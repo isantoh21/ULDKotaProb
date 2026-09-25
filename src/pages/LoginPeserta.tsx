@@ -7,6 +7,25 @@ interface Props {
   onLoginSuccess: (peserta: Peserta) => void;
 }
 
+const ADMIN_CONTACTS = [
+  {
+    id: 'admin-1',
+    nama: 'Sugeng',
+    role: 'Admin 1 ULD Kota Probolinggo',
+    waNumber: '6285236028521',
+    waFormatted: '0852-3602-8521',
+    waUrl: 'https://wa.me/6285236028521?text=Halo%20Pak%20Sugeng%20(Admin%201%20ULD%20Kota%20Probolinggo),%20saya%20ingin%20mendaftarkan%20anak%20saya%20untuk%20layanan%20asesmen%20awal%20di%20ULD...'
+  },
+  {
+    id: 'admin-2',
+    nama: 'Helmi',
+    role: 'Admin 2 ULD Kota Probolinggo',
+    waNumber: '6282247952696',
+    waFormatted: '0822-4795-2696',
+    waUrl: 'https://wa.me/6282247952696?text=Halo%20Pak%20Helmi%20(Admin%202%20ULD%20Kota%20Probolinggo),%20saya%20ingin%20mendaftarkan%20anak%20saya%20untuk%20layanan%20asesmen%20awal%20di%20ULD...'
+  }
+];
+
 export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
   const [selectedPesertaId, setSelectedPesertaId] = useState<string>('');
   const [searchFilter, setSearchFilter] = useState<string>('');
@@ -14,6 +33,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPinHint, setShowPinHint] = useState(false);
+  const [showContactAdminModal, setShowContactAdminModal] = useState(false);
 
   const rawList = db.getPesertaList();
 
@@ -255,13 +275,101 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
             Nama anak Anda belum ada di daftar drop down terapi rutin?
           </div>
           <button
-            onClick={() => navigateTo('/asesmen-guest')}
-            className="w-full py-2.5 px-4 rounded-xl border border-sky-600 text-sky-700 hover:bg-sky-50 text-xs font-bold transition-colors"
+            type="button"
+            onClick={() => setShowContactAdminModal(true)}
+            className="w-full py-2.5 px-4 rounded-xl border border-sky-600 text-sky-700 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer"
           >
             Daftar Layanan Asesmen Awal (Guest / Pasien Baru)
           </button>
         </div>
       </div>
+
+      {/* Modal Kontak Admin 1 & Admin 2 untuk Pendaftaran Asesmen Awal */}
+      {showContactAdminModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95 shadow-2xl border-2 border-emerald-300">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">💬</span>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">
+                    Pendaftaran Layanan Asesmen Awal
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Hubungi Petugas Admin Loket ULD Kota Probolinggo
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowContactAdminModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Bagi calon siswa baru yang ingin mendaftar layanan asesmen awal atau konsultasi psikolog, silakan hubungi langsung salah satu petugas Admin kami melalui WhatsApp di bawah ini:
+            </p>
+
+            {/* Tombol WhatsApp Langsung ke Admin 1 & Admin 2 */}
+            <div className="space-y-3">
+              {ADMIN_CONTACTS.map(adm => (
+                <div 
+                  key={adm.id}
+                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/80 hover:bg-emerald-50/40 hover:border-emerald-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-900 text-sm">{adm.nama}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+                        {adm.role}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500 font-mono mt-0.5">
+                      WA: <strong className="text-slate-700">{adm.waFormatted}</strong>
+                    </div>
+                  </div>
+
+                  <a
+                    href={adm.waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs shadow transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+                  >
+                    <span>💬 Chat WA Pak {adm.nama}</span>
+                    <span>→</span>
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-900 space-y-1 leading-relaxed">
+              <div className="font-bold text-amber-950">📋 Berkas yang Perlu Disiapkan untuk Loket ULD:</div>
+              <ul className="list-disc list-inside space-y-0.5 text-amber-900">
+                <li>Surat Rekomendasi untuk asesmen dari sekolah</li>
+                <li>Fotocopy KTP orang tua</li>
+                <li>Fotocopy Kartu Keluarga (KK)</li>
+                <li>Fotocopy Akta Lahir Anak</li>
+              </ul>
+              <div className="text-[10px] text-amber-800 pt-1 border-t border-amber-200/60">
+                Setelah asesmen dan dinyatakan butuh terapi, anak akan dibuatkan akun siswa reguler yang mendapatkan akses untuk mendaftar layanan 1x seminggu.
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowContactAdminModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
