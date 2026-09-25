@@ -15,6 +15,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   const [psikologNoticeModal, setPsikologNoticeModal] = useState<SlotHarian | null>(null);
   const [weeklyLimitNoticeModal, setWeeklyLimitNoticeModal] = useState<{ slot: SlotHarian; existingTanggal: string; existingJam: string } | null>(null);
   const [showContactAdminModal, setShowContactAdminModal] = useState<boolean>(false);
+  const [showDaftarChoiceModal, setShowDaftarChoiceModal] = useState<SlotHarian | null>(null);
   const [keluhanFokus, setKeluhanFokus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -272,60 +273,12 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
           </div>
         )}
 
-        {/* 4 Aturan Resmi Operasional Layanan ULD */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 space-y-1">
-            <div className="font-extrabold flex items-center justify-between text-amber-900">
-              <span>📅 Kuota Layanan:</span>
-              <span className="px-1.5 py-0.5 rounded bg-amber-200/80 text-[10px] font-black uppercase">Maks 1x / Pekan</span>
-            </div>
-            <p className="text-slate-700 leading-relaxed text-[11px]">
-              Setiap anak hanya dapat mendaftar <strong>maksimal 1x per minggu</strong> kalender demi pemerataan.
-            </p>
-          </div>
-
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200 text-xs text-rose-950 space-y-1">
-            <div className="font-extrabold flex items-center justify-between text-rose-900">
-              <span>⏰ Batas Waktu H-1:</span>
-              <span className="px-1.5 py-0.5 rounded bg-rose-200/80 text-[10px] font-black uppercase">Maks 24.00 WIB</span>
-            </div>
-            <p className="text-slate-700 leading-relaxed text-[11px]">
-              Pendaftaran minimal dilakukan <strong>H-1 hari maks jam 24.00 WIB</strong>. Pendaftaran Hari H ditutup otomatis.
-            </p>
-          </div>
-
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-teal-50/80 border border-teal-200 text-xs text-teal-950 space-y-1">
-            <div className="font-extrabold flex items-center justify-between text-teal-900">
-              <span>📌 Siswa Binaan Tetap:</span>
-              <span className="px-1.5 py-0.5 rounded bg-teal-200/80 text-[10px] font-black uppercase">Permanen</span>
-            </div>
-            <p className="text-slate-700 leading-relaxed text-[11px]">
-              Siswa yang sudah ditetapkan oleh terapis <strong>hanya dapat mendaftar ke terapis tersebut</strong>.
-            </p>
-          </div>
-
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-xs text-indigo-950 space-y-1">
-            <div className="font-extrabold flex items-center justify-between text-indigo-900">
-              <span>🧠 Khusus Psikolog:</span>
-              <span className="px-1.5 py-0.5 rounded bg-indigo-200/80 text-[10px] font-black uppercase">Via Admin</span>
-            </div>
-            <p className="text-slate-700 leading-relaxed text-[11px]">
-              Layanan Psikolog (M. Ikhsan, M.Psi.) hanya melalui <strong>Admin 1 (Sugeng)</strong> & <strong>Admin 2 (Helmi)</strong>.
-            </p>
-          </div>
-        </div>
-
-        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 text-xs">
-          <div className="text-slate-600 flex items-center gap-1.5">
-            <span>ℹ️</span>
-            <span><strong>Pendaftaran Resmi:</strong> Pendaftaran dapat dilakukan langsung di Loket ULD atau secara online bagi siswa binaan tetap yang memenuhi batas H-1.</span>
-          </div>
-          <button
-            onClick={() => setShowContactAdminModal(true)}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
-          >
-            <span>💬 Hubungi Admin Loket via WA</span>
-          </button>
+        {/* Ketentuan Singkat */}
+        <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+          <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-200">📅 Maks 1x/minggu</span>
+          <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 font-semibold border border-rose-200">⏰ Daftar paling lambat H-1 jam 24.00</span>
+          <span className="px-2.5 py-1 rounded-full bg-teal-100 text-teal-900 font-semibold border border-teal-200">📌 Siswa binaan hanya ke terapis tetapnya</span>
+          <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-900 font-semibold border border-indigo-200">🧠 Psikolog hanya via Admin</span>
         </div>
       </div>
 
@@ -393,22 +346,18 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
         )}
       </div>
 
-      {/* Slots List dengan Nama-Nama Peserta Terjadwal */}
+      {/* Slots List — dikelompokkan per Terapis */}
       <div className="space-y-4">
         <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-          <span>Menampilkan <strong>{filteredSlots.length}</strong> slot terapi aktif ({minAllowedDate} s/d {maxAllowedDate})</span>
-          <span>Jadwal Resmi: Senin – Jumat 09.00 – 13.00 WIB</span>
+          <span>Menampilkan <strong>{filteredSlots.length}</strong> slot aktif ({minAllowedDate} s/d {maxAllowedDate})</span>
+          <span>Senin – Jumat 09.00 – 13.00 WIB</span>
         </div>
 
         {filteredSlots.length === 0 ? (
           <div className="bg-white rounded-2xl p-10 border border-slate-200 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center font-bold">
-              ∅
-            </div>
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center font-bold">∅</div>
             <h3 className="font-bold text-slate-900">Belum Ada Slot yang Sesuai Filter</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Tidak ditemukan jadwal pada kriteria yang Anda pilih. Silakan ubah pilihan bidang terapi atau tanggal.
-            </p>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">Tidak ditemukan jadwal pada kriteria yang dipilih.</p>
             <button
               onClick={() => { setSelectedSpesialisasi('all'); setSelectedDateFilter('all'); }}
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-700"
@@ -416,233 +365,235 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
               Reset Filter
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredSlots.map(slot => {
-              const terapis = getTerapis(slot.terapisId);
-              const bookedStudents = getBookedStudentsForSlot(slot);
-              const isFull = bookedStudents.length >= slot.kuotaMaksimal;
-              const sisaKuota = Math.max(0, slot.kuotaMaksimal - bookedStudents.length);
-              const isPsikolog = slot.spesialisasi === 'psikolog';
-              const deadline = checkBatasPendaftaranHMinus1(slot.tanggal);
+        ) : (() => {
+          // Kelompokkan slot per terapisId
+          const groups: { terapisId: string; slots: SlotHarian[] }[] = [];
+          filteredSlots.forEach(slot => {
+            const g = groups.find(x => x.terapisId === slot.terapisId);
+            if (g) g.slots.push(slot);
+            else groups.push({ terapisId: slot.terapisId, slots: [slot] });
+          });
 
-              // Check weekly limit for current participant
-              const slotWeek = getWeekBounds(slot.tanggal);
-              const existingBookingInWeek = activePeserta
-                ? activeBookings.find(b => getWeekBounds(b.tanggal).monday === slotWeek.monday)
-                : undefined;
-
-              // Check student assigned therapist (Aturan 2)
-              const isAssignedToThisTerapis = activePeserta?.assignedTerapisId === slot.terapisId;
-              const isAssignedToOtherTerapis = !!activePeserta?.assignedTerapisId && !isAssignedToThisTerapis;
-              const isUnassigned = !!activePeserta && !activePeserta.assignedTerapisId;
-
-              return (
-                <div
-                  key={slot.id}
-                  className={`bg-white rounded-3xl p-5 border transition-all flex flex-col justify-between ${
-                    !deadline.bisaDaftar
-                      ? 'border-rose-200 bg-rose-50/20'
-                      : isPsikolog 
-                        ? 'border-indigo-200 bg-gradient-to-b from-indigo-50/20 to-white shadow-sm' 
-                        : isFull 
-                          ? 'border-slate-200 bg-slate-50/40' 
-                          : 'border-slate-200 shadow-sm hover:border-teal-500'
-                  }`}
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-[11px] font-bold tracking-wide uppercase ${isPsikolog ? 'text-indigo-800' : 'text-teal-800'}`}>
-                            {getSpesialisasiLabel(slot.spesialisasi)}
-                          </span>
-                          {isPsikolog && (
-                            <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-900 text-[10px] font-extrabold">
-                              Via Admin
-                            </span>
-                          )}
+          return (
+            <div className="space-y-4">
+              {groups.map(group => {
+                const terapis = getTerapis(group.terapisId);
+                const isPsikolog = group.slots[0]?.spesialisasi === 'psikolog';
+                return (
+                  <div
+                    key={group.terapisId}
+                    className={`bg-white rounded-3xl border shadow-sm overflow-hidden ${
+                      isPsikolog ? 'border-indigo-200' : 'border-slate-200'
+                    }`}
+                  >
+                    {/* Header Terapis */}
+                    <div className={`px-5 py-4 flex items-center gap-3 ${
+                      isPsikolog ? 'bg-indigo-50 border-b border-indigo-100' : 'bg-teal-50/60 border-b border-slate-100'
+                    }`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                        isPsikolog ? 'bg-indigo-100' : 'bg-teal-100'
+                      }`}>
+                        {isPsikolog ? '🧠' : '🩺'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-[10px] font-bold uppercase tracking-wider ${
+                          isPsikolog ? 'text-indigo-700' : 'text-teal-700'
+                        }`}>
+                          {getSpesialisasiLabel(group.slots[0].spesialisasi)}
+                          {isPsikolog && <span className="ml-1.5 px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-900">Via Admin</span>}
                         </div>
-                        <h3 className="font-bold text-slate-900 text-base mt-0.5">
+                        <div className="font-extrabold text-slate-900 text-base">
                           {terapis?.nama || 'Tenaga Ahli ULD'}
-                        </h3>
+                        </div>
                       </div>
-
                       <div className="text-right shrink-0">
-                        {!deadline.bisaDaftar ? (
-                          <span className="text-[11px] font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
-                            ⛔ {deadline.labelBatas}
-                          </span>
-                        ) : isPsikolog ? (
-                          <span className="text-[11px] font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                            Loket Admin
-                          </span>
-                        ) : isFull ? (
-                          <span className="text-[11px] font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded">
-                            Penuh
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded">
-                            Tersedia ({sisaKuota} Pasien)
-                          </span>
-                        )}
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                          isPsikolog ? 'bg-indigo-100 text-indigo-800' : 'bg-teal-100 text-teal-800'
+                        }`}>
+                          {group.slots.length} sesi
+                        </span>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-slate-600">
-                      <div className="flex items-center gap-2 font-medium text-slate-900">
-                        <svg className="w-4 h-4 text-teal-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span>{slot.tanggal} · {slot.jamMulai} - {slot.jamSelesai} WIB</span>
-                      </div>
+                    {/* List Jam per Tanggal */}
+                    <div className="divide-y divide-slate-100">
+                      {group.slots.map(slot => {
+                        const bookedStudents = getBookedStudentsForSlot(slot);
+                        const isFull = bookedStudents.length >= slot.kuotaMaksimal;
+                        const sisaKuota = Math.max(0, slot.kuotaMaksimal - bookedStudents.length);
+                        const deadline = checkBatasPendaftaranHMinus1(slot.tanggal);
+                        const slotWeek = getWeekBounds(slot.tanggal);
+                        const existingBookingInWeek = activePeserta
+                          ? activeBookings.find(b => getWeekBounds(b.tanggal).monday === slotWeek.monday)
+                          : undefined;
+                        const isAssignedToThisTerapis = activePeserta?.assignedTerapisId === slot.terapisId;
+                        const isAssignedToOtherTerapis = !!activePeserta?.assignedTerapisId && !isAssignedToThisTerapis;
 
-                      <div className="text-slate-500">
-                        Ruang: <span className="text-slate-800 font-medium">{slot.ruang}</span>
-                      </div>
-
-                      {slot.catatanTerapis && (
-                        <div className="p-2 rounded-xl bg-teal-50/50 text-[11px] text-teal-900 border border-teal-100/70">
-                          <strong className="text-teal-950">Catatan:</strong> {slot.catatanTerapis}
-                        </div>
-                      )}
-
-                      {/* Notifikasi Batas H-1 Jam 24.00 WIB (Aturan 3) */}
-                      {!deadline.bisaDaftar && (
-                        <div className="p-2 rounded-xl bg-rose-50 text-[11px] text-rose-900 border border-rose-200 flex items-center gap-1.5">
-                          <span>⛔</span>
-                          <span><strong>Pendaftaran Ditutup:</strong> Sesuai batas operasional ULD, pendaftaran minimal H-1 hari maks jam 24.00 WIB.</span>
-                        </div>
-                      )}
-
-                      {/* Status Penetapan Terapis Siswa (Aturan 2) */}
-                      {activePeserta && (
-                        <>
-                          {isAssignedToThisTerapis ? (
-                            <div className="p-2 rounded-xl bg-teal-50 text-[11px] text-teal-950 font-bold border border-teal-200 flex items-center gap-1.5">
-                              <span>📌</span>
-                              <span>Tenaga Ahli Pembina Tetap Ananda (Memenuhi Syarat Penugasan)</span>
-                            </div>
-                          ) : isAssignedToOtherTerapis ? (
-                            <div className="p-2 rounded-xl bg-slate-100 text-[11px] text-slate-700 border border-slate-200 flex items-center gap-1.5">
-                              <span>🔒</span>
-                              <span>Khusus siswa terapis ini. Ananda dibina oleh: <strong>{activePeserta.assignedTerapisNama}</strong></span>
-                            </div>
-                          ) : (
-                            <div className="p-2 rounded-xl bg-amber-50 text-[11px] text-amber-900 border border-amber-200 flex items-center gap-1.5">
-                              <span>⏳</span>
-                              <span>Ananda belum di-assign ke terapis pembina tetap.</span>
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                      {/* Notifikasi Batas Mingguan */}
-                      {existingBookingInWeek && !isPsikolog && (
-                        <div className="p-2 rounded-xl bg-amber-50 text-[11px] text-amber-900 border border-amber-200 flex items-center gap-1.5">
-                          <span>⚠️</span>
-                          <span>Ananda sudah terjadwal di pekan ini ({existingBookingInWeek.tanggal}). Kuota maks 1x/minggu.</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* FITUR 1: DAFTAR NAMA PESERTA YANG TERJADWAL DI HARI INI */}
-                    <div className="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                      <div className="text-[11px] font-bold text-slate-800 flex items-center justify-between">
-                        <span className="flex items-center gap-1">
-                          <span>👥</span>
-                          <span>Peserta Terdaftar di Jam Ini:</span>
-                        </span>
-                        <span className="font-mono text-teal-800 text-[11px]">
-                          {bookedStudents.length} / {slot.kuotaMaksimal} Terisi
-                        </span>
-                      </div>
-
-                      {bookedStudents.length === 0 ? (
-                        <div className="text-[11px] text-slate-400 italic">
-                          Belum ada peserta yang mendaftar di slot jam ini.
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {bookedStudents.map((st, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-teal-100/90 text-teal-950 font-bold text-xs border border-teal-200 shadow-xs"
-                            >
-                              <span>🧒</span>
-                              <span>{st.nama}</span>
-                              {st.asalSekolah && (
-                                <span className="text-[10px] font-normal text-teal-700">({st.asalSekolah})</span>
+                        return (
+                          <div key={slot.id} className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3">
+                            {/* Info Jam */}
+                            <div className="flex-1 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-bold text-slate-900 text-sm">
+                                  {slot.jamMulai} – {slot.jamSelesai} WIB
+                                </span>
+                                <span className="text-[11px] text-slate-500">{slot.tanggal}</span>
+                                {slot.tanggal === todayWIB.dateStr && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black">Hari H</span>
+                                )}
+                                {!deadline.bisaDaftar ? (
+                                  <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold">⛔ Ditutup</span>
+                                ) : isFull ? (
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">Penuh</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                    {sisaKuota} kuota tersisa
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-500">Ruang: {slot.ruang}</div>
+                              {/* Peserta terdaftar */}
+                              {bookedStudents.length > 0 && (
+                                <div className="flex flex-wrap gap-1 pt-1">
+                                  {bookedStudents.map((st, idx) => (
+                                    <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-teal-100 text-teal-900 text-[10px] font-semibold border border-teal-200">
+                                      🧒 {st.nama}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                              {existingBookingInWeek && !isPsikolog && (
+                                <div className="text-[10px] text-amber-700 font-medium pt-0.5">
+                                  ⚠️ Sudah terjadwal di pekan ini ({existingBookingInWeek.tanggal})
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Tombol Daftar */}
+                            <div className="shrink-0">
+                              {!deadline.bisaDaftar ? (
+                                <span className="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200 cursor-not-allowed">
+                                  Ditutup
+                                </span>
+                              ) : isFull ? (
+                                <span className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">
+                                  Penuh
+                                </span>
+                              ) : isPsikolog ? (
+                                <button
+                                  onClick={() => setPsikologNoticeModal(slot)}
+                                  className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-800 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                >
+                                  🧠 Daftar via Admin
+                                </button>
+                              ) : activePeserta ? (
+                                isAssignedToThisTerapis ? (
+                                  <button
+                                    onClick={() => handleOpenBooking(slot)}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-teal-800 hover:bg-teal-700 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                  >
+                                    ✓ Daftar
+                                  </button>
+                                ) : isAssignedToOtherTerapis ? (
+                                  <span className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed">
+                                    🔒 Bukan Terapis Ananda
+                                  </span>
+                                ) : (
+                                  <span className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-700 border border-amber-300">
+                                    ⏳ Belum Di-assign
+                                  </span>
+                                )
+                              ) : (
+                                <button
+                                  onClick={() => setShowDaftarChoiceModal(slot)}
+                                  className="px-4 py-2 rounded-xl text-xs font-bold bg-teal-800 hover:bg-teal-700 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                >
+                                  Daftar →
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div className="text-[11px] text-slate-400">
-                      Maks: {slot.kuotaMaksimal} peserta
-                    </div>
-
-                    {!deadline.bisaDaftar ? (
-                      <span className="w-full sm:w-auto text-center px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 cursor-not-allowed">
-                        ⛔ Ditutup (Batas H-1)
-                      </span>
-                    ) : isFull ? (
-                      <span className="w-full sm:w-auto text-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                        Slot Penuh ({bookedStudents.length} Peserta)
-                      </span>
-                    ) : isPsikolog ? (
-                      <button
-                        onClick={() => setPsikologNoticeModal(slot)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-800 hover:bg-indigo-700 text-white shadow-sm flex items-center justify-center gap-1.5 transition-all transform active:scale-95"
-                      >
-                        <span>🧠 Daftar via Admin</span>
-                        <span>→</span>
-                      </button>
-                    ) : activePeserta ? (
-                      isAssignedToThisTerapis ? (
-                        <button
-                          onClick={() => handleOpenBooking(slot)}
-                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-800 hover:bg-teal-700 text-white shadow-sm flex items-center justify-center gap-1.5 transition-all transform active:scale-95"
-                        >
-                          <span>✓ Daftar Sesi Ini</span>
-                          <span>→</span>
-                        </button>
-                      ) : isAssignedToOtherTerapis ? (
-                        <button
-                          disabled
-                          className="w-full sm:w-auto text-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                          title={`Ananda hanya dapat mendaftar ke ${activePeserta.assignedTerapisNama}`}
-                        >
-                          <span>🔒 Khusus Siswa Terapis Ini</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => alert(`Pendaftaran belum dapat diproses. Ananda ${activePeserta.namaLengkap} belum ditetapkan ke Tenaga Ahli / Terapis pembina tetap. Silakan hubungi terapis atau petugas loket ULD.`)}
-                          className="w-full sm:w-auto text-center px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors"
-                        >
-                          <span>⏳ Belum Di-assign</span>
-                        </button>
-                      )
-                    ) : (
-                      <button
-                        onClick={() => setShowContactAdminModal(true)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-800 hover:bg-teal-700 text-white shadow-sm flex items-center justify-center gap-1.5 transition-all transform active:scale-95"
-                      >
-                        <span>🏥 Daftar di Loket ULD</span>
-                        <span>→</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
+
+      {/* Modal Pilih Tipe Pendaftar (Siswa Binaan / Siswa Baru) */}
+      {showDaftarChoiceModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border-2 border-teal-300">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <div className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">Pendaftaran Jadwal Terapi</div>
+                <h3 className="font-extrabold text-slate-900 text-base mt-0.5">
+                  {getTerapis(showDaftarChoiceModal.terapisId)?.nama} · {showDaftarChoiceModal.jamMulai}–{showDaftarChoiceModal.jamSelesai}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowDaftarChoiceModal(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600">Anda ingin mendaftar sebagai:</p>
+
+            <div className="space-y-3">
+              {/* Pilihan 1: Siswa Binaan / Rutin */}
+              <button
+                onClick={() => {
+                  setShowDaftarChoiceModal(null);
+                  navigateTo('/login-peserta');
+                }}
+                className="w-full p-4 rounded-2xl border-2 border-teal-300 bg-teal-50 hover:bg-teal-100 text-left transition-all group"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎒</span>
+                  <div>
+                    <div className="font-extrabold text-teal-900 text-sm">Siswa Binaan / Rutin</div>
+                    <div className="text-xs text-teal-700 mt-0.5">Sudah terdaftar di ULD dan punya PIN siswa. Login untuk mendaftar sesi ini langsung.</div>
+                  </div>
+                  <span className="ml-auto text-teal-600 group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </button>
+
+              {/* Pilihan 2: Siswa Baru */}
+              <button
+                onClick={() => {
+                  setShowDaftarChoiceModal(null);
+                  setShowContactAdminModal(true);
+                }}
+                className="w-full p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-all group"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🆕</span>
+                  <div>
+                    <div className="font-extrabold text-slate-900 text-sm">Siswa Baru / Asesmen Perdana</div>
+                    <div className="text-xs text-slate-600 mt-0.5">Belum pernah terapi di ULD atau ingin asesmen psikolog pertama kali. Perlu menghubungi admin dulu untuk penjadwalan.</div>
+                  </div>
+                  <span className="ml-auto text-slate-500 group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setShowDaftarChoiceModal(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Kontak Admin (WhatsApp Langsung ke Admin 1 & Admin 2) */}
       {(showContactAdminModal || psikologNoticeModal) && (
