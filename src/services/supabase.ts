@@ -3,6 +3,7 @@ import {
   Peserta, 
   Terapis, 
   SlotHarian, 
+  PengosonganJadwalRutin,
   BookingTerapi, 
   PendaftaranAsesmenGuest, 
   AdminUser,
@@ -24,6 +25,7 @@ const STORAGE_KEYS = {
   TERAPIS: 'uld_prob_terapis_v3',
   ADMINS: 'uld_prob_admins_v3',
   SLOTS: 'uld_prob_slots_v3',
+  PENGOSONGAN_RUTIN: 'uld_prob_pengosongan_rutin_v1',
   BOOKINGS: 'uld_prob_bookings_v2',
   ASESMEN: 'uld_prob_asesmen_v1',
   LOGS: 'uld_prob_logs_v1',
@@ -570,6 +572,9 @@ class SupabaseDataService {
     if (!rawSlots) {
       localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(INITIAL_SLOTS));
     }
+    if (!localStorage.getItem(STORAGE_KEYS.PENGOSONGAN_RUTIN)) {
+      localStorage.setItem(STORAGE_KEYS.PENGOSONGAN_RUTIN, JSON.stringify([]));
+    }
     // Pastikan seluruh sesi Senin - Jumat otomatis terbuka untuk setiap pekan
     this.ensureAutoOpenWeekdaySlots();
 
@@ -589,6 +594,7 @@ class SupabaseDataService {
     localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(INITIAL_TERAPIS));
     localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(INITIAL_ADMINS));
     localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(INITIAL_SLOTS));
+    localStorage.setItem(STORAGE_KEYS.PENGOSONGAN_RUTIN, JSON.stringify([]));
     this.ensureAutoOpenWeekdaySlots();
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(INITIAL_BOOKINGS));
     localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(INITIAL_ASESMEN_GUEST));
@@ -737,11 +743,19 @@ class SupabaseDataService {
 
   public hidupkanSemuaSlotTanggal(terapisId: string, tanggal: string): boolean {
     const list = this.getSlotsList(tanggal);
+    const pengosonganRules = this.getPengosonganRutinByTerapis(terapisId);
+    const dayNum = new Date(tanggal + 'T00:00:00').getDay();
     let changed = false;
     list.forEach(s => {
       if (s.terapisId === terapisId && s.tanggal === tanggal && s.statusSlot === 'dibatalkan') {
-        s.statusSlot = s.kuotaTerisi >= s.kuotaMaksimal ? 'penuh' : 'tersedia';
-        changed = true;
+        const isBlockedPermanen = pengosonganRules.some(r =>
+          (r.hari === -1 || r.hari === dayNum) &&
+          (r.jamMulai === 'SEMUA' || r.jamMulai === s.jamMulai)
+        );
+        if (!isBlockedPermanen) {
+          s.statusSlot = s.kuotaTerisi >= s.kuotaMaksimal ? 'penuh' : 'tersedia';
+          changed = true;
+        }
       }
     });
     if (changed) {
@@ -749,7 +763,7 @@ class SupabaseDataService {
       this.catatAktivitas({
         kategori: 'jadwal_slot',
         judul: 'Pengaktifan Kembali Seluruh Sesi Tanggal',
-        deskripsi: `Seluruh sesi terapi pada tanggal ${tanggal} diaktifkan kembali oleh Tenaga Ahli.`,
+        deskripsi: `Seluruh sesi terapi pada tanggal ${tanggal} diaktifkan kembali oleh Tenaga Ahli (kecuali yang memiliki aturan pengosongan rutin).`,
         pelaku: 'Tenaga Ahli ULD',
         rolePelaku: 'terapis',
         icon: '🟢'
@@ -760,6 +774,164 @@ class SupabaseDataService {
       this.triggerAutoSync();
     }
     return changed;
+  }
+
+  // --- PENGOSONGAN JADWAL RUTIN (SEPANJANG MINGGU SELAMANYA SAMPAI DI-REVOKE) ---
+  public getPengosonganRutinList(): PengosonganJadwalRutin[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PENGOSONGAN_RUTIN);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public getPengosonganRutinByTerapis(terapisId: string): PengosonganJadwalRutin[] {
+    return this.getPengosonganRutinList().filter(r => r.terapisId === terapisId);
+  }
+
+  public tambahPengosonganRutin(data: {
+    terapisId: string;
+    hari: number;
+    hariLabel: string;
+    jamMulai: string;
+    jamSelesai?: string;
+    labelSesi: string;
+    alasan?: string;
+  }): { success: boolean; rule?: PengosonganJadwalRutin; message?: string } {
+    const list = this.getPengosonganRutinList();
+
+    // Cek apakah aturan identik sudah ada
+    const duplicate = list.find(r =>
+      r.terapisId === data.terapisId &&
+      r.hari === data.hari &&
+      r.jamMulai === data.jamMulai
+    );
+    if (duplicate) {
+      return { 
+        success: false, 
+        message: `Aturan pengosongan untuk hari ${data.hariLabel} sesi ${data.labelSesi} sudah aktif sebelumnya.` 
+      };
+    }
+
+    const newRule: PengosonganJadwalRutin = {
+      id: `block-rutin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      terapisId: data.terapisId,
+      hari: data.hari,
+      hariLabel: data.hariLabel,
+      jamMulai: data.jamMulai,
+      jamSelesai: data.jamSelesai,
+      labelSesi: data.labelSesi,
+      alasan: data.alasan?.trim() || undefined,
+      createdAt: new Date().toISOString()
+    };
+
+    list.unshift(newRule);
+    localStorage.setItem(STORAGE_KEYS.PENGOSONGAN_RUTIN, JSON.stringify(list));
+
+    // Langsung terapkan pengosongan ke seluruh slot harian yang ada
+    const slots = this.getSlotsList();
+    let slotUpdatedCount = 0;
+    slots.forEach(slot => {
+      if (slot.terapisId === data.terapisId) {
+        const slotDay = new Date(slot.tanggal + 'T00:00:00').getDay();
+        const matchHari = data.hari === -1 ? (slotDay >= 1 && slotDay <= 5) : (slotDay === data.hari);
+        const matchJam = data.jamMulai === 'SEMUA' || slot.jamMulai === data.jamMulai;
+        if (matchHari && matchJam) {
+          if (slot.kuotaTerisi === 0) {
+            slot.statusSlot = 'dibatalkan';
+            slot.catatanTerapis = data.alasan
+              ? `Dikosongkan Rutin: ${data.alasan}`
+              : 'Dikosongkan rutin setiap minggu sepanjang masa';
+            slotUpdatedCount++;
+          }
+        }
+      }
+    });
+
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+
+    const terapis = this.getTerapisById(data.terapisId);
+    this.catatAktivitas({
+      kategori: 'jadwal_slot',
+      judul: 'Pengosongan Rutin Jadwal Terapi',
+      deskripsi: `${terapis?.nama || 'Tenaga Ahli'} mengosongkan jadwal rutin setiap hari ${data.hariLabel} sesi ${data.labelSesi} sepanjang minggu selamanya.`,
+      pelaku: terapis?.nama || 'Tenaga Ahli ULD',
+      rolePelaku: 'terapis',
+      icon: '🔒'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+    this.triggerAutoSync();
+
+    return {
+      success: true,
+      rule: newRule,
+      message: `Jadwal hari ${data.hariLabel} sesi ${data.labelSesi} berhasil dikosongkan sepanjang minggu selamanya sampai akses di-revoke.`
+    };
+  }
+
+  public revokePengosonganRutin(ruleId: string): { success: boolean; message?: string } {
+    const list = this.getPengosonganRutinList();
+    const ruleIdx = list.findIndex(r => r.id === ruleId);
+    if (ruleIdx === -1) {
+      return { success: false, message: 'Aturan pengosongan tidak ditemukan atau sudah dicabut.' };
+    }
+
+    const removedRule = list[ruleIdx];
+    list.splice(ruleIdx, 1);
+    localStorage.setItem(STORAGE_KEYS.PENGOSONGAN_RUTIN, JSON.stringify(list));
+
+    // Pulihkan slot-slot yang sebelumnya dibatalkan oleh aturan ini (kecuali jika masih ada aturan lain yang menaunginya)
+    const remainingRules = list.filter(r => r.terapisId === removedRule.terapisId);
+    const slots = this.getSlotsList();
+    let restoredCount = 0;
+
+    slots.forEach(slot => {
+      if (slot.terapisId === removedRule.terapisId) {
+        const slotDay = new Date(slot.tanggal + 'T00:00:00').getDay();
+        const matchHari = removedRule.hari === -1 ? (slotDay >= 1 && slotDay <= 5) : (slotDay === removedRule.hari);
+        const matchJam = removedRule.jamMulai === 'SEMUA' || slot.jamMulai === removedRule.jamMulai;
+
+        if (matchHari && matchJam && slot.statusSlot === 'dibatalkan' && slot.kuotaTerisi === 0) {
+          const stillBlocked = remainingRules.some(r => {
+            const rMatchHari = r.hari === -1 ? (slotDay >= 1 && slotDay <= 5) : (slotDay === r.hari);
+            const rMatchJam = r.jamMulai === 'SEMUA' || slot.jamMulai === r.jamMulai;
+            return rMatchHari && rMatchJam;
+          });
+
+          if (!stillBlocked) {
+            slot.statusSlot = 'tersedia';
+            slot.catatanTerapis = 'Jadwal reguler otomatis ULD (Senin - Jumat 09.00 - 13.00 WIB)';
+            restoredCount++;
+          }
+        }
+      }
+    });
+
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+
+    const terapis = this.getTerapisById(removedRule.terapisId);
+    this.catatAktivitas({
+      kategori: 'jadwal_slot',
+      judul: 'Revoke Pengosongan Jadwal Rutin',
+      deskripsi: `Pengosongan jadwal hari ${removedRule.hariLabel} sesi ${removedRule.labelSesi} telah di-revoke oleh ${terapis?.nama || 'Tenaga Ahli'}. Jadwal diaktifkan kembali.`,
+      pelaku: terapis?.nama || 'Tenaga Ahli ULD',
+      rolePelaku: 'terapis',
+      icon: '🔓'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+    this.triggerAutoSync();
+
+    return {
+      success: true,
+      message: `Akses jadwal hari ${removedRule.hariLabel} sesi ${removedRule.labelSesi} berhasil di-revoke! Jadwal kembali terbuka dan aktif.`
+    };
   }
 
   // --- PESERTA METHODS ---
@@ -1079,12 +1251,22 @@ class SupabaseDataService {
 
     let hasAdded = false;
     const terapisList = this.getTerapisList();
+    const pengosonganRules = this.getPengosonganRutinList();
 
     datesToEnsure.forEach(dStr => {
+      const dObj = new Date(dStr + 'T00:00:00');
+      const dayNum = dObj.getDay();
+
       terapisList.forEach(t => {
         DEFAULT_TERAPI_SESSIONS.forEach(sess => {
-          const exists = list.some(s => s.terapisId === t.id && s.tanggal === dStr && s.jamMulai === sess.start);
-          if (!exists) {
+          const matchedRule = pengosonganRules.find(r => 
+            r.terapisId === t.id &&
+            (r.hari === -1 || r.hari === dayNum) &&
+            (r.jamMulai === 'SEMUA' || r.jamMulai === sess.start)
+          );
+
+          const existingIdx = list.findIndex(s => s.terapisId === t.id && s.tanggal === dStr && s.jamMulai === sess.start);
+          if (existingIdx === -1) {
             list.push({
               id: `slot-auto-${t.id}-${dStr}-${sess.start.replace(':', '')}`,
               terapisId: t.id,
@@ -1095,10 +1277,18 @@ class SupabaseDataService {
               ruang: t.ruangPraktek,
               kuotaMaksimal: 1,
               kuotaTerisi: 0,
-              statusSlot: 'tersedia',
-              catatanTerapis: 'Jadwal reguler otomatis ULD (Senin - Jumat 09.00 - 13.00 WIB)',
+              statusSlot: matchedRule ? 'dibatalkan' : 'tersedia',
+              catatanTerapis: matchedRule 
+                ? (matchedRule.alasan ? `Dikosongkan Rutin: ${matchedRule.alasan}` : 'Dikosongkan rutin setiap minggu sepanjang masa')
+                : 'Jadwal reguler otomatis ULD (Senin - Jumat 09.00 - 13.00 WIB)',
               createdAt: new Date().toISOString()
             });
+            hasAdded = true;
+          } else if (matchedRule && list[existingIdx].statusSlot === 'tersedia' && list[existingIdx].kuotaTerisi === 0) {
+            list[existingIdx].statusSlot = 'dibatalkan';
+            list[existingIdx].catatanTerapis = matchedRule.alasan 
+              ? `Dikosongkan Rutin: ${matchedRule.alasan}` 
+              : 'Dikosongkan rutin setiap minggu sepanjang masa';
             hasAdded = true;
           }
         });
@@ -1214,6 +1404,19 @@ class SupabaseDataService {
       return { 
         success: false, 
         error: 'Pendaftaran konsultasi Psikolog untuk umum hanya dapat dilakukan melalui Petugas Admin ULD di loket atau jika siswa telah ditetapkan sebagai siswa binaan tetap.' 
+      };
+    }
+
+    // Validasi aturan pengosongan rutin Tenaga Ahli (berlaku selamanya sampai di-revoke)
+    const slotDayNum = new Date(slot.tanggal + 'T00:00:00').getDay();
+    const activeBlockRule = this.getPengosonganRutinByTerapis(slot.terapisId).find(r =>
+      (r.hari === -1 || r.hari === slotDayNum) &&
+      (r.jamMulai === 'SEMUA' || r.jamMulai === slot.jamMulai)
+    );
+    if (activeBlockRule) {
+      return {
+        success: false,
+        error: `Maaf, jadwal sesi ${slot.jamMulai} WIB pada setiap hari ${activeBlockRule.hariLabel} telah dikosongkan secara rutin oleh Tenaga Ahli (${activeBlockRule.alasan || 'Tidak Menerima Layanan Rutin'}).`
       };
     }
 

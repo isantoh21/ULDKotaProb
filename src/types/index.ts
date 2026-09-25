@@ -57,6 +57,18 @@ export interface SlotHarian {
   createdAt: string;
 }
 
+export interface PengosonganJadwalRutin {
+  id: string;
+  terapisId: string;
+  hari: number; // 1 = Senin, 2 = Selasa, 3 = Rabu, 4 = Kamis, 5 = Jumat, -1 = Setiap Hari (Senin - Jumat)
+  hariLabel: string; // 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Setiap Hari Kerja'
+  jamMulai: string; // '09:00', '10:00', '11:00', '12:00', or 'SEMUA'
+  jamSelesai?: string; // '10:00', '11:00', '12:00', '13:00', or 'SEMUA'
+  labelSesi: string; // e.g. 'Sesi 1 (09.00 - 10.00 WIB)' or 'Semua Sesi (09.00 - 13.00 WIB)'
+  alasan?: string;
+  createdAt: string;
+}
+
 export interface BookingTerapi {
   id: string;
   slotId: string;

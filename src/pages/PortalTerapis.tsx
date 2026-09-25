@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Terapis, SlotHarian, BookingTerapi, Peserta, LogAktivitas, KategoriAktivitas } from '../types';
+import { Terapis, SlotHarian, PengosonganJadwalRutin, BookingTerapi, Peserta, LogAktivitas, KategoriAktivitas } from '../types';
 import { db, DEFAULT_TERAPI_SESSIONS } from '../services/supabase';
 import { getNextWeekdayDate } from '../services/initialData';
 
@@ -11,6 +11,23 @@ interface Props {
 }
 
 const DEFAULT_HOURS = DEFAULT_TERAPI_SESSIONS;
+
+const HARI_PILIHAN = [
+  { value: 1, label: 'Setiap Hari Senin', nama: 'Senin' },
+  { value: 2, label: 'Setiap Hari Selasa', nama: 'Selasa' },
+  { value: 3, label: 'Setiap Hari Rabu', nama: 'Rabu' },
+  { value: 4, label: 'Setiap Hari Kamis', nama: 'Kamis' },
+  { value: 5, label: 'Setiap Hari Jumat', nama: 'Jumat' },
+  { value: -1, label: 'Setiap Hari Kerja (Senin s.d. Jumat)', nama: 'Senin - Jumat' },
+];
+
+const SESI_PILIHAN = [
+  { value: '09:00', end: '10:00', label: 'Sesi 1 (09.00 - 10.00 WIB)' },
+  { value: '10:00', end: '11:00', label: 'Sesi 2 (10.00 - 11.00 WIB)' },
+  { value: '11:00', end: '12:00', label: 'Sesi 3 (11.00 - 12.00 WIB)' },
+  { value: '12:00', end: '13:00', label: 'Sesi 4 (12.00 - 13.00 WIB)' },
+  { value: 'SEMUA', end: '13:00', label: 'Semua Sesi (09.00 - 13.00 WIB / Libur Seharian Penuh)' },
+];
 
 export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }) => {
   const isPsikolog = terapis.spesialisasi === 'psikolog';
@@ -274,15 +291,27 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   // Fetch all slots & bookings for this therapist (passing selectedDate ensures auto-open slots exist)
   const [slotsList, setSlotsList] = useState<SlotHarian[]>(() => db.getSlotsList(selectedDate));
   const [allBookings, setAllBookings] = useState<BookingTerapi[]>(() => db.getBookingsList());
+  const [pengosonganRutinList, setPengosonganRutinList] = useState<PengosonganJadwalRutin[]>(() =>
+    db.getPengosonganRutinByTerapis(terapis.id)
+  );
+
+  // Modal State untuk Pengosongan Rutin Selamanya
+  const [showModalPengosongan, setShowModalPengosongan] = useState(false);
+  const [formHariRutin, setFormHariRutin] = useState<number>(1);
+  const [formJamRutin, setFormJamRutin] = useState<string>('09:00');
+  const [formAlasanRutin, setFormAlasanRutin] = useState<string>('');
+  const [rutinMsg, setRutinMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isSubmittingRutin, setIsSubmittingRutin] = useState(false);
 
   useEffect(() => {
     const handleUpdate = () => {
       setSlotsList(db.getSlotsList(selectedDate));
       setAllBookings(db.getBookingsList());
+      setPengosonganRutinList(db.getPengosonganRutinByTerapis(terapis.id));
     };
     window.addEventListener('uld_data_updated', handleUpdate);
     return () => window.removeEventListener('uld_data_updated', handleUpdate);
-  }, [selectedDate]);
+  }, [selectedDate, terapis.id]);
 
   const allSlots = slotsList.filter(s => s.terapisId === terapis.id);
   const slotsForSelectedDate = allSlots.filter(s => s.tanggal === selectedDate);
@@ -299,7 +328,18 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
     }
   })();
 
-  // Handle 1-Click Toggle Slot (Matikan / Hidupkan Sesi)
+  // Nama hari dari selectedDate
+  const namaHariIni = (() => {
+    try {
+      const d = new Date(selectedDate + 'T00:00:00');
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      return days[d.getDay()] || 'Hari Ini';
+    } catch {
+      return 'Hari Ini';
+    }
+  })();
+
+  // Handle 1-Click Toggle Slot (Matikan / Hidupkan Sesi Hari Ini Saja)
   const handleToggleSlotHour = (hourStart: string) => {
     const existing = allSlots.find(s => s.tanggal === selectedDate && s.jamMulai === hourStart);
     if (existing) {
@@ -319,6 +359,74 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
       db.matikanSemuaSlotTanggal(terapis.id, selectedDate);
       setSlotsList(db.getSlotsList(selectedDate));
     }
+  };
+
+  // Handler Simpan Aturan Pengosongan Rutin Selamanya
+  const handleSimpanPengosonganRutin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingRutin(true);
+    setRutinMsg(null);
+
+    const matchedHari = HARI_PILIHAN.find(h => h.value === formHariRutin);
+    const matchedSesi = SESI_PILIHAN.find(s => s.value === formJamRutin);
+
+    const result = db.tambahPengosonganRutin({
+      terapisId: terapis.id,
+      hari: formHariRutin,
+      hariLabel: matchedHari?.nama || 'Senin',
+      jamMulai: formJamRutin,
+      jamSelesai: matchedSesi?.end || '10:00',
+      labelSesi: matchedSesi?.label || formJamRutin,
+      alasan: formAlasanRutin.trim() || undefined
+    });
+
+    setIsSubmittingRutin(false);
+    if (result.success) {
+      confetti({ particleCount: 40 });
+      setRutinMsg({ type: 'success', text: result.message || 'Jadwal berhasil dikosongkan selamanya.' });
+      setPengosonganRutinList(db.getPengosonganRutinByTerapis(terapis.id));
+      setSlotsList(db.getSlotsList(selectedDate));
+      setTimeout(() => {
+        setShowModalPengosongan(false);
+        setFormAlasanRutin('');
+        setRutinMsg(null);
+      }, 1400);
+    } else {
+      setRutinMsg({ type: 'error', text: result.message || 'Gagal menambahkan aturan pengosongan.' });
+    }
+  };
+
+  // Handler Revoke Pengosongan Rutin (Pulihkan Kembali)
+  const handleRevokeRutin = (rule: PengosonganJadwalRutin) => {
+    if (window.confirm(`Revoke aturan pengosongan jadwal?\n\nJadwal setiap hari ${rule.hariLabel} sesi ${rule.labelSesi} akan diaktifkan dan dibuka kembali secara otomatis sepanjang minggu.`)) {
+      const result = db.revokePengosonganRutin(rule.id);
+      if (result.success) {
+        confetti({ particleCount: 40 });
+        setPengosonganRutinList(db.getPengosonganRutinByTerapis(terapis.id));
+        setSlotsList(db.getSlotsList(selectedDate));
+      } else {
+        alert(result.message || 'Gagal merevoke aturan.');
+      }
+    }
+  };
+
+  // Quick Action: Buka Modal Pengosongan untuk jam tertentu pada hari yang sedang dipilih
+  const handleQuickBlockPermanent = (hourStart: string) => {
+    try {
+      const d = new Date(selectedDate + 'T00:00:00');
+      const day = d.getDay();
+      if (day >= 1 && day <= 5) {
+        setFormHariRutin(day);
+      } else {
+        setFormHariRutin(1);
+      }
+    } catch {
+      setFormHariRutin(1);
+    }
+    setFormJamRutin(hourStart);
+    setFormAlasanRutin('');
+    setRutinMsg(null);
+    setShowModalPengosongan(true);
   };
 
   // Handle Save PIN
@@ -447,9 +555,97 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 Jadwal Praktik Otomatis Aktif (Senin – Jumat)
               </div>
               <p className="text-sky-700 leading-relaxed text-[11px]">
-                Seluruh 4 sesi terapi (09.00 – 13.00 WIB) setiap pekan secara otomatis telah <strong>dibuka aktif</strong> oleh sistem untuk pendaftaran siswa binaan Anda. Anda hanya perlu menekan tombol <strong>"🔴 Matikan Sesi"</strong> jika Anda berhalangan hadir atau ada rapat/kegiatan dinas pada jam tertentu.
+                Seluruh 4 sesi terapi (09.00 – 13.00 WIB) setiap pekan secara otomatis telah <strong>dibuka aktif</strong> oleh sistem untuk pendaftaran siswa binaan Anda. Anda dapat mematikan sesi per tanggal atau menggunakan fitur <strong>Pengosongan Rutin Selamanya</strong> jika memiliki jadwal tetap di luar layanan.
               </p>
             </div>
+          </div>
+
+          {/* Card Pengosongan Rutin Mingguan Selamanya */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 text-white p-4 sm:p-6 rounded-3xl shadow-sm space-y-4 border border-slate-700">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3.5">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xl">🔒</span>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Pengosongan Jadwal Rutin Selamanya
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">
+                    {pengosonganRutinList.length} Aturan Aktif
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+                  Kosongkan jadwal di hari dan jam tertentu <strong>sepanjang minggu selamanya</strong> (misal rapat dinas rutin, home visit tetap, atau kegiatan terjadwal). Siswa tidak dapat mendaftar sampai akses pengosongan <strong>di-revoke</strong>.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormAlasanRutin('');
+                  setRutinMsg(null);
+                  setShowModalPengosongan(true);
+                }}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <span>➕ Tambah Pengosongan Rutin</span>
+              </button>
+            </div>
+
+            {/* List Aturan Pengosongan yang Sedang Aktif */}
+            {pengosonganRutinList.length === 0 ? (
+              <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700 text-center space-y-1 text-slate-300 text-xs">
+                <div className="text-base">✨</div>
+                <div className="font-bold text-white">Belum ada pengosongan rutin mingguan</div>
+                <div className="text-[11px] text-slate-400">
+                  Seluruh sesi Senin s.d. Jumat aktif normal setiap minggu. Klik tombol di atas jika ada hari/jam tertentu yang ingin dikosongkan permanen.
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Daftar Sesi yang Sedang Dikosongkan Permanen (Sepanjang Minggu):
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {pengosonganRutinList.map(rule => (
+                    <div
+                      key={rule.id}
+                      className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700 flex flex-col justify-between gap-3 shadow-xs hover:border-slate-600 transition-all"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2.5 py-0.5 rounded-lg text-xs font-black bg-sky-900 text-sky-200 border border-sky-700">
+                            🗓️ {rule.hariLabel}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                            🔴 Dikosongkan Permanen
+                          </span>
+                        </div>
+                        <div className="text-sm font-extrabold text-white font-mono">
+                          ⏰ {rule.labelSesi}
+                        </div>
+                        {rule.alasan && (
+                          <div className="text-[11px] text-amber-300 bg-amber-950/50 px-2 py-1 rounded-lg border border-amber-800/40">
+                            💬 Catatan: {rule.alasan}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-slate-400">
+                          Dibuat: {new Date(rule.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeRutin(rule)}
+                        className="w-full py-2 rounded-xl bg-slate-700 hover:bg-rose-700 text-white font-bold text-xs border border-slate-600 hover:border-rose-600 transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs cursor-pointer"
+                        title="Cabut pengosongan dan aktifkan kembali sesi ini untuk setiap pekan"
+                      >
+                        <span>🔓 Revoke (Pulihkan Sesi)</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tanggal Layanan */}
@@ -511,15 +707,24 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
               const isBooked = matchedSlot && (matchedSlot.statusSlot === 'penuh' || matchedSlot.kuotaTerisi >= matchedSlot.kuotaMaksimal);
               const isClosed = matchedSlot && matchedSlot.statusSlot === 'dibatalkan';
 
+              // Pengecekan aturan pengosongan rutin mingguan
+              const selectedDayNum = new Date(selectedDate + 'T00:00:00').getDay();
+              const matchedRecurringRule = pengosonganRutinList.find(r =>
+                (r.hari === -1 || r.hari === selectedDayNum) &&
+                (r.jamMulai === 'SEMUA' || r.jamMulai === h.start)
+              );
+
               return (
                 <div
                   key={idx}
                   className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                    isOpen 
-                      ? 'border-emerald-300 bg-emerald-50/50' 
-                      : isBooked 
-                        ? 'border-amber-300 bg-amber-50/50' 
-                        : 'border-slate-300 bg-slate-100/80'
+                    matchedRecurringRule
+                      ? 'border-rose-300 bg-rose-50/70'
+                      : isOpen 
+                        ? 'border-emerald-300 bg-emerald-50/50' 
+                        : isBooked 
+                          ? 'border-amber-300 bg-amber-50/50' 
+                          : 'border-slate-300 bg-slate-100/80'
                   }`}
                 >
                   <div className="space-y-1">
@@ -527,13 +732,22 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                       {h.label}
                     </div>
                     <div className="text-xs">
-                      {isOpen && (
+                      {matchedRecurringRule ? (
+                        <div className="space-y-1">
+                          <span className="font-extrabold text-rose-800 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-600 shrink-0"></span>
+                            <span>🔒 Dikosongkan Rutin ({matchedRecurringRule.hariLabel}, {matchedRecurringRule.labelSesi})</span>
+                          </span>
+                          <span className="text-[11px] text-slate-600 block">
+                            Berlaku sepanjang minggu selamanya {matchedRecurringRule.alasan ? `• Catatan: "${matchedRecurringRule.alasan}"` : ''}
+                          </span>
+                        </div>
+                      ) : isOpen ? (
                         <span className="font-bold text-emerald-800 flex items-center gap-1.5">
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
                           <span>🟢 Terbuka Otomatis (Siap Didaftar Siswa Binaan)</span>
                         </span>
-                      )}
-                      {isBooked && (
+                      ) : isBooked ? (
                         <div className="space-y-1">
                           <span className="font-bold text-amber-900 flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-amber-600 shrink-0"></span>
@@ -559,27 +773,49 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                             </button>
                           )}
                         </div>
-                      )}
-                      {isClosed && (
+                      ) : isClosed ? (
                         <span className="font-semibold text-slate-600 flex items-center gap-1.5">
                           <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
-                          <span>⚪ Sesi Dimatikan oleh Anda (Siswa Tidak Dapat Mendaftar)</span>
+                          <span>⚪ Sesi Dimatikan Khusus Hari Ini Saja (Siswa Tidak Dapat Mendaftar)</span>
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleToggleSlotHour(h.start)}
-                    className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-sm active:scale-95 whitespace-nowrap flex items-center justify-center gap-1.5 ${
-                      isClosed 
-                        ? 'bg-emerald-700 hover:bg-emerald-800 text-white' 
-                        : 'bg-rose-700 hover:bg-rose-800 text-white'
-                    }`}
-                  >
-                    {isClosed ? '🟢 Hidupkan Kembali Sesi' : '🔴 Matikan Sesi Ini'}
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    {matchedRecurringRule ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeRutin(matchedRecurringRule)}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-black text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 transition-all shadow-sm active:scale-95 whitespace-nowrap flex items-center justify-center gap-1.5 border border-amber-600 cursor-pointer"
+                        title="Cabut pengosongan permanen dan buka kembali sesi ini untuk setiap pekan"
+                      >
+                        <span>🔓 Revoke Pengosongan Ini</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSlotHour(h.start)}
+                          className={`w-full sm:w-auto px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-sm active:scale-95 whitespace-nowrap flex items-center justify-center gap-1.5 cursor-pointer ${
+                            isClosed 
+                              ? 'bg-emerald-700 hover:bg-emerald-800 text-white' 
+                              : 'bg-rose-700 hover:bg-rose-800 text-white'
+                          }`}
+                        >
+                          {isClosed ? '🟢 Hidupkan Hari Ini' : '🔴 Matikan Hari Ini'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleQuickBlockPermanent(h.start)}
+                          className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-900 text-white transition-all shadow-xs active:scale-95 whitespace-nowrap flex items-center justify-center gap-1 cursor-pointer"
+                          title={`Kosongkan sesi ${h.start} di setiap hari ${namaHariIni} sepanjang minggu selamanya`}
+                        >
+                          <span>🔒 Kosongkan Tiap {namaHariIni}</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -1524,6 +1760,128 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow transition-all active:scale-95 disabled:opacity-50 text-center flex items-center justify-center gap-1.5"
               >
                 <span>{isSubmittingBatalMendadak ? 'Memproses...' : '⚠️ Konfirmasi Batalkan Jadwal'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL PENGOSONGAN JADWAL RUTIN SELAMANYA */}
+      {showModalPengosongan && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <form
+            onSubmit={handleSimpanPengosonganRutin}
+            className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-7 space-y-4 sm:space-y-5 shadow-2xl animate-in zoom-in-95 border border-slate-200"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl p-2 rounded-2xl bg-amber-100 text-amber-900 shrink-0">🔒</span>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base sm:text-lg">
+                    Kosongkan Jadwal Rutin Selamanya
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Otomatis dikosongkan setiap minggu sampai di-revoke
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModalPengosongan(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Notification message */}
+            {rutinMsg && (
+              <div
+                className={`p-3 rounded-2xl text-xs font-bold border flex items-center gap-2 ${
+                  rutinMsg.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                    : 'bg-rose-50 text-rose-900 border-rose-200'
+                }`}
+              >
+                <span>{rutinMsg.type === 'success' ? '✅' : '⚠️'}</span>
+                <span>{rutinMsg.text}</span>
+              </div>
+            )}
+
+            {/* Form Pilihan Hari */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                1. Pilih Hari Praktik:
+              </label>
+              <select
+                value={formHariRutin}
+                onChange={e => setFormHariRutin(Number(e.target.value))}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600"
+              >
+                {HARI_PILIHAN.map(h => (
+                  <option key={h.value} value={h.value}>
+                    {h.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Form Pilihan Jam / Sesi */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                2. Pilih Jam / Sesi yang Dikosongkan:
+              </label>
+              <select
+                value={formJamRutin}
+                onChange={e => setFormJamRutin(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 font-mono"
+              >
+                {SESI_PILIHAN.map(s => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Form Keterangan / Alasan */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                3. Alasan / Keterangan Pengosongan (Opsional):
+              </label>
+              <input
+                type="text"
+                value={formAlasanRutin}
+                onChange={e => setFormAlasanRutin(e.target.value)}
+                placeholder="Misal: Rapat Koordinasi Dinas / Home Visit Pasien / Jadwal Luar"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 font-medium"
+              />
+            </div>
+
+            {/* Info Box */}
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-[11px] leading-relaxed flex items-start gap-2">
+              <span className="text-sm shrink-0 mt-0.5">ℹ️</span>
+              <div>
+                <strong>Pengosongan Selamanya:</strong> Seluruh slot pada hari dan jam yang dipilih akan langsung ditutup (dibatalkan) untuk minggu sekarang dan seluruh pekan mendatang. Siswa tidak akan dapat mendaftar sesi ini. Anda dapat mencabut/membuka kembali jadwal ini kapan saja dengan menekan tombol <strong>Revoke</strong>.
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="pt-2 flex flex-col-reverse sm:flex-row gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowModalPengosongan(false)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 text-center cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingRutin}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 text-center flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>{isSubmittingRutin ? 'Menyimpan...' : '🔒 Kosongkan Jadwal Ini Selamanya'}</span>
               </button>
             </div>
           </form>
