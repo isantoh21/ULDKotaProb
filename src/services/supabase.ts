@@ -392,34 +392,42 @@ class SupabaseDataService {
       // 1. Terapis
       const { data: terapisData } = await this.client.from('terapis').select('*');
       if (terapisData && terapisData.length > 0) {
-        const mapped: Terapis[] = terapisData.map((t: any) => ({
-          id: t.id,
-          nipOrId: t.nip_or_id,
-          nama: (t.id === 'terapis-2' || (t.nama && t.nama.toLowerCase().includes('indaryati'))) ? 'Indaryati Machmudi, A.Md.Kes' : t.nama,
-          gelar: (t.spesialisasi === 'psikolog' || t.id === 'terapis-4' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) ? 'Psikolog' : t.gelar,
-          spesialisasi: t.spesialisasi,
-          spesialisasiLabel: t.spesialisasi_label || t.spesialisasi,
-          pin: t.pin,
-          nomorTelepon: t.nomor_telepon,
-          deskripsi: t.deskripsi,
-          ruangPraktek: t.ruang_praktek,
-          fotoUrl: t.foto_url,
-          isActive: t.is_active
-        }));
+        const localList = this.getTerapisList();
+        const mapped: Terapis[] = terapisData.map((t: any) => {
+          const localItem = localList.find(e => e.id === t.id);
+          return {
+            id: t.id,
+            nipOrId: t.nip_or_id,
+            nama: (t.id === 'terapis-2' || (t.nama && t.nama.toLowerCase().includes('indaryati'))) ? 'Indaryati Machmudi, A.Md.Kes' : t.nama,
+            gelar: (t.spesialisasi === 'psikolog' || t.id === 'terapis-4' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) ? 'Psikolog' : t.gelar,
+            spesialisasi: t.spesialisasi,
+            spesialisasiLabel: t.spesialisasi_label || t.spesialisasi,
+            pin: t.pin,
+            nomorTelepon: t.nomor_telepon,
+            deskripsi: t.deskripsi,
+            ruangPraktek: t.ruang_praktek,
+            fotoUrl: t.foto_url || localItem?.fotoUrl,
+            isActive: t.is_active
+          };
+        });
         localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(mapped));
       }
 
       // 2. Admins
       const { data: adminData } = await this.client.from('admin_users').select('*');
       if (adminData && adminData.length > 0) {
-        const mapped: AdminUser[] = adminData.map((a: any) => ({
-          id: a.id,
-          nama: a.nama,
-          roleTitle: a.role_title,
-          pin: a.pin,
-          nomorTelepon: a.nomor_telepon,
-          fotoUrl: a.foto_url || undefined
-        }));
+        const localAdmins = this.getAdminList();
+        const mapped: AdminUser[] = adminData.map((a: any) => {
+          const localAdmin = localAdmins.find(x => x.id === a.id);
+          return {
+            id: a.id,
+            nama: a.nama,
+            roleTitle: a.role_title,
+            pin: a.pin,
+            nomorTelepon: a.nomor_telepon,
+            fotoUrl: a.foto_url || localAdmin?.fotoUrl
+          };
+        });
         localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(mapped));
       }
 
@@ -759,6 +767,19 @@ class SupabaseDataService {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('uld_data_updated'));
       }
+
+      // Update langsung dan aman ke database cloud Supabase
+      if (this.client) {
+        this.client
+          .from('terapis')
+          .update({ foto_url: fotoUrl })
+          .eq('id', terapisId)
+          .then(({ error }: any) => {
+            if (error) console.warn('Supabase update foto_url error:', error.message);
+          })
+          .catch(console.warn);
+      }
+
       this.triggerAutoSync();
       return true;
     }
@@ -784,6 +805,19 @@ class SupabaseDataService {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('uld_data_updated'));
       }
+
+      // Update langsung dan aman ke database cloud Supabase
+      if (this.client) {
+        this.client
+          .from('admin_users')
+          .update({ foto_url: fotoUrl })
+          .eq('id', adminId)
+          .then(({ error }: any) => {
+            if (error) console.warn('Supabase update admin foto_url error:', error.message);
+          })
+          .catch(console.warn);
+      }
+
       this.triggerAutoSync();
       return true;
     }

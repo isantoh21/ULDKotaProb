@@ -121,10 +121,14 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   useEffect(() => {
     const handleUpdate = () => {
       setPesertaList(db.getPesertaList());
+      const updatedT = db.getTerapisById(terapis.id);
+      if (updatedT?.fotoUrl) {
+        setCurrentFoto(updatedT.fotoUrl);
+      }
     };
     window.addEventListener('uld_data_updated', handleUpdate);
     return () => window.removeEventListener('uld_data_updated', handleUpdate);
-  }, []);
+  }, [terapis.id]);
 
   const assignedStudents = pesertaList.filter(p => p.assignedTerapisId === terapis.id && p.status === 'aktif');
   const unassignedStudents = pesertaList.filter(p => !p.assignedTerapisId && p.status === 'aktif');

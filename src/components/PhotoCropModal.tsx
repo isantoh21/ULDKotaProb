@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface PhotoCropModalProps {
   isOpen: boolean;
@@ -15,9 +15,9 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
   onClose,
   onSaveCrop,
 }) => {
-  // Crop Viewport size (fixed 280x280 px for exact 1:1 math)
+  // Ukuran dasar viewport (280x280 pada layar standar)
   const VIEWPORT_SIZE = 280;
-  const OUTPUT_SIZE = 400; // Output JPEG resolution (400x400 px)
+  const OUTPUT_SIZE = 400; // Output JPEG 400x400 px tajam & stabil
 
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0); // 0, 90, 180, 270
@@ -26,7 +26,7 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  // Natural image dimensions
+  // Dimensi natural gambar
   const [imageMeta, setImageMeta] = useState<{
     naturalWidth: number;
     naturalHeight: number;
@@ -39,18 +39,19 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
     baseHeight: VIEWPORT_SIZE,
   });
 
-  // Touch pinch tracking
   const [touchPinchDist, setTouchPinchDist] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
-  // Load natural dimensions whenever imageSrc changes
+  // Inisialisasi saat modal dibuka dengan gambar baru
   useEffect(() => {
     if (!isOpen || !imageSrc) return;
 
     setZoom(1);
     setRotation(0);
     setOffset({ x: 0, y: 0 });
+    setIsDragging(false);
 
     const img = new Image();
     img.onload = () => {
@@ -58,16 +59,15 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
       const nh = img.naturalHeight || VIEWPORT_SIZE;
       const aspect = nw / nh;
 
-      // Calculate initial base dimensions to neatly cover the viewport
       let bw = VIEWPORT_SIZE;
       let bh = VIEWPORT_SIZE;
 
       if (aspect >= 1) {
-        // Landscape or Square: height fits viewport, width scales up
+        // Landscape
         bh = VIEWPORT_SIZE;
         bw = Math.round(VIEWPORT_SIZE * aspect);
       } else {
-        // Portrait: width fits viewport, height scales up
+        // Portrait
         bw = VIEWPORT_SIZE;
         bh = Math.round(VIEWPORT_SIZE / aspect);
       }
@@ -82,7 +82,63 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
     img.src = imageSrc;
   }, [isOpen, imageSrc]);
 
-  // Mouse Drag handlers
+  // Global window mouse & touch listeners agar drag tidak pernah lepas/macet
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      setOffset({
+        x: Math.round(e.clientX - dragStart.x),
+        y: Math.round(e.clientY - dragStart.y),
+      });
+    };
+
+    const handleWindowMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const handleWindowTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        if (e.cancelable) e.preventDefault();
+        setOffset({
+          x: Math.round(e.touches[0].clientX - dragStart.x),
+          y: Math.round(e.touches[0].clientY - dragStart.y),
+        });
+      } else if (e.touches.length === 2 && touchPinchDist !== null) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const currentDist = Math.hypot(dx, dy);
+        const diff = currentDist - touchPinchDist;
+
+        if (Math.abs(diff) > 4) {
+          const factor = diff > 0 ? 0.03 : -0.03;
+          setZoom(prev => Math.min(4, Math.max(0.5, Number((prev + factor).toFixed(2)))));
+          setTouchPinchDist(currentDist);
+        }
+      }
+    };
+
+    const handleWindowTouchEnd = () => {
+      setIsDragging(false);
+      setTouchPinchDist(null);
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    window.addEventListener('touchmove', handleWindowTouchMove, { passive: false });
+    window.addEventListener('touchend', handleWindowTouchEnd);
+    window.addEventListener('touchcancel', handleWindowTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+      window.removeEventListener('touchmove', handleWindowTouchMove);
+      window.removeEventListener('touchend', handleWindowTouchEnd);
+      window.removeEventListener('touchcancel', handleWindowTouchEnd);
+    };
+  }, [isDragging, dragStart, touchPinchDist]);
+
+  // Handler awal drag mouse
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -92,29 +148,7 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
     });
   };
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setOffset({
-      x: Math.round(e.clientX - dragStart.x),
-      y: Math.round(e.clientY - dragStart.y),
-    });
-  }, [isDragging, dragStart]);
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Wheel zoom
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.08 : -0.08;
-    setZoom(prev => {
-      const next = Math.min(4, Math.max(0.5, Number((prev + delta).toFixed(2))));
-      return next;
-    });
-  };
-
-  // Touch Handlers with Pinch-to-zoom support
+  // Handler awal drag touch pada ponsel
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
       setIsDragging(true);
@@ -131,120 +165,103 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
     }
   };
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 1 && isDragging) {
-      setOffset({
-        x: Math.round(e.touches[0].clientX - dragStart.x),
-        y: Math.round(e.touches[0].clientY - dragStart.y),
-      });
-    } else if (e.touches.length === 2 && touchPinchDist !== null) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const currentDist = Math.hypot(dx, dy);
-      const diff = currentDist - touchPinchDist;
-
-      if (Math.abs(diff) > 4) {
-        const factor = diff > 0 ? 0.03 : -0.03;
-        setZoom(prev => Math.min(4, Math.max(0.5, Number((prev + factor).toFixed(2)))));
-        setTouchPinchDist(currentDist);
-      }
-    }
-  }, [isDragging, dragStart, touchPinchDist]);
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    setTouchPinchDist(null);
+  // Wheel zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.08 : -0.08;
+    setZoom(prev => Math.min(4, Math.max(0.5, Number((prev + delta).toFixed(2)))));
   };
 
-  // Rotate 90 degrees
+  // Preset posisi cepat
+  const handleAlignFace = () => {
+    setOffset({ x: 0, y: 35 });
+  };
+
+  const handleCenter = () => {
+    setOffset({ x: 0, y: 0 });
+  };
+
   const handleRotate = () => {
     setRotation(prev => (prev + 90) % 360);
   };
 
-  // Reset to initial
   const handleReset = () => {
     setZoom(1);
     setRotation(0);
     setOffset({ x: 0, y: 0 });
   };
 
-  // 100% Mathematically Exact Canvas Cropping
+  // Pemotongan Kanvas Sinkron & 100% Presisi Piksel
   const handleApplyCrop = () => {
-    if (!imageSrc || imageMeta.naturalWidth === 0) return;
+    if (!imageSrc || !imageRef.current) return;
     setIsProcessing(true);
 
     try {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = OUTPUT_SIZE;
-        canvas.height = OUTPUT_SIZE;
-        const ctx = canvas.getContext('2d');
+      const img = imageRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = OUTPUT_SIZE;
+      canvas.height = OUTPUT_SIZE;
+      const ctx = canvas.getContext('2d');
 
-        if (!ctx) {
-          setIsProcessing(false);
-          return;
-        }
+      if (!ctx) {
+        setIsProcessing(false);
+        return;
+      }
 
-        // Enable high quality image smoothing
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
-        // Clean white background
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+      // Latar belakang putih bersih
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-        const scale = OUTPUT_SIZE / VIEWPORT_SIZE;
+      // Hitung skala nyata terhadap ukuran fisik viewport saat ini di layar
+      const rect = containerRef.current?.getBoundingClientRect();
+      const currentViewportW = rect && rect.width > 0 ? rect.width : VIEWPORT_SIZE;
+      const scale = OUTPUT_SIZE / currentViewportW;
 
-        ctx.save();
+      ctx.save();
 
-        // 1. Move to center of canvas
-        ctx.translate(OUTPUT_SIZE / 2, OUTPUT_SIZE / 2);
+      // 1. Geser titik asal ke pusat kanvas
+      ctx.translate(OUTPUT_SIZE / 2, OUTPUT_SIZE / 2);
 
-        // 2. Apply drag translation scaled from viewport to canvas
-        ctx.translate(offset.x * scale, offset.y * scale);
+      // 2. Terapkan pergeseran (offset) yang dikalikan skala kanvas
+      ctx.translate(offset.x * scale, offset.y * scale);
 
-        // 3. Apply rotation around center
-        ctx.rotate((rotation * Math.PI) / 180);
+      // 3. Terapkan rotasi
+      ctx.rotate((rotation * Math.PI) / 180);
 
-        // 4. Apply zoom around center
-        ctx.scale(zoom, zoom);
+      // 4. Terapkan zoom
+      ctx.scale(zoom, zoom);
 
-        // 5. Draw image centered
-        const drawW = imageMeta.baseWidth * scale;
-        const drawH = imageMeta.baseHeight * scale;
-        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+      // 5. Gambar foto di titik tengah
+      const drawW = imageMeta.baseWidth * scale;
+      const drawH = imageMeta.baseHeight * scale;
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
-        ctx.restore();
+      ctx.restore();
 
-        // High quality JPEG
-        const croppedBase64 = canvas.toDataURL('image/jpeg', 0.92);
-        onSaveCrop(croppedBase64);
-        onClose();
-      };
-
-      img.src = imageSrc;
+      // Ekspor hasil akhir JPEG berkualitas tinggi
+      const croppedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+      onSaveCrop(croppedBase64);
+      onClose();
     } catch (err) {
       console.error('Gagal memproses cropping foto:', err);
-      alert('Terjadi kesalahan saat memproses crop foto.');
+      alert('Terjadi kesalahan saat memotong foto.');
+    } finally {
       setIsProcessing(false);
     }
   };
 
   if (!isOpen || !imageSrc) return null;
 
-  // Scale factor for live previews
-  const previewScaleCircle = 64 / VIEWPORT_SIZE; // 64px preview
-  const previewScaleSquare = 64 / VIEWPORT_SIZE; // 64px preview
+  const previewScaleCircle = 64 / VIEWPORT_SIZE;
+  const previewScaleSquare = 64 / VIEWPORT_SIZE;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 shadow-2xl border border-slate-200 animate-in zoom-in-95 flex flex-col max-h-[95vh] overflow-y-auto"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -270,13 +287,13 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
         <div className="p-3 rounded-2xl bg-sky-50 border border-sky-200 text-[11px] sm:text-xs text-sky-900 flex items-start gap-2 shadow-2xs">
           <span className="text-base select-none shrink-0">💡</span>
           <span className="leading-relaxed">
-            <strong>Tarik/geser foto</strong> ke posisi yang pas. Gunakan <strong>slider</strong> atau <strong>scroll mouse</strong> untuk zoom, serta tombol <strong>Putar</strong> jika foto terbalik. Hasil simpan akan <strong>100% presisi</strong> sesuai area lingkaran panduan.
+            <strong>Tarik/geser foto</strong> atau gunakan tombol cepat di bawah untuk memposisikan wajah. Hasil foto <strong>tersimpan stabil</strong> dan tidak akan bergeser sendiri baik di desktop maupun ponsel.
           </span>
         </div>
 
         {/* Center: Crop Area + Live Previews */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 py-1">
-          {/* Main 280x280 Interactive Crop Viewport */}
+          {/* Main 280x280 Interactive Crop Viewport with touch-none */}
           <div className="flex flex-col items-center">
             <div
               ref={containerRef}
@@ -286,13 +303,15 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
               style={{
                 width: `${VIEWPORT_SIZE}px`,
                 height: `${VIEWPORT_SIZE}px`,
+                touchAction: 'none',
               }}
               className={`relative rounded-3xl bg-slate-950 overflow-hidden shadow-2xl select-none flex items-center justify-center border-2 border-slate-700/60 ${
                 isDragging ? 'cursor-grabbing' : 'cursor-grab'
               }`}
             >
-              {/* Image Element with exact center-based transformation */}
+              {/* Image Element */}
               <img
+                ref={imageRef}
                 src={imageSrc}
                 alt="Area Crop Foto"
                 draggable={false}
@@ -315,7 +334,7 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
               {/* Precise Circular Mask & Rule of Thirds Grid Overlay */}
               <div className="absolute inset-0 pointer-events-none">
                 <div className="w-full h-full rounded-full border-2 border-white/95 shadow-[0_0_0_9999px_rgba(15,23,42,0.68)] ring-2 ring-sky-400/90 relative overflow-hidden">
-                  {/* Grid Lines (Rule of Thirds) */}
+                  {/* Grid Lines */}
                   <div className="w-full h-full grid grid-cols-3 grid-rows-3 opacity-30 pointer-events-none">
                     <div className="border-r border-b border-white"></div>
                     <div className="border-r border-b border-white"></div>
@@ -370,7 +389,7 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
               <span className="text-[10px] text-slate-500 font-semibold">Avatar Bulat</span>
             </div>
 
-            {/* Preview 2: Avatar Kartu Beranda (Rounded-2xl) */}
+            {/* Preview 2: Avatar Kartu Beranda */}
             <div className="flex flex-col items-center gap-1">
               <div 
                 style={{ width: '64px', height: '64px' }}
@@ -399,9 +418,8 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
           </div>
         </div>
 
-        {/* Controls: Zoom, Rotate, and Reset */}
+        {/* Controls: Zoom Slider */}
         <div className="space-y-3 pt-1">
-          {/* Zoom Slider */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700">
               <span className="flex items-center gap-1.5">
@@ -444,25 +462,47 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Buttons: Rotate, Center Reset */}
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <button
-              type="button"
-              onClick={handleRotate}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Putar Foto 90 Derajat Searah Jarum Jam"
-            >
-              <span>🔄</span>
-              <span>Putar 90° ({rotation}°)</span>
-            </button>
+          {/* Quick Buttons: Presets, Rotate, Center Reset */}
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-100">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleCenter}
+                className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                title="Posisikan tepat di tengah"
+              >
+                <span>🎯</span>
+                <span>Pusatkan</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAlignFace}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                title="Fokuskan ke area wajah (sedikit ke atas)"
+              >
+                <span>👤</span>
+                <span>Fokus Wajah</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRotate}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                title="Putar 90 Derajat"
+              >
+                <span>🔄</span>
+                <span>Putar ({rotation}°)</span>
+              </button>
+            </div>
 
             <button
               type="button"
               onClick={handleReset}
-              className="text-sky-700 font-bold hover:underline flex items-center gap-1 cursor-pointer text-xs"
+              className="text-slate-500 hover:text-slate-800 font-bold hover:underline flex items-center gap-1 cursor-pointer text-xs"
             >
               <span>↺</span>
-              <span>Reset Posisi Tengah</span>
+              <span>Reset Posisi</span>
             </button>
           </div>
         </div>
@@ -489,7 +529,7 @@ export const PhotoCropModal: React.FC<PhotoCropModalProps> = ({
             ) : (
               <>
                 <span>✓</span>
-                <span>Terapkan Foto Presisi</span>
+                <span>Simpan & Terapkan Foto</span>
               </>
             )}
           </button>
