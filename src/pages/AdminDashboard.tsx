@@ -59,17 +59,8 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   const [selectedPesertaForBooking, setSelectedPesertaForBooking] = useState<string>('');
   const [selectedSlotForBooking, setSelectedSlotForBooking] = useState<string>('');
   const [bookingMsg, setBookingMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
-  const [showBukaSlotLoketModal, setShowBukaSlotLoketModal] = useState(false);
   const [selectedLoketTicket, setSelectedLoketTicket] = useState<BookingTerapi | null>(null);
   const [filterLayananTable, setFilterLayananTable] = useState<string>('all');
-
-  // Form Buka Slot Baru di Loket
-  const [newSlotTerapisId, setNewSlotTerapisId] = useState(terapisList[0]?.id || '');
-  const [newSlotTanggal, setNewSlotTanggal] = useState(new Date().toISOString().split('T')[0]);
-  const [newSlotJamMulai, setNewSlotJamMulai] = useState('09:00');
-  const [newSlotJamSelesai, setNewSlotJamSelesai] = useState('10:00');
-  const [newSlotRuang, setNewSlotRuang] = useState('');
-  const [newSlotCatatan, setNewSlotCatatan] = useState('Sesi terapi pendaftaran loket ULD Kota Probolinggo.');
 
   // 2. FITUR: PENJADWALAN ASESMEN BARU OLEH ADMIN
   const [showAddAsesmenModal, setShowAddAsesmenModal] = useState(false);
@@ -252,32 +243,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     }
   };
 
-  // --- BUKA SLOT BARU DI LOKET ---
-  const handleBukaSlotLoket = (e: React.FormEvent) => {
-    e.preventDefault();
-    const t = terapisList.find(item => item.id === (newSlotTerapisId || selectedTerapisIdForBooking)) || terapisList[0];
-    if (!t) return;
 
-    const newSlot = db.bukaSlotHarian({
-      terapisId: t.id,
-      tanggal: newSlotTanggal,
-      jamMulai: newSlotJamMulai,
-      jamSelesai: newSlotJamSelesai,
-      spesialisasi: t.spesialisasi,
-      ruang: newSlotRuang.trim() || t.ruangPraktek,
-      kuotaMaksimal: 1,
-      catatanTerapis: newSlotCatatan.trim()
-    });
-
-    confetti({ particleCount: 50 });
-    setSelectedTerapisIdForBooking(t.id);
-    setSelectedSlotForBooking(newSlot.id);
-    setShowBukaSlotLoketModal(false);
-    setBookingMsg({
-      type: 'success',
-      text: `Slot baru berhasil dibuka di loket untuk ${t.nama} (${newSlotTanggal}, ${newSlotJamMulai} - ${newSlotJamSelesai} WIB). Otomatis dipilih pada formulir.`
-    });
-  };
 
   // --- BATALKAN BOOKING ---
   const handleBatalkanBooking = (bookingId: string) => {
@@ -513,16 +479,9 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setNewSlotTerapisId(selectedTerapisIdForBooking);
-                  setShowBukaSlotLoketModal(true);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-50 text-sky-800 border border-sky-100 text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-1.5"
-              >
-                <span>+ Buka Slot Baru di Loket</span>
-              </button>
+              <div className="text-[11px] text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/60 flex items-center gap-1.5">
+                <span>ℹ️ Slot sesi dibuka & dikelola oleh Terapis / Psikolog</span>
+              </div>
             </div>
 
             <form onSubmit={handleScheduleTerapiLoket} className="space-y-4 text-xs">
@@ -1180,131 +1139,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
         </div>
       )}
 
-      {/* MODAL 3: BUKA SLOT BARU DI LOKET */}
-      {showBukaSlotLoketModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleBukaSlotLoket} className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-sky-500">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-base">
-                  Buka Slot Terapi Baru di Loket
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Membuka sesi langsung untuk pendaftaran loket
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowBukaSlotLoketModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-sm"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Pilih Layanan & Tenaga Ahli *
-                </label>
-                <select
-                  required
-                  value={newSlotTerapisId}
-                  onChange={e => setNewSlotTerapisId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 font-bold bg-white"
-                >
-                  {terapisList.map(t => (
-                    <option key={t.id} value={t.id}>
-                      {t.spesialisasiLabel} ({t.nama})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Tanggal Layanan *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newSlotTanggal}
-                  onChange={e => setNewSlotTanggal(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 font-bold"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Jam Mulai *
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={newSlotJamMulai}
-                    onChange={e => setNewSlotJamMulai(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Jam Selesai *
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={newSlotJamSelesai}
-                    onChange={e => setNewSlotJamSelesai(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono font-bold"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Nama Ruangan
-                </label>
-                <input
-                  type="text"
-                  value={newSlotRuang}
-                  onChange={e => setNewSlotRuang(e.target.value)}
-                  placeholder="Sesuai ruang praktek terapis"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Catatan Sesi
-                </label>
-                <input
-                  type="text"
-                  value={newSlotCatatan}
-                  onChange={e => setNewSlotCatatan(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2 flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setShowBukaSlotLoketModal(false)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-sm"
-              >
-                ✓ Buka Slot Sekarang
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* MODAL 4: TIKET LOKET RESMI */}
       {selectedLoketTicket && (
