@@ -73,6 +73,9 @@ export interface BookingTerapi {
   id: string;
   slotId: string;
   pesertaId: string;
+  namaPeserta?: string;
+  nomorRekamMedis?: string;
+  asalSekolah?: string;
   terapisId: string;
   kodeBooking: string; // e.g. TRP-2609-001
   tanggal: string;

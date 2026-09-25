@@ -1380,9 +1380,13 @@ class SupabaseDataService {
   public getBookingsList(): BookingTerapi[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-      return data ? JSON.parse(data) : [];
+      if (!data) {
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(INITIAL_BOOKINGS));
+        return INITIAL_BOOKINGS;
+      }
+      return JSON.parse(data);
     } catch {
-      return [];
+      return INITIAL_BOOKINGS;
     }
   }
 
@@ -1488,6 +1492,9 @@ class SupabaseDataService {
       id: `booking-${Date.now()}`,
       slotId: slot.id,
       pesertaId: pesertaId,
+      namaPeserta: peserta.namaLengkap,
+      nomorRekamMedis: peserta.nomorRekamMedis,
+      asalSekolah: peserta.asalSekolah,
       terapisId: slot.terapisId,
       kodeBooking: kodeBooking,
       tanggal: slot.tanggal,
