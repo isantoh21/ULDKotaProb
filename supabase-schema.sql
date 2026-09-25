@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.admin_users (
     role_title TEXT NOT NULL,
     pin VARCHAR(6) NOT NULL,
     nomor_telepon TEXT NOT NULL,
+    foto_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS public.booking_terapi (
     status VARCHAR(30) DEFAULT 'terjadwal' CHECK (status IN ('menunggu_konfirmasi', 'terjadwal', 'hadir', 'selesai', 'tidak_hadir', 'batal')),
     keluhan_hari_ini TEXT,
     catatan_sesi_terapis TEXT,
+    asal_sekolah TEXT,
     didaftarkan_oleh_admin TEXT,
     reschedule_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
@@ -127,6 +129,7 @@ CREATE TABLE IF NOT EXISTS public.log_aktivitas (
     pelaku TEXT NOT NULL,
     role_pelaku TEXT,
     icon TEXT,
+    metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
@@ -220,3 +223,16 @@ VALUES
     ('log-init-4', '25 Sep 2026 08:20 WIB', 'jadwal_slot', 'Pembukaan Sesi Harian Terapi', 'Tenaga Ahli membuka sesi pelayanan reguler Senin-Jumat pukul 09.00 - 13.00 WIB.', 'Ahmad Hafizul Adly, S.Pd. (Terapis Perilaku)', 'terapis', '🗓️'),
     ('log-init-5', '25 Sep 2026 08:00 WIB', 'sistem', 'Inisialisasi Sistem Loket & Layanan ULD', 'Sistem operasional Unit Layanan Disabilitas Kota Probolinggo aktif dengan sinkronisasi data 4 Tenaga Ahli dan Loket Administrasi.', 'Sistem ULD', 'sistem', '🚀')
 ON CONFLICT (id) DO NOTHING;
+
+-- ====================================================================
+-- SKRIP MIGRASI / PEMBARUAN TERBARU (BAGIAN BARU UNTUK DITERAPKAN DI SQL EDITOR)
+-- Jalankan kode di bawah ini jika database Supabase Anda sudah dibuat sebelumnya:
+-- ====================================================================
+-- 1. Tambah foto profil petugas admin ULD (fitur upload foto pekerja ULD)
+ALTER TABLE public.admin_users ADD COLUMN IF NOT EXISTS foto_url TEXT;
+
+-- 2. Tambah asal sekolah pada riwayat pendaftaran sesi terapi
+ALTER TABLE public.booking_terapi ADD COLUMN IF NOT EXISTS asal_sekolah TEXT;
+
+-- 3. Tambah metadata fleksibel pada log aktivitas sistem
+ALTER TABLE public.log_aktivitas ADD COLUMN IF NOT EXISTS metadata JSONB;

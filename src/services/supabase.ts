@@ -254,7 +254,8 @@ class SupabaseDataService {
         nama: a.nama,
         role_title: a.roleTitle,
         pin: a.pin,
-        nomor_telepon: a.nomorTelepon
+        nomor_telepon: a.nomorTelepon,
+        foto_url: a.fotoUrl || null
       }));
       await this.client.from('admin_users').upsert(admins);
 
@@ -312,6 +313,7 @@ class SupabaseDataService {
         status: b.status,
         keluhan_hari_ini: b.keluhanHariIni || null,
         catatan_sesi_terapis: b.catatanSesiTerapis || null,
+        asal_sekolah: b.asalSekolah || null,
         didaftarkan_oleh_admin: b.didaftarkanOlehAdmin || null,
         reschedule_count: b.rescheduleCount || 0
       }));
@@ -415,7 +417,8 @@ class SupabaseDataService {
           nama: a.nama,
           roleTitle: a.role_title,
           pin: a.pin,
-          nomorTelepon: a.nomor_telepon
+          nomorTelepon: a.nomor_telepon,
+          fotoUrl: a.foto_url || undefined
         }));
         localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(mapped));
       }
@@ -483,6 +486,7 @@ class SupabaseDataService {
           status: b.status,
           keluhanHariIni: b.keluhan_hari_ini,
           catatanSesiTerapis: b.catatan_sesi_terapis,
+          asalSekolah: b.asal_sekolah || undefined,
           didaftarkanOlehAdmin: b.didaftarkan_oleh_admin,
           rescheduleCount: b.reschedule_count || 0,
           createdAt: b.created_at || new Date().toISOString()
