@@ -711,6 +711,56 @@ class SupabaseDataService {
     return false;
   }
 
+  public updateFotoTerapis(terapisId: string, fotoUrl: string): boolean {
+    const list = this.getTerapisList();
+    const idx = list.findIndex(t => t.id === terapisId);
+    if (idx !== -1) {
+      list[idx].fotoUrl = fotoUrl;
+      localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(list));
+
+      this.catatAktivitas({
+        kategori: 'sistem',
+        judul: 'Pembaruan Foto Profil Tenaga Ahli',
+        deskripsi: `Foto profil untuk Tenaga Ahli "${list[idx].nama}" (${list[idx].spesialisasiLabel}) berhasil diperbarui.`,
+        pelaku: list[idx].nama,
+        rolePelaku: 'terapis',
+        icon: '📸'
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  public updateFotoAdmin(adminId: string, fotoUrl: string): boolean {
+    const list = this.getAdminList();
+    const idx = list.findIndex(a => a.id === adminId);
+    if (idx !== -1) {
+      list[idx].fotoUrl = fotoUrl;
+      localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(list));
+
+      this.catatAktivitas({
+        kategori: 'sistem',
+        judul: 'Pembaruan Foto Profil Petugas Admin',
+        deskripsi: `Foto profil untuk Petugas Admin "${list[idx].nama}" berhasil diperbarui.`,
+        pelaku: `Petugas Admin ${list[idx].nama}`,
+        rolePelaku: 'admin',
+        icon: '📸'
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
   public gantiPinPeserta(pesertaId: string, pinBaru: string): boolean {
     return this.resetPinPeserta(pesertaId, pinBaru);
   }

@@ -4,6 +4,7 @@ import { db, getWIBDate } from '../services/supabase';
 import { Peserta, PendaftaranAsesmenGuest, Terapis, SlotHarian, BookingTerapi, LogAktivitas } from '../types';
 import { ULD_LOGO_BASE64 } from '../constants/logoData';
 import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
+import { compressImageFile } from '../utils/imageCompressor';
 
 interface Props {
   onLogout?: () => void;
@@ -47,6 +48,26 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   // Petugas Admin Terautentikasi (Terkunci sesuai akun login PIN)
   const activeAdmin = adminList.find(a => a.id === initialAdminId) || adminList[0];
   const activeAdminId = activeAdmin.id;
+
+  // Foto Profil Admin
+  const [currentAdminFoto, setCurrentAdminFoto] = useState<string | undefined>(() => {
+    return adminList.find(a => a.id === activeAdmin.id)?.fotoUrl || activeAdmin.fotoUrl;
+  });
+
+  const handleUploadAdminFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressed = await compressImageFile(file, 400, 0.85);
+      db.updateFotoAdmin(activeAdmin.id, compressed);
+      setCurrentAdminFoto(compressed);
+      confetti({ particleCount: 50 });
+      alert(`Foto profil Petugas Admin ${activeAdmin.nama} berhasil diperbarui! Foto Anda sekarang tampil di Beranda.`);
+    } catch (err: any) {
+      alert(err.message || 'Gagal memproses unggahan foto.');
+    }
+  };
 
   // Admin PIN change
   const [showAdminPinModal, setShowAdminPinModal] = useState(false);
@@ -322,6 +343,32 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                 (e.currentTarget as HTMLImageElement).src = '/logo-uld.jpg';
               }}
             />
+            {/* Foto Profil Petugas Admin */}
+            <div className="relative group shrink-0">
+              {currentAdminFoto ? (
+                <img
+                  src={currentAdminFoto}
+                  alt={activeAdmin.nama}
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md bg-white/20"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-sky-900 border-2 border-sky-400 text-white font-black text-2xl flex items-center justify-center shadow-md">
+                  {activeAdmin.nama.charAt(0)}
+                </div>
+              )}
+              <label 
+                className="absolute -bottom-1.5 -right-1.5 bg-yellow-400 hover:bg-yellow-300 text-sky-950 p-1.5 rounded-xl cursor-pointer shadow-md transition-transform active:scale-90 flex items-center justify-center border border-white"
+                title="Unggah / Ganti Foto Profil Admin"
+              >
+                <span className="text-[11px]">📷</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadAdminFoto}
+                  className="hidden"
+                />
+              </label>
+            </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs text-sky-100 font-semibold tracking-wide">
                 <span>Pemerintah Kota Probolinggo</span>
@@ -331,11 +378,20 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
                 Petugas: {activeAdmin.nama}
               </h1>
-              <p className="text-xs text-sky-100 flex items-center gap-2">
-                <span>No. WhatsApp Petugas:</span>
-                <span className="font-mono text-yellow-300 font-bold">+{activeAdmin.nomorTelepon}</span>
+              <p className="text-xs text-sky-100 flex items-center gap-2 flex-wrap">
+                <span>No. WhatsApp: <strong className="font-mono text-yellow-300 font-bold">+{activeAdmin.nomorTelepon}</strong></span>
                 <span>·</span>
                 <span className="font-mono text-sky-200">PIN: {activeAdmin.pin}</span>
+                <span>·</span>
+                <label className="text-[11px] text-yellow-300 hover:underline cursor-pointer font-semibold inline-flex items-center gap-1">
+                  <span>📸 Ganti Foto</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadAdminFoto}
+                    className="hidden"
+                  />
+                </label>
               </p>
             </div>
           </div>

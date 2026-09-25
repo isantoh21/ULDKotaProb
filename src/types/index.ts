@@ -123,6 +123,7 @@ export interface AdminUser {
   roleTitle: string;
   pin: string;
   nomorTelepon: string;
+  fotoUrl?: string;
 }
 
 export interface StatistikULD {

@@ -4,6 +4,7 @@ import { Terapis, SlotHarian, PengosonganJadwalRutin, BookingTerapi, Peserta, Lo
 import { db, DEFAULT_TERAPI_SESSIONS } from '../services/supabase';
 import { getNextWeekdayDate } from '../services/initialData';
 import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
+import { compressImageFile } from '../utils/imageCompressor';
 
 interface Props {
   terapis: Terapis;
@@ -51,6 +52,26 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   
   // Date selector (Default today or next weekday)
   const [selectedDate, setSelectedDate] = useState<string>(() => getNextWeekdayDate(0));
+  
+  // Foto Profil Pekerja
+  const [currentFoto, setCurrentFoto] = useState<string | undefined>(() => {
+    return db.getTerapisById(terapis.id)?.fotoUrl || terapis.fotoUrl;
+  });
+
+  const handleUploadFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressed = await compressImageFile(file, 400, 0.85);
+      db.updateFotoTerapis(terapis.id, compressed);
+      setCurrentFoto(compressed);
+      confetti({ particleCount: 50 });
+      alert(`Foto profil ${terapis.nama} berhasil diperbarui! Foto Anda sekarang tampil di Beranda.`);
+    } catch (err: any) {
+      alert(err.message || 'Gagal memproses unggahan foto.');
+    }
+  };
   
   // Change PIN Modal
   const [showPinModal, setShowPinModal] = useState(false);
@@ -455,15 +476,52 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
       {/* Super Simple Profile Header */}
       <div className="bg-sky-800 text-white rounded-3xl p-4 sm:p-6 shadow-md space-y-3.5 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <span className="text-[11px] font-bold text-sky-200 uppercase tracking-wider block">
-              {terapis.spesialisasiLabel} ULD Kota Probolinggo
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
-              {terapis.nama}
-            </h1>
-            <div className="text-xs text-sky-100 mt-1">
-              Ruang: {terapis.ruangPraktek}
+          <div className="flex items-center gap-3.5">
+            <div className="relative group shrink-0">
+              {currentFoto ? (
+                <img
+                  src={currentFoto}
+                  alt={terapis.nama}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-white shadow-md bg-white/20"
+                />
+              ) : (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-sky-900 border-2 border-sky-400 text-white font-black text-2xl flex items-center justify-center shadow-md">
+                  {terapis.nama.charAt(0)}
+                </div>
+              )}
+              <label 
+                className="absolute -bottom-1.5 -right-1.5 bg-yellow-400 hover:bg-yellow-300 text-sky-950 p-1.5 rounded-xl cursor-pointer shadow-md transition-transform active:scale-90 flex items-center justify-center border border-white"
+                title="Unggah / Ganti Foto Profil"
+              >
+                <span className="text-[11px]">📷</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadFoto}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <div>
+              <span className="text-[11px] font-bold text-sky-200 uppercase tracking-wider block">
+                {terapis.spesialisasiLabel} ULD Kota Probolinggo
+              </span>
+              <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
+                {terapis.nama}
+              </h1>
+              <div className="text-xs text-sky-100 mt-1 flex items-center gap-2 flex-wrap">
+                <span>Ruang: {terapis.ruangPraktek}</span>
+                <span>·</span>
+                <label className="text-[11px] text-yellow-300 hover:underline cursor-pointer font-semibold inline-flex items-center gap-1">
+                  <span>📸 Ganti Foto</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadFoto}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
           </div>
 

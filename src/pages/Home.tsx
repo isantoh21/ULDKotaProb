@@ -1,29 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { navigateTo } from '../services/router';
 import { db } from '../services/supabase';
 
 export const Home: React.FC = () => {
-  const stats = db.getStatistik();
-  const terapisList = db.getTerapisList();
+  const [stats, setStats] = useState(() => db.getStatistik());
+  const [terapisList, setTerapisList] = useState(() => db.getTerapisList());
+  const [adminList, setAdminList] = useState(() => db.getAdminList());
 
-  const ADMIN_CONTACTS = [
-    {
-      id: 'admin-1',
-      nama: 'Sugeng',
-      role: 'Admin 1 ULD Kota Probolinggo',
-      waNumber: '6285236028521',
-      waFormatted: '0852-3602-8521',
-      waUrl: 'https://wa.me/6285236028521?text=Halo%20Pak%20Sugeng%20(Admin%201%20ULD%20Kota%20Probolinggo),%20saya%20ingin%20berkonsultasi%20mengenai%20jadwal%20terapi%20atau%20asesmen...'
-    },
-    {
-      id: 'admin-2',
-      nama: 'Helmi',
-      role: 'Admin 2 ULD Kota Probolinggo',
-      waNumber: '6282247952696',
-      waFormatted: '0822-4795-2696',
-      waUrl: 'https://wa.me/6282247952696?text=Halo%20Pak%20Helmi%20(Admin%202%20ULD%20Kota%20Probolinggo),%20saya%20ingin%20berkonsultasi%20mengenai%20jadwal%20terapi%20atau%20asesmen...'
-    }
-  ];
+  useEffect(() => {
+    const handleUpdate = () => {
+      setStats(db.getStatistik());
+      setTerapisList(db.getTerapisList());
+      setAdminList(db.getAdminList());
+    };
+    window.addEventListener('uld_data_updated', handleUpdate);
+    return () => window.removeEventListener('uld_data_updated', handleUpdate);
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16">
@@ -186,34 +178,50 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          {ADMIN_CONTACTS.map(adm => (
-            <div 
-              key={adm.id}
-              className="p-4 rounded-2xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-3"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-white text-base">{adm.nama}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-800 text-emerald-200 font-mono">
-                    {adm.role.split(' ')[0]} {adm.role.split(' ')[1]}
-                  </span>
-                </div>
-                <div className="text-xs text-emerald-300 font-mono mt-1">
-                  WhatsApp: <strong>{adm.waFormatted}</strong> ({adm.waNumber})
-                </div>
-              </div>
-
-              <a
-                href={adm.waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 active:scale-95"
+          {adminList.map(adm => {
+            const waUrl = `https://wa.me/${adm.nomorTelepon}?text=Halo%20Pak%20${encodeURIComponent(adm.nama)}%20(${encodeURIComponent(adm.roleTitle)}),%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20ULD%20Kota%20Probolinggo...`;
+            return (
+              <div 
+                key={adm.id}
+                className="p-5 rounded-3xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-4 shadow-sm"
               >
-                <span>💬 Chat WA {adm.nama}</span>
-                <span>→</span>
-              </a>
-            </div>
-          ))}
+                <div className="flex items-center gap-3.5">
+                  {adm.fotoUrl ? (
+                    <img
+                      src={adm.fotoUrl}
+                      alt={adm.nama}
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-md shrink-0 bg-white/10"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-emerald-800 border-2 border-emerald-500 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
+                      {adm.nama.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-extrabold text-white text-base sm:text-lg">{adm.nama}</span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-200 border border-emerald-700">
+                        {adm.roleTitle}
+                      </span>
+                    </div>
+                    <div className="text-xs text-emerald-300 font-mono mt-1">
+                      WhatsApp: <strong>+{adm.nomorTelepon}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <span>💬 Chat WA {adm.nama}</span>
+                  <span>→</span>
+                </a>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -261,14 +269,14 @@ export const Home: React.FC = () => {
       </section>
 
       {/* 4 Pilar Tenaga Ahli Preview */}
-      <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+      <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              4 Pilar Layanan Tenaga Ahli ULD
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
+              Tim Tenaga Ahli & Psikolog ULD
             </h2>
             <p className="text-xs text-slate-500">
-              Didukung oleh psikolog, terapis perilaku, fisioterapis, dan pendidik luar biasa.
+              Didukung oleh psikolog, terapis perilaku, fisioterapis, dan pendidik luar biasa berkompeten.
             </p>
           </div>
           <button
@@ -279,16 +287,39 @@ export const Home: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           {terapisList.map((t) => (
-            <div key={t.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 hover:border-sky-200 transition-colors">
-              <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wide">
-                {t.spesialisasiLabel}
-              </span>
-              <div className="font-bold text-slate-900 text-sm">{t.nama}</div>
-              <div className="text-[11px] text-slate-500">{t.gelar}</div>
-              <div className="text-[11px] text-slate-600 pt-1 line-clamp-2">
-                {t.deskripsi}
+            <div key={t.id} className="p-4 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-xs hover:border-sky-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  {t.fotoUrl ? (
+                    <img
+                      src={t.fotoUrl}
+                      alt={t.nama}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-sky-500 shadow-sm shrink-0 bg-white"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-sky-100 border border-sky-200 text-sky-800 font-black text-xl flex items-center justify-center shrink-0">
+                      {t.nama.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[10px] font-extrabold text-sky-700 uppercase tracking-wide block">
+                      {t.spesialisasiLabel}
+                    </span>
+                    <div className="font-extrabold text-slate-900 text-sm leading-tight mt-0.5">
+                      {t.nama}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">{t.gelar}</div>
+                <div className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">
+                  {t.deskripsi}
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-200/60 text-[10px] font-semibold text-slate-500 flex items-center gap-1">
+                <span>📍</span>
+                <span className="truncate">{t.ruangPraktek}</span>
               </div>
             </div>
           ))}
