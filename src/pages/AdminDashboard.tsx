@@ -6,6 +6,7 @@ import { ULD_LOGO_BASE64 } from '../constants/logoData';
 import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
 import { compressImageFile } from '../utils/imageCompressor';
 import { PhotoCropModal } from '../components/PhotoCropModal';
+import { DatabaseStatusBar } from '../components/DatabaseStatusBar';
 
 interface Props {
   onLogout?: () => void;
@@ -413,6 +414,9 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
           </div>
 
           <div className="shrink-0 flex flex-wrap items-center gap-2">
+            {/* Status Bar Koneksi Database Supabase & Jaringan Internet */}
+            <DatabaseStatusBar />
+
             <div className="flex items-center bg-sky-800/70 border border-sky-600/50 px-3 py-2 rounded-xl text-xs gap-2 shadow-inner">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               <span className="text-sky-200">Petugas Aktif:</span>
