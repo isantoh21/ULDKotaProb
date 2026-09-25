@@ -70,9 +70,10 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   const [asesmenIndikasi, setAsesmenIndikasi] = useState('');
   const [asesmenSuccessMsg, setAsesmenSuccessMsg] = useState('');
 
-  // 3. FITUR: BUAT AKUN SISWA TERAPI BARU (CUKUP NAMA, NAMA ORTU, PIN)
+  // 3. FITUR: BUAT AKUN SISWA TERAPI BARU (NAMA, ASAL SEKOLAH, NAMA ORTU, PIN)
   const [showSimpleAddPesertaModal, setShowSimpleAddPesertaModal] = useState(false);
   const [simpleNamaAnak, setSimpleNamaAnak] = useState('');
+  const [simpleAsalSekolah, setSimpleAsalSekolah] = useState('');
   const [simpleNamaOrtu, setSimpleNamaOrtu] = useState('');
   const [simplePin, setSimplePin] = useState('');
   const [createdStudentCard, setCreatedStudentCard] = useState<Peserta | null>(null);
@@ -225,9 +226,10 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     }
   };
 
-  // --- SUBMIT BUAT AKUN SISWA TERAPI BARU (CUKUP NAMA, NAMA ORTU, PIN) ---
+  // --- SUBMIT BUAT AKUN SISWA TERAPI BARU (NAMA, ASAL SEKOLAH, NAMA ORTU, PIN) ---
   const handleOpenSimpleAddStudent = () => {
     setSimpleNamaAnak('');
+    setSimpleAsalSekolah('');
     setSimpleNamaOrtu('');
     setSimplePin(Math.floor(100000 + Math.random() * 900000).toString());
     setShowSimpleAddPesertaModal(true);
@@ -243,7 +245,8 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     const created = db.buatAkunSiswaBaru(
       simpleNamaAnak.trim(),
       simpleNamaOrtu.trim(),
-      simplePin.trim()
+      simplePin.trim(),
+      simpleAsalSekolah.trim()
     );
 
     confetti({ particleCount: 70 });
@@ -850,7 +853,21 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  2. Nama Orang Tua / Wali *
+                  2. Asal Sekolah / Jenjang Pendidikan *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={simpleAsalSekolah}
+                  onChange={e => setSimpleAsalSekolah(e.target.value)}
+                  placeholder="Contoh: SDN Sukabumi 2 / TK Pertiwi / Belum Sekolah"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  3. Nama Orang Tua / Wali *
                 </label>
                 <input
                   type="text"
@@ -865,7 +882,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block font-bold text-slate-700">
-                    3. PIN Login Siswa (6 Digit) *
+                    4. PIN Login Siswa (6 Digit) *
                   </label>
                   <button
                     type="button"
@@ -921,6 +938,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
             <div className="p-4 rounded-2xl bg-sky-900 text-white space-y-2">
               <div className="text-xs text-sky-200">Nomor RM: {createdStudentCard.nomorRekamMedis}</div>
               <div className="text-lg font-bold text-white">{createdStudentCard.namaLengkap}</div>
+              <div className="text-xs text-sky-200">Asal Sekolah: <strong className="text-white">{createdStudentCard.asalSekolah || '-'}</strong></div>
               <div className="text-xs text-sky-100">Wali: {createdStudentCard.namaWali}</div>
               <div className="pt-2 border-t border-sky-700 flex justify-between items-center text-xs">
                 <span className="text-sky-200">PIN Login Siswa:</span>

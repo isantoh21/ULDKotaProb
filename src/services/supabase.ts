@@ -1019,8 +1019,8 @@ class SupabaseDataService {
     return newPeserta;
   }
 
-  // Buat akun siswa terapi rutin baru: cukup nama, nama ortu, dan PIN
-  public buatAkunSiswaBaru(namaAnak: string, namaOrtu: string, pin: string): Peserta {
+  // Buat akun siswa terapi rutin baru: nama, asal sekolah, nama ortu, dan PIN
+  public buatAkunSiswaBaru(namaAnak: string, namaOrtu: string, pin: string, asalSekolah?: string): Peserta {
     const list = this.getPesertaList();
     const year = new Date().getFullYear();
     const noRM = `ULD-PROB-${year}-${String(list.length + 1).padStart(4, '0')}`;
@@ -1038,6 +1038,7 @@ class SupabaseDataService {
       alamat: 'Kota Probolinggo',
       kecamatan: 'Kota Probolinggo',
       ragamDisabilitas: 'Terapi Rutin ULD',
+      asalSekolah: asalSekolah?.trim() || '-',
       status: 'aktif',
       terdaftarSejak: new Date().toISOString().split('T')[0],
       catatanKhusus: 'Akun resmi diterbitkan langsung oleh Petugas Admin ULD.'
@@ -1049,7 +1050,7 @@ class SupabaseDataService {
     this.catatAktivitas({
       kategori: 'manajemen_siswa',
       judul: 'Pembuatan Akun Siswa Baru',
-      deskripsi: `Akun baru diterbitkan untuk ananda "${namaAnak.trim()}" (Wali: ${namaOrtu.trim()}) dengan nomor RM ${noRM}.`,
+      deskripsi: `Akun baru diterbitkan untuk ananda "${namaAnak.trim()}" (Sekolah: ${asalSekolah?.trim() || '-'}, Wali: ${namaOrtu.trim()}) dengan nomor RM ${noRM}.`,
       pelaku: 'Petugas Admin Loket',
       rolePelaku: 'admin',
       icon: '🧒'
