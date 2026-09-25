@@ -629,94 +629,6 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
             </div>
           </div>
 
-          {/* Card Pengosongan Rutin Mingguan Selamanya */}
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 text-white p-4 sm:p-6 rounded-3xl shadow-sm space-y-4 border border-slate-700">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3.5">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xl">🔒</span>
-                  <h3 className="text-base sm:text-lg font-black text-white">
-                    Pengosongan Jadwal Rutin Selamanya
-                  </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">
-                    {pengosonganRutinList.length} Aturan Aktif
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
-                  Kosongkan jadwal di hari dan jam tertentu <strong>sepanjang minggu selamanya</strong> (misal rapat dinas rutin, home visit tetap, atau kegiatan terjadwal). Siswa tidak dapat mendaftar sampai akses pengosongan <strong>di-revoke</strong>.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFormAlasanRutin('');
-                  setRutinMsg(null);
-                  setShowModalPengosongan(true);
-                }}
-                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-              >
-                <span>➕ Tambah Pengosongan Rutin</span>
-              </button>
-            </div>
-
-            {/* List Aturan Pengosongan yang Sedang Aktif */}
-            {pengosonganRutinList.length === 0 ? (
-              <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700 text-center space-y-1 text-slate-300 text-xs">
-                <div className="text-base">✨</div>
-                <div className="font-bold text-white">Belum ada pengosongan rutin mingguan</div>
-                <div className="text-[11px] text-slate-400">
-                  Seluruh sesi Senin s.d. Jumat aktif normal setiap minggu. Klik tombol di atas jika ada hari/jam tertentu yang ingin dikosongkan permanen.
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Daftar Sesi yang Sedang Dikosongkan Permanen (Sepanjang Minggu):
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {pengosonganRutinList.map(rule => (
-                    <div
-                      key={rule.id}
-                      className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700 flex flex-col justify-between gap-3 shadow-xs hover:border-slate-600 transition-all"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="px-2.5 py-0.5 rounded-lg text-xs font-black bg-sky-900 text-sky-200 border border-sky-700">
-                            🗓️ {rule.hariLabel}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
-                            🔴 Dikosongkan Permanen
-                          </span>
-                        </div>
-                        <div className="text-sm font-extrabold text-white font-mono">
-                          ⏰ {rule.labelSesi}
-                        </div>
-                        {rule.alasan && (
-                          <div className="text-[11px] text-amber-300 bg-amber-950/50 px-2 py-1 rounded-lg border border-amber-800/40">
-                            💬 Catatan: {rule.alasan}
-                          </div>
-                        )}
-                        <div className="text-[10px] text-slate-400">
-                          Dibuat: {new Date(rule.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRevokeRutin(rule)}
-                        className="w-full py-2 rounded-xl bg-slate-700 hover:bg-rose-700 text-white font-bold text-xs border border-slate-600 hover:border-rose-600 transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs cursor-pointer"
-                        title="Cabut pengosongan dan aktifkan kembali sesi ini untuk setiap pekan"
-                      >
-                        <span>🔓 Revoke (Pulihkan Sesi)</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Tanggal Layanan */}
           <div className="bg-slate-50 p-3.5 sm:p-4 rounded-2xl border border-slate-200 space-y-3">
             <div>
@@ -888,6 +800,94 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 </div>
               );
             })}
+          </div>
+
+          {/* Card Pengosongan Rutin Mingguan Selamanya */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 text-white p-4 sm:p-6 rounded-3xl shadow-sm space-y-4 border border-slate-700">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3.5">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xl">🔒</span>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Pengosongan Jadwal Rutin Selamanya
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">
+                    {pengosonganRutinList.length} Aturan Aktif
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+                  Kosongkan jadwal di hari dan jam tertentu <strong>sepanjang minggu selamanya</strong> (misal rapat dinas rutin, home visit tetap, atau kegiatan terjadwal). Siswa tidak dapat mendaftar sampai akses pengosongan <strong>di-revoke</strong>.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormAlasanRutin('');
+                  setRutinMsg(null);
+                  setShowModalPengosongan(true);
+                }}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <span>➕ Tambah Pengosongan Rutin</span>
+              </button>
+            </div>
+
+            {/* List Aturan Pengosongan yang Sedang Aktif */}
+            {pengosonganRutinList.length === 0 ? (
+              <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700 text-center space-y-1 text-slate-300 text-xs">
+                <div className="text-base">✨</div>
+                <div className="font-bold text-white">Belum ada pengosongan rutin mingguan</div>
+                <div className="text-[11px] text-slate-400">
+                  Seluruh sesi Senin s.d. Jumat aktif normal setiap minggu. Klik tombol di atas jika ada hari/jam tertentu yang ingin dikosongkan permanen.
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Daftar Sesi yang Sedang Dikosongkan Permanen (Sepanjang Minggu):
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {pengosonganRutinList.map(rule => (
+                    <div
+                      key={rule.id}
+                      className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700 flex flex-col justify-between gap-3 shadow-xs hover:border-slate-600 transition-all"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2.5 py-0.5 rounded-lg text-xs font-black bg-sky-900 text-sky-200 border border-sky-700">
+                            🗓️ {rule.hariLabel}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                            🔴 Dikosongkan Permanen
+                          </span>
+                        </div>
+                        <div className="text-sm font-extrabold text-white font-mono">
+                          ⏰ {rule.labelSesi}
+                        </div>
+                        {rule.alasan && (
+                          <div className="text-[11px] text-amber-300 bg-amber-950/50 px-2 py-1 rounded-lg border border-amber-800/40">
+                            💬 Catatan: {rule.alasan}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-slate-400">
+                          Dibuat: {new Date(rule.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeRutin(rule)}
+                        className="w-full py-2 rounded-xl bg-slate-700 hover:bg-rose-700 text-white font-bold text-xs border border-slate-600 hover:border-rose-600 transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs cursor-pointer"
+                        title="Cabut pengosongan dan aktifkan kembali sesi ini untuk setiap pekan"
+                      >
+                        <span>🔓 Revoke (Pulihkan Sesi)</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
