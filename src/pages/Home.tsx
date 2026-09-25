@@ -312,7 +312,9 @@ export const Home: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium">{t.gelar}</div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  {(t.id === 'terapis-4' || t.spesialisasi === 'psikolog' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) ? 'Psikolog' : t.gelar}
+                </div>
                 <div className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">
                   {t.deskripsi}
                 </div>

@@ -396,7 +396,7 @@ class SupabaseDataService {
           id: t.id,
           nipOrId: t.nip_or_id,
           nama: t.nama,
-          gelar: t.gelar,
+          gelar: (t.spesialisasi === 'psikolog' || t.id === 'terapis-4' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) ? 'Psikolog' : t.gelar,
           spesialisasi: t.spesialisasi,
           spesialisasiLabel: t.spesialisasi_label || t.spesialisasi,
           pin: t.pin,
@@ -598,8 +598,27 @@ class SupabaseDataService {
       }
     }
 
-    if (!localStorage.getItem(STORAGE_KEYS.TERAPIS)) {
+    const rawTerapis = localStorage.getItem(STORAGE_KEYS.TERAPIS);
+    if (!rawTerapis) {
       localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(INITIAL_TERAPIS));
+    } else {
+      try {
+        const parsedT: Terapis[] = JSON.parse(rawTerapis);
+        let updated = false;
+        parsedT.forEach(t => {
+          if (t.id === 'terapis-4' || t.spesialisasi === 'psikolog' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) {
+            if (t.gelar !== 'Psikolog') {
+              t.gelar = 'Psikolog';
+              updated = true;
+            }
+          }
+        });
+        if (updated) {
+          localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(parsedT));
+        }
+      } catch {
+        // ignore
+      }
     }
     if (!localStorage.getItem(STORAGE_KEYS.ADMINS)) {
       localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(INITIAL_ADMINS));
@@ -1185,9 +1204,22 @@ class SupabaseDataService {
   public getTerapisList(): Terapis[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TERAPIS);
-      return data ? JSON.parse(data) : [];
+      const list: Terapis[] = data ? JSON.parse(data) : INITIAL_TERAPIS;
+      let needsSave = false;
+      list.forEach(t => {
+        if (t.id === 'terapis-4' || t.spesialisasi === 'psikolog' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) {
+          if (t.gelar !== 'Psikolog') {
+            t.gelar = 'Psikolog';
+            needsSave = true;
+          }
+        }
+      });
+      if (needsSave) {
+        localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(list));
+      }
+      return list;
     } catch {
-      return [];
+      return INITIAL_TERAPIS;
     }
   }
 
