@@ -10,7 +10,7 @@ interface Props {
 
 export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   const [selectedSpesialisasi, setSelectedSpesialisasi] = useState<string>('all');
-  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('all');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('');
   const [bookingSlotModal, setBookingSlotModal] = useState<SlotHarian | null>(null);
   const [psikologNoticeModal, setPsikologNoticeModal] = useState<SlotHarian | null>(null);
   const [weeklyLimitNoticeModal, setWeeklyLimitNoticeModal] = useState<{ slot: SlotHarian; existingTanggal: string; existingJam: string } | null>(null);
@@ -64,16 +64,17 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   const todayWIB = getWIBDate();
   const currentWeek = getWeekBounds(todayWIB.dateStr);
   const mondayDate = new Date(currentWeek.monday + 'T00:00:00');
+
+  // Hitung Jumat dari Senin minggu ini (tidak tergantung bulan, otomatis cross-month)
   const fridayDate = new Date(mondayDate);
   fridayDate.setDate(mondayDate.getDate() + 4);
   const currentWeekFriday = fridayDate.toISOString().split('T')[0];
 
-  // ATURAN 1: Jadwal terapi publik tidak perlu menampilkan tanggal yang sudah lewat.
-  // Cukup hari H dan hari aktif selama minggu berjalan (Senin - Jumat).
+  // Tentukan rentang tanggal yang ditampilkan
   let minAllowedDate = todayWIB.dateStr;
   let maxAllowedDate = currentWeekFriday;
 
-  // Jika hari ini adalah akhir pekan (Sabtu/Minggu), tampilkan pekan aktif berikutnya
+  // Jika hari ini weekend (Sabtu/Minggu), tampilkan pekan berikutnya
   if (todayWIB.dateStr > currentWeekFriday) {
     const nextMonday = new Date(mondayDate);
     nextMonday.setDate(mondayDate.getDate() + 7);
@@ -83,23 +84,22 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
     maxAllowedDate = nextFriday.toISOString().split('T')[0];
   }
 
-  // Filter slots khusus publik: HANYA Hari H dan hari aktif selama minggu berjalan (tanggal lewat dihilangkan)
+  // Filter slots publik: Hari H s/d Jumat minggu yang sama (lintas bulan otomatis tercakup)
   const activePublicSlots = slotsList.filter(slot => {
     return slot.tanggal >= minAllowedDate && slot.tanggal <= maxAllowedDate;
   });
 
+  // Extract unique dates yang tersedia
+  const uniqueDates = Array.from(new Set(activePublicSlots.map(s => s.tanggal))).sort();
+
+  // Auto-select tanggal pertama jika belum ada pilihan
+  const effectiveDateFilter = selectedDateFilter || uniqueDates[0] || '';
+
   const filteredSlots = activePublicSlots.filter(slot => {
-    if (selectedSpesialisasi !== 'all' && slot.spesialisasi !== selectedSpesialisasi) {
-      return false;
-    }
-    if (selectedDateFilter !== 'all' && slot.tanggal !== selectedDateFilter) {
-      return false;
-    }
+    if (selectedSpesialisasi !== 'all' && slot.spesialisasi !== selectedSpesialisasi) return false;
+    if (effectiveDateFilter && slot.tanggal !== effectiveDateFilter) return false;
     return true;
   });
-
-  // Extract unique available dates
-  const uniqueDates = Array.from(new Set(activePublicSlots.map(s => s.tanggal))).sort();
 
   // Active bookings for current participant (to check 1x / week rule)
   const activeBookings = activePeserta
@@ -311,26 +311,21 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
           <div className="pt-2 border-t border-slate-200/80">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                Pilih Tanggal (Hari H & Sisa Hari Aktif Pekan Ini):
+                Pilih Tanggal:
               </label>
               <span className="text-[10px] text-teal-800 font-semibold bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full w-fit">
-                {minAllowedDate} s/d {maxAllowedDate} (Tanggal lampau tidak ditampilkan)
+                Pekan {minAllowedDate} s/d {maxAllowedDate}
               </span>
             </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1.5 no-scrollbar -mx-1 px-1">
-              <button
-                onClick={() => setSelectedDateFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${selectedDateFilter === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
-              >
-                Semua Hari Aktif ({uniqueDates.length})
-              </button>
               {uniqueDates.map(date => {
                 const isToday = date === todayWIB.dateStr;
+                const isSelected = effectiveDateFilter === date;
                 return (
                   <button
                     key={date}
                     onClick={() => setSelectedDateFilter(date)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono transition-all shrink-0 whitespace-nowrap flex items-center gap-1 ${selectedDateFilter === date ? 'bg-teal-900 text-white shadow-sm font-bold' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono transition-all shrink-0 whitespace-nowrap flex items-center gap-1 ${isSelected ? 'bg-teal-900 text-white shadow-sm font-bold' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
                   >
                     <span>{date}</span>
                     {isToday && (
@@ -349,7 +344,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
       {/* Slots List — dikelompokkan per Terapis */}
       <div className="space-y-4">
         <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-          <span>Menampilkan <strong>{filteredSlots.length}</strong> slot aktif ({minAllowedDate} s/d {maxAllowedDate})</span>
+          <span>Menampilkan <strong>{filteredSlots.length}</strong> slot aktif · {effectiveDateFilter}</span>
           <span>Senin – Jumat 09.00 – 13.00 WIB</span>
         </div>
 
@@ -359,7 +354,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
             <h3 className="font-bold text-slate-900">Belum Ada Slot yang Sesuai Filter</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">Tidak ditemukan jadwal pada kriteria yang dipilih.</p>
             <button
-              onClick={() => { setSelectedSpesialisasi('all'); setSelectedDateFilter('all'); }}
+              onClick={() => setSelectedSpesialisasi('all')}
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-700"
             >
               Reset Filter
