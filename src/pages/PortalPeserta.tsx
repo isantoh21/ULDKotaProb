@@ -63,12 +63,42 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
   const [isSubmittingReschedule, setIsSubmittingReschedule] = useState<boolean>(false);
 
-  // Calculate current week days (Senin - Jumat)
+  // Rentang 2 Pekan ke Depan (Senin - Jumat, sama seperti Loket Admin)
   const todayWIB = getWIBDate();
-  const currentWeek = getWeekBounds(todayWIB.dateStr);
+  const twoWeeksAheadDate = (() => {
+    const d = new Date(todayWIB.dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  })();
 
-  const getWeekDays = () => {
-    const mondayD = new Date(currentWeek.monday + 'T00:00:00');
+  const currentWeekBounds = getWeekBounds(todayWIB.dateStr);
+  const currentWeekFriday = (() => {
+    const d = new Date(currentWeekBounds.monday + 'T00:00:00');
+    d.setDate(d.getDate() + 4);
+    return d.toISOString().split('T')[0];
+  })();
+
+  // Jika hari ini akhir pekan (Sabtu/Minggu), pekan 1 otomatis adalah pekan depan
+  const isWeekendNow = todayWIB.dateStr > currentWeekFriday;
+  const week1Monday = isWeekendNow
+    ? (() => {
+        const d = new Date(currentWeekBounds.monday + 'T00:00:00');
+        d.setDate(d.getDate() + 7);
+        return d.toISOString().split('T')[0];
+      })()
+    : currentWeekBounds.monday;
+
+  const week2Monday = (() => {
+    const d = new Date(week1Monday + 'T00:00:00');
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  })();
+
+  const week1 = getWeekBounds(week1Monday);
+  const week2 = getWeekBounds(week2Monday);
+
+  const getWeekDaysForMonday = (mondayStr: string) => {
+    const mondayD = new Date(mondayStr + 'T00:00:00');
     const days = [];
     const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
     for (let i = 0; i < 5; i++) {
@@ -86,12 +116,29 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
     return days;
   };
 
-  const weekDays = getWeekDays();
+  const week1Days = getWeekDaysForMonday(week1Monday);
+  const week2Days = getWeekDaysForMonday(week2Monday);
+
+  const [selectedWeekTab, setSelectedWeekTab] = useState<'week1' | 'week2'>('week1');
+  const [rescheduleWeekTab, setRescheduleWeekTab] = useState<'week1' | 'week2'>('week1');
+
+  const activeWeekDays = selectedWeekTab === 'week1' ? week1Days : week2Days;
+  const activeWeek = selectedWeekTab === 'week1' ? week1 : week2;
+
   const [selectedDayDate, setSelectedDayDate] = useState<string>(() => {
-    // Default to today if it's weekday, otherwise monday of this week
-    const found = weekDays.find(w => w.dateStr === todayWIB.dateStr);
-    return found ? found.dateStr : weekDays[0].dateStr;
+    const found = week1Days.find(w => w.dateStr === todayWIB.dateStr);
+    return found ? found.dateStr : week1Days[0].dateStr;
   });
+
+  const handleSelectWeek = (w: 'week1' | 'week2') => {
+    setSelectedWeekTab(w);
+    if (w === 'week1') {
+      const found = week1Days.find(d => d.dateStr === todayWIB.dateStr);
+      setSelectedDayDate(found ? found.dateStr : week1Days[0].dateStr);
+    } else {
+      setSelectedDayDate(week2Days[0].dateStr);
+    }
+  };
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -110,11 +157,27 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
   const activeBookings = allBookings.filter(b => ['terjadwal', 'menunggu_konfirmasi'].includes(b.status));
   const pastBookings = allBookings.filter(b => ['hadir', 'selesai', 'tidak_hadir', 'batal'].includes(b.status));
 
-  // Check if student already booked any session in this current week
-  const existingBookingThisWeek = allBookings.find(b => {
+  // Cek jatah pendaftaran per pekan kalender (1x per pekan)
+  const bookingInWeek1 = allBookings.find(b => {
     if (b.status === 'batal') return false;
     const bWeek = getWeekBounds(b.tanggal);
-    return bWeek.monday === currentWeek.monday;
+    return bWeek.monday === week1.monday;
+  });
+
+  const bookingInWeek2 = allBookings.find(b => {
+    if (b.status === 'batal') return false;
+    const bWeek = getWeekBounds(b.tanggal);
+    return bWeek.monday === week2.monday;
+  });
+
+  const bookingInActiveWeek = selectedWeekTab === 'week1' ? bookingInWeek1 : bookingInWeek2;
+
+  // Cek kuota pada pekan dari hari yang sedang dipilih
+  const selectedDayWeek = getWeekBounds(selectedDayDate);
+  const existingBookingInSelectedDayWeek = allBookings.find(b => {
+    if (b.status === 'batal') return false;
+    const bWeek = getWeekBounds(b.tanggal);
+    return bWeek.monday === selectedDayWeek.monday;
   });
 
   // Handle Submit Booking
@@ -320,7 +383,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
         >
           <span className="text-base sm:text-sm">🗓️</span>
           <span className="leading-tight">
-            <span className="hidden sm:inline">Pilih Jadwal Minggu Ini</span>
+            <span className="hidden sm:inline">Pilih Jadwal (2 Pekan ke Depan)</span>
             <span className="sm:hidden text-[11px]">Pilih Jadwal</span>
           </span>
         </button>
@@ -357,41 +420,137 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
       </div>
 
       {/* ============================================================ */}
-      {/* TAB 1: PILIH JADWAL TERSEDIA DI MINGGU BERJALAN & DAFTAR MANDIRI */}
+      {/* TAB 1: PILIH JADWAL TERSEDIA (2 PEKAN KE DEPAN) & DAFTAR MANDIRI */}
       {/* ============================================================ */}
       {activeTab === 'jadwal_daftar' && (
         <div className="space-y-6 animate-in fade-in">
-          {/* Status Kuota Mingguan Siswa */}
-          {existingBookingThisWeek ? (
+          {/* Selector 2 Pekan ke Depan */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Card Pekan 1 */}
+            <button
+              type="button"
+              onClick={() => handleSelectWeek('week1')}
+              className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${
+                selectedWeekTab === 'week1'
+                  ? 'bg-gradient-to-br from-sky-50 to-sky-100/60 border-sky-600 shadow-md ring-2 ring-sky-500/30'
+                  : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="font-mono text-xs font-bold text-sky-900 flex items-center gap-1.5">
+                  <span>📅</span>
+                  <span className="uppercase tracking-wider">Pekan 1 (Pekan Berjalan)</span>
+                </span>
+                {bookingInWeek1 ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs">
+                    ⚠️ Terjadwal (1/1)
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                    🟢 Kuota Tersedia (1x)
+                  </span>
+                )}
+              </div>
+              <div className="font-extrabold text-sm sm:text-base text-slate-900">
+                {week1.label}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                {bookingInWeek1 
+                  ? `Terdaftar: ${bookingInWeek1.tanggal} (${bookingInWeek1.jamMulai} - ${bookingInWeek1.jamSelesai} WIB)`
+                  : 'Sesi aktif terbuka untuk pendaftaran pekan ini'
+                }
+              </p>
+            </button>
+
+            {/* Card Pekan 2 */}
+            <button
+              type="button"
+              onClick={() => handleSelectWeek('week2')}
+              className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${
+                selectedWeekTab === 'week2'
+                  ? 'bg-gradient-to-br from-sky-50 to-sky-100/60 border-sky-600 shadow-md ring-2 ring-sky-500/30'
+                  : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="font-mono text-xs font-bold text-sky-900 flex items-center gap-1.5">
+                  <span>📅</span>
+                  <span className="uppercase tracking-wider">Pekan 2 (Pekan Berikutnya)</span>
+                </span>
+                {bookingInWeek2 ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs">
+                    ⚠️ Terjadwal (1/1)
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                    🟢 Kuota Tersedia (1x)
+                  </span>
+                )}
+              </div>
+              <div className="font-extrabold text-sm sm:text-base text-slate-900">
+                {week2.label}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                {bookingInWeek2
+                  ? `Terdaftar: ${bookingInWeek2.tanggal} (${bookingInWeek2.jamMulai} - ${bookingInWeek2.jamSelesai} WIB)`
+                  : bookingInWeek1 
+                    ? '✨ Pekan aktif sudah terjadwal, Anda bisa ambil jadwal di pekan ini!'
+                    : 'Tersedia untuk pendaftaran sesi pekan selanjutnya'
+                }
+              </p>
+            </button>
+          </div>
+
+          {/* Banner Status Kuota Pekan Terpilih */}
+          {bookingInActiveWeek ? (
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
               <div className="flex items-center gap-2.5">
-                <span className="text-2xl">⏳</span>
+                <span className="text-2xl shrink-0">⏳</span>
                 <div className="text-xs">
                   <div className="font-bold text-amber-950 text-sm">
-                    Kuota Minggu Ini Sudah Digunakan (1 Sesi / Minggu)
+                    Kuota {selectedWeekTab === 'week1' ? 'Pekan Berjalan' : 'Pekan Berikutnya'} Sudah Digunakan (1 Sesi / Minggu)
                   </div>
                   <div className="text-amber-800 mt-0.5">
-                    Ananda sudah terdaftar di sesi <strong>{existingBookingThisWeek.tanggal}</strong> pukul <strong>{existingBookingThisWeek.jamMulai} - {existingBookingThisWeek.jamSelesai} WIB</strong>.
+                    Ananda sudah terdaftar di sesi <strong>{bookingInActiveWeek.tanggal}</strong> pukul <strong>{bookingInActiveWeek.jamMulai} - {bookingInActiveWeek.jamSelesai} WIB</strong>.
+                    {selectedWeekTab === 'week1' && !bookingInWeek2 && (
+                      <span className="block mt-1 font-semibold text-sky-800">
+                        💡 Anda masih memiliki kuota 1x untuk <strong>Pekan Berikutnya ({week2.label})</strong>!
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setActiveTab('jadwal_aktif')}
-                className="px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shrink-0 shadow-xs"
-              >
-                Lihat Tiket Jadwal Aktif →
-              </button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {selectedWeekTab === 'week1' && !bookingInWeek2 && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectWeek('week2')}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold text-xs shadow-xs cursor-pointer"
+                  >
+                    👉 Pilih Jadwal Pekan Berikutnya
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('jadwal_aktif')}
+                  className="px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shrink-0 shadow-xs cursor-pointer"
+                >
+                  Lihat Tiket Jadwal Aktif →
+                </button>
+              </div>
             </div>
           ) : (
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex items-center gap-3 shadow-xs">
-              <span className="text-2xl">✨</span>
+              <span className="text-2xl shrink-0">✨</span>
               <div className="text-xs">
                 <div className="font-bold text-emerald-950 text-sm">
-                  Kuota Minggu Ini Tersedia (1 Kali Pendaftaran)
+                  Kuota {selectedWeekTab === 'week1' ? 'Pekan Berjalan' : 'Pekan Berikutnya'} Tersedia (1 Kali Pendaftaran)
                 </div>
                 <div className="text-emerald-800 mt-0.5">
-                  Pilih hari dan jam sesi di bawah ini untuk mendaftarkan jadwal sesi terapi ananda ke Tenaga Ahli Pembina Tetap Anda.
+                  {selectedWeekTab === 'week2' && bookingInWeek1
+                    ? 'Karena di pekan aktif sudah ada jadwal, Anda berhak memilih 1 jadwal di pekan selanjutnya ini sesuai aturan 1 pekan jatah 1 kali.'
+                    : 'Pilih hari dan jam sesi di bawah ini untuk mendaftarkan jadwal sesi terapi ananda ke Tenaga Ahli Pembina Tetap Anda.'
+                  }
                 </div>
               </div>
             </div>
@@ -420,14 +579,14 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
             </div>
           ) : (
             <div className="bg-white rounded-3xl p-4 sm:p-7 border border-slate-200 shadow-sm space-y-5 sm:space-y-6">
-              {/* Header Jadwal Minggu Berjalan */}
+              {/* Header Jadwal */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3 sm:pb-4">
                 <div>
                   <h2 className="text-base sm:text-lg font-black text-slate-900">
-                    Jadwal Terapi Minggu Berjalan: {assignedTerapis?.nama}
+                    Jadwal Terapi: {assignedTerapis?.nama}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Pekan kalender: <strong className="font-mono text-sky-700">{currentWeek.label}</strong>
+                    Pekan kalender terpilih: <strong className="font-mono text-sky-700">{activeWeek.label}</strong>
                   </p>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-700 font-bold text-xs border border-sky-100 self-start sm:self-auto">
@@ -435,14 +594,14 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                 </span>
               </div>
 
-              {/* Day Selector Pills (Senin s.d. Jumat - Scrollable di Mobile agar tidak gepeng) */}
+              {/* Day Selector Pills (Senin s.d. Jumat) */}
               <div>
                 <div className="flex sm:hidden items-center justify-between text-[11px] text-slate-400 mb-1 px-1">
-                  <span>Pilih hari terapi:</span>
+                  <span>Pilih hari terapi ({selectedWeekTab === 'week1' ? 'Pekan 1' : 'Pekan 2'}):</span>
                   <span>Geser ke samping 👉</span>
                 </div>
                 <div className="flex sm:grid sm:grid-cols-5 gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 snap-x">
-                  {weekDays.map(day => {
+                  {activeWeekDays.map(day => {
                     const isSelected = selectedDayDate === day.dateStr;
                     const deadline = checkBatasPendaftaranHMinus1(day.dateStr);
 
@@ -451,7 +610,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                         key={day.dateStr}
                         type="button"
                         onClick={() => setSelectedDayDate(day.dateStr)}
-                        className={`p-2.5 sm:p-3 rounded-2xl text-center transition-all flex flex-col items-center justify-center gap-1 border shrink-0 sm:shrink min-w-[76px] sm:min-w-0 flex-1 snap-center ${
+                        className={`p-2.5 sm:p-3 rounded-2xl text-center transition-all flex flex-col items-center justify-center gap-1 border shrink-0 sm:shrink min-w-[76px] sm:min-w-0 flex-1 snap-center cursor-pointer ${
                           isSelected 
                             ? 'bg-sky-800 text-white border-sky-900 shadow-md ring-2 ring-sky-400/30' 
                             : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -486,14 +645,13 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span className="font-bold text-slate-800">
-                    Sesi Tersedia pada {weekDays.find(d => d.dateStr === selectedDayDate)?.dayName}, {selectedDayDate}:
+                    Sesi Tersedia pada {activeWeekDays.find(d => d.dateStr === selectedDayDate)?.dayName}, {selectedDayDate}:
                   </span>
                   <span>Maksimal 1 Kuota per Jam Sesi</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {DEFAULT_SESSIONS.map(session => {
-                    // Find if a slot exists for this therapist, date, and hour
                     const existingSlot = slotsList.find(s => 
                       s.terapisId === currentPeserta.assignedTerapisId && 
                       s.tanggal === selectedDayDate && 
@@ -502,14 +660,12 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
                     const deadline = checkBatasPendaftaranHMinus1(selectedDayDate);
 
-                    // Check if this student booked this exact slot
                     const isBookedByMe = allBookings.some(b => 
                       b.tanggal === selectedDayDate && 
                       b.jamMulai === session.start && 
                       b.status !== 'batal'
                     );
 
-                    // Slot status
                     const isFull = existingSlot && existingSlot.kuotaTerisi >= existingSlot.kuotaMaksimal;
                     const isClosedByTerapis = existingSlot && existingSlot.statusSlot === 'dibatalkan';
 
@@ -568,7 +724,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                             <button
                               type="button"
                               onClick={() => setActiveTab('jadwal_aktif')}
-                              className="w-full py-2 rounded-xl bg-sky-700 text-white font-bold text-xs"
+                              className="w-full py-2 rounded-xl bg-sky-700 text-white font-bold text-xs cursor-pointer"
                             >
                               Lihat Tiket Saya →
                             </button>
@@ -584,15 +740,26 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                             <div className="text-center py-1.5 text-[11px] font-semibold text-rose-700">
                               Slot sudah terisi oleh siswa lain
                             </div>
-                          ) : existingBookingThisWeek ? (
-                            <button
-                              type="button"
-                              disabled
-                              title="Anda sudah memiliki 1 jadwal aktif pekan ini"
-                              className="w-full py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed"
-                            >
-                              Kuota Pekan Ini Penuh
-                            </button>
+                          ) : existingBookingInSelectedDayWeek ? (
+                            <div className="space-y-1">
+                              <button
+                                type="button"
+                                disabled
+                                title={`Anda sudah memiliki 1 jadwal aktif pada pekan ini (${existingBookingInSelectedDayWeek.tanggal})`}
+                                className="w-full py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed"
+                              >
+                                Kuota Pekan Ini Penuh (1/1)
+                              </button>
+                              {selectedWeekTab === 'week1' && !bookingInWeek2 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectWeek('week2')}
+                                  className="w-full text-center text-[10px] text-sky-700 font-bold hover:underline cursor-pointer"
+                                >
+                                  👉 Ambil Kuota di Pekan Berikutnya →
+                                </button>
+                              )}
+                            </div>
                           ) : (
                             <button
                               type="button"
@@ -618,7 +785,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                                   ruang: assignedTerapis!.ruangPraktek
                                 });
                               }}
-                              className="w-full py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                              className="w-full py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               <span>📝 Daftar Sesi Ini</span>
                             </button>
@@ -735,6 +902,8 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                           type="button"
                           onClick={() => {
                             setBookingToReschedule(b);
+                            const bWeek = getWeekBounds(b.tanggal);
+                            setRescheduleWeekTab(bWeek.monday === week2.monday ? 'week2' : 'week1');
                             setRescheduleDayDate(b.tanggal);
                             setRescheduleSlotId('');
                             setRescheduleAlasan('Salah memilih hari/waktu');
@@ -1074,11 +1243,47 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
             {/* 1. Pilih Hari Pengganti */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-800">
-                1. Pilih Hari Pengganti (Senin - Jumat):
-              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <label className="block text-xs font-bold text-slate-800">
+                  1. Pilih Hari Pengganti (2 Pekan ke Depan):
+                </label>
+                <div className="flex rounded-xl bg-slate-100 p-0.5 border border-slate-200 text-[10px] font-bold self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRescheduleWeekTab('week1');
+                      const firstOpen = week1Days.find(d => checkBatasPendaftaranHMinus1(d.dateStr).bisaDaftar);
+                      setRescheduleDayDate(firstOpen ? firstOpen.dateStr : week1Days[0].dateStr);
+                      setRescheduleSlotId('');
+                    }}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      rescheduleWeekTab === 'week1'
+                        ? 'bg-sky-700 text-white shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Pekan 1 ({week1.label})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRescheduleWeekTab('week2');
+                      setRescheduleDayDate(week2Days[0].dateStr);
+                      setRescheduleSlotId('');
+                    }}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      rescheduleWeekTab === 'week2'
+                        ? 'bg-sky-700 text-white shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Pekan 2 ({week2.label})
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-5 gap-1.5">
-                {weekDays.map(wd => {
+                {(rescheduleWeekTab === 'week1' ? week1Days : week2Days).map(wd => {
                   const deadline = checkBatasPendaftaranHMinus1(wd.dateStr);
                   const isSelected = (rescheduleDayDate || bookingToReschedule.tanggal) === wd.dateStr;
                   const isCurrentDay = bookingToReschedule.tanggal === wd.dateStr;
@@ -1092,9 +1297,9 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                         setRescheduleDayDate(wd.dateStr);
                         setRescheduleSlotId('');
                       }}
-                      className={`p-2 rounded-xl text-center border transition-all ${
+                      className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-sky-800 text-white border-sky-900 shadow-sm font-bold'
+                          ? 'bg-sky-800 text-white border-sky-900 shadow-sm font-bold ring-2 ring-sky-400/40'
                           : !deadline.bisaDaftar
                             ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
                             : 'bg-white text-slate-700 border-slate-200 hover:border-sky-400'
@@ -1103,7 +1308,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                       <div className="text-[11px] font-bold">{wd.dayName}</div>
                       <div className="text-[10px] opacity-80">{wd.dayFormatted}</div>
                       {isCurrentDay && (
-                        <div className="text-[9px] text-amber-300 font-extrabold mt-0.5">• Lama</div>
+                        <div className="text-[9px] text-amber-500 font-extrabold mt-0.5">• Lama</div>
                       )}
                     </button>
                   );

@@ -62,30 +62,19 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   };
 
   const todayWIB = getWIBDate();
-  const currentWeek = getWeekBounds(todayWIB.dateStr);
-  const mondayDate = new Date(currentWeek.monday + 'T00:00:00');
+  // Rentang tanggal 2 Pekan ke Depan (sama seperti Loket Admin)
+  const twoWeeksAheadDate = (() => {
+    const d = new Date(todayWIB.dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  })();
 
-  // Hitung Jumat dari Senin minggu ini (tidak tergantung bulan, otomatis cross-month)
-  const fridayDate = new Date(mondayDate);
-  fridayDate.setDate(mondayDate.getDate() + 4);
-  const currentWeekFriday = fridayDate.toISOString().split('T')[0];
+  const minAllowedDate = todayWIB.dateStr;
+  const maxAllowedDate = twoWeeksAheadDate;
 
-  // Tentukan rentang tanggal yang ditampilkan
-  let minAllowedDate = todayWIB.dateStr;
-  let maxAllowedDate = currentWeekFriday;
-
-  // Jika hari ini weekend (Sabtu/Minggu), tampilkan pekan berikutnya
-  if (todayWIB.dateStr > currentWeekFriday) {
-    const nextMonday = new Date(mondayDate);
-    nextMonday.setDate(mondayDate.getDate() + 7);
-    const nextFriday = new Date(nextMonday);
-    nextFriday.setDate(nextMonday.getDate() + 4);
-    minAllowedDate = nextMonday.toISOString().split('T')[0];
-    maxAllowedDate = nextFriday.toISOString().split('T')[0];
-  }
-
-  // Filter slots publik: Hari H s/d Jumat minggu yang sama (lintas bulan otomatis tercakup)
+  // Filter slots publik: Hari H s/d 2 pekan ke depan
   const activePublicSlots = slotsList.filter(slot => {
+    if (slot.statusSlot === 'dibatalkan') return false;
     return slot.tanggal >= minAllowedDate && slot.tanggal <= maxAllowedDate;
   });
 
@@ -366,7 +355,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                 Pilih Tanggal:
               </label>
               <span className="text-[10px] text-sky-700 font-semibold bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-full w-fit">
-                Pekan {minAllowedDate} s/d {maxAllowedDate}
+                2 Pekan ke Depan ({minAllowedDate} s/d {maxAllowedDate})
               </span>
             </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1.5 no-scrollbar -mx-1 px-1">

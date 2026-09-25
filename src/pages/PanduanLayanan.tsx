@@ -102,7 +102,7 @@ export const PanduanLayanan: React.FC = () => {
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
             <div className="font-bold text-slate-900">Batas Kuota Mingguan</div>
             <p className="text-slate-500">
-              Siswa terdaftar hanya dapat mendaftar maksimal 1 kali dalam 1 minggu demi pemerataan kuota layanan se-Kota Probolinggo.
+              Siswa terdaftar dibatasi maksimal 1 kali per pekan kalender (tersedia pemilihan slot 2 pekan ke depan). Jika di pekan aktif sudah ambil jadwal, peserta dapat memilih jadwal untuk pekan selanjutnya.
             </p>
           </div>
 

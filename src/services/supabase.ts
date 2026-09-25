@@ -1521,6 +1521,19 @@ class SupabaseDataService {
       return { success: false, error: 'Anda sudah memiliki pendaftaran jadwal terapi pada jam yang sama di tanggal ini.' };
     }
 
+    // Batas maksimal pendaftaran adalah 2 pekan ke depan
+    const twoWeeksAheadDate = (() => {
+      const d = new Date(todayWIB.dateStr + 'T00:00:00');
+      d.setDate(d.getDate() + 14);
+      return d.toISOString().split('T')[0];
+    })();
+    if (slot.tanggal > twoWeeksAheadDate) {
+      return {
+        success: false,
+        error: `Pendaftaran jadwal terapi dibatasi maksimal 2 pekan ke depan (${twoWeeksAheadDate}).`
+      };
+    }
+
     // ATURAN 2: Siswa terdaftar hanya bisa mendaftar maksimal 1x dalam seminggu
     const targetWeek = getWeekBounds(slot.tanggal);
     const existingInSameWeek = bookings.find(b => {
