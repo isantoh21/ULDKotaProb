@@ -58,6 +58,21 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
     return sortedPeserta.find(p => p.id === selectedPesertaId);
   }, [sortedPeserta, selectedPesertaId]);
 
+  const assignedTerapis = useMemo(() => {
+    if (!currentSelected?.assignedTerapisId) return undefined;
+    return db.getTerapisById(currentSelected.assignedTerapisId);
+  }, [currentSelected]);
+
+  const getLayananName = (code?: string, label?: string) => {
+    switch (code) {
+      case 'terapis_perilaku': return 'Terapi Perilaku (ABA)';
+      case 'fisioterapis': return 'Fisioterapi';
+      case 'tenaga_plb': return 'Pendidikan Luar Biasa (PLB)';
+      case 'psikolog': return 'Konseling & Observasi Psikologi';
+      default: return label || 'Layanan Terapi';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -202,12 +217,36 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
                   <strong className="text-slate-900">{currentSelected.namaWali}</strong>
                 </div>
                 <div>
+                  <span className="text-slate-500 font-medium">Layanan Rutin:</span>{' '}
+                  {currentSelected.status === 'lulus' ? (
+                    <strong className="text-emerald-800 font-bold">🎓 Telah Lulus Program ULD</strong>
+                  ) : assignedTerapis ? (
+                    <strong className="text-sky-800 font-bold">
+                      {getLayananName(assignedTerapis.spesialisasi, assignedTerapis.spesialisasiLabel)} ({assignedTerapis.nama})
+                    </strong>
+                  ) : currentSelected.assignedTerapisNama ? (
+                    <strong className="text-sky-800 font-bold">
+                      Layanan Terapi ({currentSelected.assignedTerapisNama})
+                    </strong>
+                  ) : (
+                    <strong className="text-amber-700 font-bold">
+                      Belum di-assign
+                    </strong>
+                  )}
+                </div>
+                <div>
                   <span className="text-slate-500 font-medium">Kecamatan:</span>{' '}
                   <strong className="text-slate-900">{currentSelected.kecamatan}</strong>
                 </div>
-                <div>
-                  <span className="text-slate-500 font-medium">Layanan Rutin:</span>{' '}
-                  <strong className="text-sky-800">{currentSelected.ragamDisabilitas}</strong>
+                <div className="sm:col-span-2 pt-1 border-t border-sky-100/70 flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                  <span className="text-slate-500">
+                    Kebutuhan / Ragam: <strong className="text-slate-800">{currentSelected.ragamDisabilitas}</strong>
+                  </span>
+                  {assignedTerapis && (
+                    <span className="text-sky-700 font-medium">
+                      Ruang: <strong>{assignedTerapis.ruangPraktek}</strong>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
