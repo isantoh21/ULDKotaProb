@@ -127,6 +127,20 @@ export default function App() {
             onAdminLoginSuccess={(admin) => {
               setCurrentUser({ role: 'admin', admin });
             }}
+            defaultTab="terapis"
+          />
+        );
+
+      case '/login-admin':
+        return (
+          <LoginTerapis 
+            onLoginSuccess={(terapis) => {
+              setCurrentUser({ role: 'terapis', terapis });
+            }} 
+            onAdminLoginSuccess={(admin) => {
+              setCurrentUser({ role: 'admin', admin });
+            }}
+            defaultTab="admin"
           />
         );
 

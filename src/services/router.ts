@@ -8,6 +8,7 @@ export type AppRoute =
   | '/portal-peserta'
   | '/daftar-jadwal'
   | '/login-terapis'
+  | '/login-admin'
   | '/portal-terapis'
   | '/admin'
   | '/log-aktivitas'
@@ -30,6 +31,7 @@ export function parseHash(hash: string): RouteState {
     '/portal-peserta',
     '/daftar-jadwal',
     '/login-terapis',
+    '/login-admin',
     '/portal-terapis',
     '/admin',
     '/log-aktivitas',

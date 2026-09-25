@@ -21,14 +21,8 @@ export const LoginTerapis: React.FC<Props> = ({
   const [selectedType, setSelectedType] = useState<'terapis' | 'admin'>(() => {
     return defaultTab === 'admin' ? 'admin' : 'terapis';
   });
-  const [selectedId, setSelectedId] = useState<string>(() => {
-    if (defaultTab === 'admin' && adminList.length > 0) return adminList[0].id;
-    return terapisList[0]?.id || '';
-  });
-  const [pin, setPin] = useState<string>(() => {
-    if (defaultTab === 'admin' && adminList.length > 0) return adminList[0].pin;
-    return terapisList[0]?.pin || '223344';
-  });
+  const [selectedId, setSelectedId] = useState<string>('');
+  const [pin, setPin] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,14 +32,14 @@ export const LoginTerapis: React.FC<Props> = ({
   const handleSelectTerapis = (t: Terapis) => {
     setSelectedType('terapis');
     setSelectedId(t.id);
-    setPin(t.pin);
+    setPin(''); // Kosongkan agar user memasukkan PIN secara sadar
     setErrorMsg('');
   };
 
   const handleSelectAdmin = (a: AdminUser) => {
     setSelectedType('admin');
     setSelectedId(a.id);
-    setPin(a.pin);
+    setPin(''); // Kosongkan agar user memasukkan PIN secara sadar
     setErrorMsg('');
   };
 

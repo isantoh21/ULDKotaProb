@@ -161,10 +161,11 @@ export const Home: React.FC = () => {
             </div>
 
             <button
-              onClick={() => navigateTo('/admin')}
-              className="w-full py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs transition-all border border-slate-300"
+              onClick={() => navigateTo('/login-admin')}
+              className="w-full py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5"
             >
-              Masuk Loket Admin ULD →
+              <span>Pilih Petugas & Masuk (PIN)</span>
+              <span>→</span>
             </button>
           </div>
         </div>
