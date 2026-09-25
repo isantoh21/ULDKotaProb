@@ -1,0 +1,6 @@
+{
+  "name": "ULD Kota Probolinggo - Sistem Pendaftaran Terapi & Asesmen",
+  "description": "Aplikasi pendaftaran jadwal terapi inklusif dan asesmen Unit Layanan Disabilitas (ULD) Kota Probolinggo dengan akses peserta, terapis, tenaga PLB, psikolog, dan guest.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

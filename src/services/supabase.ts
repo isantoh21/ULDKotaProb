@@ -1,0 +1,1941 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { 
+  Peserta, 
+  Terapis, 
+  SlotHarian, 
+  BookingTerapi, 
+  PendaftaranAsesmenGuest, 
+  AdminUser,
+  StatistikULD,
+  LogAktivitas,
+  KategoriAktivitas 
+} from '../types';
+import { 
+  INITIAL_PESERTA, 
+  INITIAL_TERAPIS, 
+  INITIAL_ADMINS,
+  INITIAL_SLOTS, 
+  INITIAL_BOOKINGS, 
+  INITIAL_ASESMEN_GUEST 
+} from './initialData';
+
+const STORAGE_KEYS = {
+  PESERTA: 'uld_prob_peserta_v2',
+  TERAPIS: 'uld_prob_terapis_v3',
+  ADMINS: 'uld_prob_admins_v3',
+  SLOTS: 'uld_prob_slots_v3',
+  BOOKINGS: 'uld_prob_bookings_v2',
+  ASESMEN: 'uld_prob_asesmen_v1',
+  LOGS: 'uld_prob_logs_v1',
+  SUPABASE_URL: 'uld_prob_supabase_url',
+  SUPABASE_KEY: 'uld_prob_supabase_key',
+};
+
+// Helper untuk mendapatkan tanggal dan jam saat ini dalam Waktu Indonesia Barat (WIB / UTC+7)
+export function getWIBDate(): { dateStr: string; timeStr: string; fullStr: string; hour: number; minute: number } {
+  const now = new Date();
+  try {
+    const formatterDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dateStr = formatterDate.format(now); // 'YYYY-MM-DD'
+    const formatterTime = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false });
+    const timeParts = formatterTime.formatToParts(now);
+    const hour = parseInt(timeParts.find(p => p.type === 'hour')?.value || '0', 10);
+    const minute = parseInt(timeParts.find(p => p.type === 'minute')?.value || '0', 10);
+    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} WIB`;
+    return { dateStr, timeStr, fullStr: `${dateStr} ${timeStr}`, hour, minute };
+  } catch {
+    const wibOffset = 7 * 60;
+    const localOffset = now.getTimezoneOffset();
+    const wibTime = new Date(now.getTime() + (wibOffset + localOffset) * 60 * 1000);
+    const dateStr = wibTime.toISOString().split('T')[0];
+    const hour = wibTime.getHours();
+    const minute = wibTime.getMinutes();
+    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} WIB`;
+    return { dateStr, timeStr, fullStr: `${dateStr} ${timeStr}`, hour, minute };
+  }
+}
+
+// Helper Aturan 3: Pendaftaran terapi paling minimal dilakukan H-1 hari di maksimal jam 24.00 WIB
+export function checkBatasPendaftaranHMinus1(slotTanggal: string): { 
+  bisaDaftar: boolean; 
+  pesan?: string;
+  isHariH: boolean;
+  isLewat: boolean;
+  labelBatas: string;
+} {
+  const { dateStr } = getWIBDate();
+  
+  // Jika slotTanggal === dateStr, pendaftaran dilakukan di Hari H -> DITOLAK
+  if (slotTanggal === dateStr) {
+    return {
+      bisaDaftar: false,
+      isHariH: true,
+      isLewat: true,
+      labelBatas: 'Hari H (Ditutup)',
+      pesan: `Pendaftaran ditutup! Sesuai ketentuan resmi operasional ULD Kota Probolinggo, pendaftaran sesi terapi paling minimal dilakukan H-1 hari di maksimal jam 24.00 WIB. Hari ini (${slotTanggal}) merupakan hari pelaksanaan (Hari H), sehingga pendaftaran tidak dapat diproses.`
+    };
+  }
+
+  // Jika slotTanggal < dateStr, tanggal sesi telah berlalu -> DITOLAK
+  if (slotTanggal < dateStr) {
+    return {
+      bisaDaftar: false,
+      isHariH: false,
+      isLewat: true,
+      labelBatas: 'Tanggal Lewat (Ditutup)',
+      pesan: `Pendaftaran ditutup! Jadwal terapi pada tanggal ${slotTanggal} sudah terlewati.`
+    };
+  }
+
+  // slotTanggal > dateStr: tanggal adalah masa mendatang (minimal H-1 atau lebih awal sebelum jam 24.00 WIB) -> DITERIMA
+  return {
+    bisaDaftar: true,
+    isHariH: false,
+    isLewat: false,
+    labelBatas: 'Buka (Memenuhi H-1)'
+  };
+}
+
+// Helper untuk menghitung batas pekan kalender (Senin - Minggu)
+export function getWeekBounds(dateStr: string): { monday: string; sunday: string; label: string } {
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay(); // 0 is Sunday, 1 is Monday ...
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const mondayDate = new Date(d);
+    mondayDate.setDate(d.getDate() + diffToMonday);
+
+    const sundayDate = new Date(mondayDate);
+    sundayDate.setDate(mondayDate.getDate() + 6);
+
+    const fmt = (dt: Date) => dt.toISOString().split('T')[0];
+    const monday = fmt(mondayDate);
+    const sunday = fmt(sundayDate);
+    return {
+      monday,
+      sunday,
+      label: `${monday} s/d ${sunday}`
+    };
+  } catch {
+    return { monday: dateStr, sunday: dateStr, label: dateStr };
+  }
+}
+
+// 4 Sesi Reguler Layanan Terapi ULD Kota Probolinggo (Senin - Jumat, 09.00 - 13.00 WIB)
+export const DEFAULT_TERAPI_SESSIONS = [
+  { start: '09:00', end: '10:00', label: 'Sesi 1 (09.00 - 10.00 WIB)' },
+  { start: '10:00', end: '11:00', label: 'Sesi 2 (10.00 - 11.00 WIB)' },
+  { start: '11:00', end: '12:00', label: 'Sesi 3 (11.00 - 12.00 WIB)' },
+  { start: '12:00', end: '13:00', label: 'Sesi 4 (12.00 - 13.00 WIB)' }
+];
+
+class SupabaseDataService {
+  private client: SupabaseClient | null = null;
+  private isSupabaseConnected = false;
+  private autoSyncTimer: any = null;
+
+  constructor() {
+    this.initSupabaseClient();
+    this.initLocalStorageIfEmpty();
+  }
+
+  private initSupabaseClient() {
+    const savedUrl = localStorage.getItem(STORAGE_KEYS.SUPABASE_URL) || (import.meta as any).env?.VITE_SUPABASE_URL || '';
+    const savedKey = localStorage.getItem(STORAGE_KEYS.SUPABASE_KEY) || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+
+    if (savedUrl && savedKey) {
+      try {
+        this.client = createClient(savedUrl, savedKey);
+        this.isSupabaseConnected = true;
+        // Background auto-sync on startup: tarik data terbaru dari cloud jika tersedia
+        setTimeout(() => {
+          this.pullAllDataFromSupabase().catch(() => {});
+        }, 1200);
+      } catch (err) {
+        console.warn('Failed to initialize Supabase client, falling back to local store:', err);
+        this.client = null;
+        this.isSupabaseConnected = false;
+      }
+    }
+  }
+
+  // SINKRONISASI OTOMATIS SETIAP SAAT KE SUPABASE (FIRE-AND-FORGET BACKGROUND SYNC)
+  public triggerAutoSync(delayMs = 500): void {
+    if (!this.client || !this.isSupabaseConnected) return;
+    if (this.autoSyncTimer) {
+      clearTimeout(this.autoSyncTimer);
+    }
+    this.autoSyncTimer = setTimeout(() => {
+      this.pushAllDataToSupabase().catch(err => {
+        console.warn('Background auto-sync to Supabase notice:', err);
+      });
+    }, delayMs);
+  }
+
+  public getSupabaseStatus(): { isConnected: boolean; url: string; hasKey: boolean } {
+    const url = localStorage.getItem(STORAGE_KEYS.SUPABASE_URL) || (import.meta as any).env?.VITE_SUPABASE_URL || '';
+    const key = localStorage.getItem(STORAGE_KEYS.SUPABASE_KEY) || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+    return {
+      isConnected: Boolean(this.client && url && key),
+      url: url,
+      hasKey: Boolean(key)
+    };
+  }
+
+  public setSupabaseCredentials(url: string, key: string): boolean {
+    if (!url || !key) {
+      localStorage.removeItem(STORAGE_KEYS.SUPABASE_URL);
+      localStorage.removeItem(STORAGE_KEYS.SUPABASE_KEY);
+      this.client = null;
+      this.isSupabaseConnected = false;
+      return false;
+    }
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.SUPABASE_URL, url.trim());
+      localStorage.setItem(STORAGE_KEYS.SUPABASE_KEY, key.trim());
+      this.client = createClient(url.trim(), key.trim());
+      this.isSupabaseConnected = true;
+      return true;
+    } catch (e) {
+      console.error('Invalid Supabase configuration', e);
+      return false;
+    }
+  }
+
+  public async testSupabaseConnection(): Promise<{ success: boolean; message: string }> {
+    if (!this.client) {
+      return { success: false, message: 'Klien Supabase belum diinisialisasi. Silakan masukkan Project URL dan Anon Key.' };
+    }
+    try {
+      const { error } = await this.client.from('terapis').select('id').limit(1);
+      if (error) {
+        if (error.code === '42P01') {
+          return {
+            success: false,
+            message: 'Terkoneksi ke Supabase, namun tabel belum dibuat! Silakan buka SQL Editor di Supabase lalu jalankan file supabase-schema.sql.'
+          };
+        }
+        return { success: false, message: `Gagal mengakses Supabase: ${error.message}` };
+      }
+      return { success: true, message: 'Alhamdulillah, koneksi ke basis data Supabase berhasil dan aktif!' };
+    } catch (err: any) {
+      return { success: false, message: `Kesalahan koneksi: ${err.message || err}` };
+    }
+  }
+
+  public async pushAllDataToSupabase(): Promise<{ success: boolean; message: string }> {
+    if (!this.client) {
+      return { success: false, message: 'Klien Supabase belum terhubung.' };
+    }
+    try {
+      // 1. Terapis
+      const terapis = this.getTerapisList().map(t => ({
+        id: t.id,
+        nip_or_id: t.nipOrId,
+        nama: t.nama,
+        gelar: t.gelar,
+        spesialisasi: t.spesialisasi,
+        spesialisasi_label: t.spesialisasiLabel,
+        pin: t.pin,
+        nomor_telepon: t.nomorTelepon,
+        deskripsi: t.deskripsi,
+        ruang_praktek: t.ruangPraktek,
+        foto_url: t.fotoUrl || null,
+        is_active: t.isActive
+      }));
+      await this.client.from('terapis').upsert(terapis);
+
+      // 2. Admins
+      const admins = this.getAdminList().map(a => ({
+        id: a.id,
+        nama: a.nama,
+        role_title: a.roleTitle,
+        pin: a.pin,
+        nomor_telepon: a.nomorTelepon
+      }));
+      await this.client.from('admin_users').upsert(admins);
+
+      // 3. Peserta
+      const peserta = this.getPesertaList().map(p => ({
+        id: p.id,
+        nomor_rekam_medis: p.nomorRekamMedis,
+        nama_lengkap: p.namaLengkap,
+        pin: p.pin,
+        tanggal_lahir: p.tanggalLahir,
+        jenis_kelamin: p.jenisKelamin,
+        nama_wali: p.namaWali,
+        nomor_telepon: p.nomorTelepon,
+        alamat: p.alamat,
+        kecamatan: p.kecamatan,
+        asal_sekolah: p.asalSekolah || null,
+        ragam_disabilitas: p.ragamDisabilitas,
+        status: p.status,
+        terdaftar_sejak: p.terdaftarSejak,
+        catatan_khusus: p.catatanKhusus || null,
+        assigned_terapis_id: p.assignedTerapisId || null,
+        assigned_terapis_nama: p.assignedTerapisNama || null,
+        assigned_at: p.assignedAt || null
+      }));
+      await this.client.from('peserta').upsert(peserta);
+
+      // 4. Slots
+      const slots = this.getSlotsList().map(s => ({
+        id: s.id,
+        terapis_id: s.terapisId,
+        tanggal: s.tanggal,
+        jam_mulai: s.jamMulai,
+        jam_selesai: s.jamSelesai,
+        spesialisasi: s.spesialisasi,
+        ruang: s.ruang,
+        kuota_maksimal: s.kuotaMaksimal,
+        kuota_terisi: s.kuotaTerisi,
+        catatan_terapis: s.catatanTerapis || null,
+        status_slot: s.statusSlot
+      }));
+      await this.client.from('slots_harian').upsert(slots);
+
+      // 5. Bookings
+      const bookings = this.getBookingsList().map(b => ({
+        id: b.id,
+        slot_id: b.slotId,
+        peserta_id: b.pesertaId,
+        terapis_id: b.terapisId,
+        kode_booking: b.kodeBooking,
+        tanggal: b.tanggal,
+        jam_mulai: b.jamMulai,
+        jam_selesai: b.jamSelesai,
+        spesialisasi: b.spesialisasi,
+        ruang: b.ruang,
+        status: b.status,
+        keluhan_hari_ini: b.keluhanHariIni || null,
+        catatan_sesi_terapis: b.catatanSesiTerapis || null,
+        didaftarkan_oleh_admin: b.didaftarkanOlehAdmin || null,
+        reschedule_count: b.rescheduleCount || 0
+      }));
+      await this.client.from('booking_terapi').upsert(bookings);
+
+      // 6. Logs
+      const logs = this.getAktivitasLogs().map(l => ({
+        id: l.id,
+        waktu: l.waktu,
+        kategori: l.kategori,
+        judul: l.judul,
+        deskripsi: l.deskripsi,
+        pelaku: l.pelaku,
+        role_pelaku: l.rolePelaku || null,
+        icon: l.icon || null
+      }));
+      await this.client.from('log_aktivitas').upsert(logs);
+
+      // 7. Pendaftaran Asesmen Guest
+      const asesmenList = this.getAsesmenGuestList().map(a => ({
+        id: a.id,
+        nomor_registrasi: a.nomorRegistrasi,
+        nama_anak: a.namaAnak,
+        tanggal_lahir: a.tanggalLahir,
+        jenis_kelamin: a.jenisKelamin,
+        nama_orang_tua: a.namaOrangTua,
+        nik_anak_or_kk: a.nikAnakOrKK,
+        nomor_whatsapp: a.nomorWhatsApp,
+        alamat_domisili: a.alamatDomisili,
+        kecamatan: a.kecamatan,
+        jenjang_pendidikan: a.jenjangPendidikan || null,
+        asal_sekolah: a.asalSekolah || null,
+        nisn_or_npsn: a.nisnOrNpsn || null,
+        sudah_terdaftar_dapodik: !!a.sudahTerdaftarDapodik,
+        indikasi_awal: a.indikasiAwal,
+        dokumen_akan_dibawa: a.dokumenAkanDibawa || [],
+        tanggal_rencana_datang: a.tanggalRencanaDatang,
+        jam_rencana_datang: a.jamRencanaDatang,
+        status: a.status,
+        peserta_id_dihasilkan: a.pesertaIdDihasilkan || null,
+        pin_dihasilkan: a.pinDihasilkan || null,
+        catatan_petugas: a.catatanPetugas || null,
+        created_at: a.createdAt || new Date().toISOString()
+      }));
+      if (asesmenList.length > 0) {
+        await this.client.from('pendaftaran_asesmen_guest').upsert(asesmenList);
+      }
+
+      return { success: true, message: 'Seluruh data lokal berhasil diunggah (push) ke tabel Supabase!' };
+    } catch (err: any) {
+      return { success: false, message: `Gagal push data: ${err.message || err}` };
+    }
+  }
+
+  public async pullAllDataFromSupabase(): Promise<{ success: boolean; message: string }> {
+    if (!this.client) {
+      return { success: false, message: 'Klien Supabase belum terhubung.' };
+    }
+    try {
+      // 1. Terapis
+      const { data: terapisData } = await this.client.from('terapis').select('*');
+      if (terapisData && terapisData.length > 0) {
+        const mapped: Terapis[] = terapisData.map((t: any) => ({
+          id: t.id,
+          nipOrId: t.nip_or_id,
+          nama: t.nama,
+          gelar: t.gelar,
+          spesialisasi: t.spesialisasi,
+          spesialisasiLabel: t.spesialisasi_label || t.spesialisasi,
+          pin: t.pin,
+          nomorTelepon: t.nomor_telepon,
+          deskripsi: t.deskripsi,
+          ruangPraktek: t.ruang_praktek,
+          fotoUrl: t.foto_url,
+          isActive: t.is_active
+        }));
+        localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(mapped));
+      }
+
+      // 2. Admins
+      const { data: adminData } = await this.client.from('admin_users').select('*');
+      if (adminData && adminData.length > 0) {
+        const mapped: AdminUser[] = adminData.map((a: any) => ({
+          id: a.id,
+          nama: a.nama,
+          roleTitle: a.role_title,
+          pin: a.pin,
+          nomorTelepon: a.nomor_telepon
+        }));
+        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(mapped));
+      }
+
+      // 3. Peserta
+      const { data: pesertaData } = await this.client.from('peserta').select('*');
+      if (pesertaData && pesertaData.length > 0) {
+        const mapped: Peserta[] = pesertaData.map((p: any) => ({
+          id: p.id,
+          nomorRekamMedis: p.nomor_rekam_medis,
+          namaLengkap: p.nama_lengkap || p.namaLengkap,
+          pin: p.pin,
+          tanggalLahir: p.tanggal_lahir,
+          jenisKelamin: p.jenis_kelamin,
+          namaWali: p.nama_wali,
+          nomorTelepon: p.nomor_telepon,
+          alamat: p.alamat,
+          kecamatan: p.kecamatan,
+          asalSekolah: p.asal_sekolah,
+          ragamDisabilitas: p.ragam_disabilitas,
+          status: p.status,
+          terdaftarSejak: p.terdaftar_sejak,
+          catatanKhusus: p.catatan_khusus,
+          assignedTerapisId: p.assigned_terapis_id,
+          assignedTerapisNama: p.assigned_terapis_nama,
+          assignedAt: p.assigned_at
+        }));
+        localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(mapped));
+      }
+
+      // 4. Slots
+      const { data: slotsData } = await this.client.from('slots_harian').select('*');
+      if (slotsData && slotsData.length > 0) {
+        const mapped: SlotHarian[] = slotsData.map((s: any) => ({
+          id: s.id,
+          terapisId: s.terapis_id,
+          tanggal: s.tanggal,
+          jamMulai: s.jam_mulai,
+          jamSelesai: s.jam_selesai,
+          spesialisasi: s.spesialisasi,
+          ruang: s.ruang,
+          kuotaMaksimal: s.kuota_maksimal,
+          kuotaTerisi: s.kuota_terisi,
+          catatanTerapis: s.catatan_terapis,
+          statusSlot: s.status_slot,
+          createdAt: s.created_at || new Date().toISOString()
+        }));
+        localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(mapped));
+      }
+
+      // 5. Bookings
+      const { data: bookingsData } = await this.client.from('booking_terapi').select('*');
+      if (bookingsData) {
+        const mapped: BookingTerapi[] = bookingsData.map((b: any) => ({
+          id: b.id,
+          slotId: b.slot_id,
+          pesertaId: b.peserta_id,
+          terapisId: b.terapis_id,
+          kodeBooking: b.kode_booking,
+          tanggal: b.tanggal,
+          jamMulai: b.jam_mulai,
+          jamSelesai: b.jam_selesai,
+          spesialisasi: b.spesialisasi,
+          ruang: b.ruang,
+          status: b.status,
+          keluhanHariIni: b.keluhan_hari_ini,
+          catatanSesiTerapis: b.catatan_sesi_terapis,
+          didaftarkanOlehAdmin: b.didaftarkan_oleh_admin,
+          rescheduleCount: b.reschedule_count || 0,
+          createdAt: b.created_at || new Date().toISOString()
+        }));
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(mapped));
+      }
+
+      // 6. Logs
+      const { data: logsData } = await this.client.from('log_aktivitas').select('*').order('created_at', { ascending: false });
+      if (logsData) {
+        const mapped: LogAktivitas[] = logsData.map((l: any) => ({
+          id: l.id,
+          waktu: l.waktu,
+          kategori: l.kategori,
+          judul: l.judul,
+          deskripsi: l.deskripsi,
+          pelaku: l.pelaku,
+          rolePelaku: l.role_pelaku,
+          icon: l.icon
+        }));
+        localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(mapped));
+      }
+
+      // 7. Pendaftaran Asesmen Guest
+      const { data: asesmenData } = await this.client.from('pendaftaran_asesmen_guest').select('*');
+      if (asesmenData && asesmenData.length > 0) {
+        const mapped: PendaftaranAsesmenGuest[] = asesmenData.map((a: any) => ({
+          id: a.id,
+          nomorRegistrasi: a.nomor_registrasi,
+          namaAnak: a.nama_anak,
+          tanggalLahir: a.tanggal_lahir,
+          jenisKelamin: a.jenis_kelamin,
+          namaOrangTua: a.nama_orang_tua,
+          nikAnakOrKK: a.nik_anak_or_kk,
+          nomorWhatsApp: a.nomor_whatsapp,
+          alamatDomisili: a.alamat_domisili,
+          kecamatan: a.kecamatan,
+          jenjangPendidikan: a.jenjang_pendidikan || 'PAUD/TK',
+          asalSekolah: a.asal_sekolah || '',
+          nisnOrNpsn: a.nisn_or_npsn || '',
+          sudahTerdaftarDapodik: !!a.sudah_terdaftar_dapodik,
+          indikasiAwal: a.indikasi_awal,
+          dokumenAkanDibawa: a.dokumen_akan_dibawa || [],
+          tanggalRencanaDatang: a.tanggal_rencana_datang,
+          jamRencanaDatang: a.jam_rencana_datang,
+          status: a.status,
+          pesertaIdDihasilkan: a.peserta_id_dihasilkan,
+          pinDihasilkan: a.pin_dihasilkan,
+          catatanPetugas: a.catatan_petugas,
+          createdAt: a.created_at || new Date().toISOString()
+        }));
+        localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(mapped));
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+        window.dispatchEvent(new CustomEvent('uld_log_updated'));
+      }
+
+      return { success: true, message: 'Alhamdulillah, data berhasil ditarik (pull) dari Supabase dan disinkronkan!' };
+    } catch (err: any) {
+      return { success: false, message: `Gagal pull data: ${err.message || err}` };
+    }
+  }
+
+  private initLocalStorageIfEmpty() {
+    const rawPeserta = localStorage.getItem(STORAGE_KEYS.PESERTA);
+    if (!rawPeserta) {
+      localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(INITIAL_PESERTA));
+    } else {
+      // Pastikan assignment terapis tersinkronisasi jika data lama belum memilikinya
+      try {
+        const parsed: Peserta[] = JSON.parse(rawPeserta);
+        const hasAssignment = parsed.some(p => p.assignedTerapisId);
+        if (!hasAssignment) {
+          const updated = parsed.map(p => {
+            const init = INITIAL_PESERTA.find(ip => ip.id === p.id);
+            if (init && init.assignedTerapisId) {
+              return { 
+                ...p, 
+                assignedTerapisId: init.assignedTerapisId, 
+                assignedTerapisNama: init.assignedTerapisNama, 
+                assignedAt: init.assignedAt 
+              };
+            }
+            return p;
+          });
+          localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(updated));
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (!localStorage.getItem(STORAGE_KEYS.TERAPIS)) {
+      localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(INITIAL_TERAPIS));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.ADMINS)) {
+      localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(INITIAL_ADMINS));
+    }
+
+    const rawSlots = localStorage.getItem(STORAGE_KEYS.SLOTS);
+    if (!rawSlots) {
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(INITIAL_SLOTS));
+    }
+    // Pastikan seluruh sesi Senin - Jumat otomatis terbuka untuk setiap pekan
+    this.ensureAutoOpenWeekdaySlots();
+
+    if (!localStorage.getItem(STORAGE_KEYS.BOOKINGS)) {
+      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(INITIAL_BOOKINGS));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.ASESMEN)) {
+      localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(INITIAL_ASESMEN_GUEST));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
+      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(this.generateInitialLogs()));
+    }
+  }
+
+  public resetToSampleData(): void {
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(INITIAL_PESERTA));
+    localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(INITIAL_TERAPIS));
+    localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(INITIAL_ADMINS));
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(INITIAL_SLOTS));
+    this.ensureAutoOpenWeekdaySlots();
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(INITIAL_BOOKINGS));
+    localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(INITIAL_ASESMEN_GUEST));
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(this.generateInitialLogs()));
+  }
+
+  // --- ADMIN METHODS (Sugeng & Helmi) ---
+  public getAdminList(): AdminUser[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ADMINS);
+      const list: AdminUser[] = data ? JSON.parse(data) : INITIAL_ADMINS;
+      // Pastikan nomor WhatsApp resmi selalu tersinkronisasi sesuai instruksi
+      const sugeng = list.find(a => a.id === 'admin-1' || a.nama.toLowerCase().includes('sugeng'));
+      if (sugeng) sugeng.nomorTelepon = '6285236028521';
+      const helmi = list.find(a => a.id === 'admin-2' || a.nama.toLowerCase().includes('helmi'));
+      if (helmi) helmi.nomorTelepon = '6282247952696';
+      return list;
+    } catch {
+      return INITIAL_ADMINS;
+    }
+  }
+
+  public loginAdmin(namaOrId: string, pin: string): { success: boolean; admin?: AdminUser; error?: string } {
+    const list = this.getAdminList();
+    const query = namaOrId.trim().toLowerCase();
+    const cleanPin = pin.trim();
+
+    const matched = list.find(a => {
+      const matchName = a.nama.toLowerCase() === query || a.id.toLowerCase() === query || a.nama.toLowerCase().includes(query);
+      const matchPin = a.pin === cleanPin;
+      return matchName && matchPin;
+    });
+
+    if (matched) {
+      return { success: true, admin: matched };
+    }
+    return { success: false, error: 'Nama Admin atau PIN tidak sesuai.' };
+  }
+
+  public gantiPinAdmin(adminId: string, pinBaru: string): boolean {
+    const list = this.getAdminList();
+    const idx = list.findIndex(a => a.id === adminId);
+    if (idx !== -1) {
+      list[idx].pin = pinBaru.trim();
+      localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(list));
+
+      this.catatAktivitas({
+        kategori: 'keamanan_pin',
+        judul: 'Pembaruan PIN Petugas Admin',
+        deskripsi: `PIN login untuk Petugas Admin "${list[idx].nama}" berhasil diperbarui.`,
+        pelaku: `Petugas Admin ${list[idx].nama}`,
+        rolePelaku: 'admin',
+        icon: '🔐'
+      });
+
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  public gantiPinTerapis(terapisId: string, pinBaru: string): boolean {
+    const list = this.getTerapisList();
+    const idx = list.findIndex(t => t.id === terapisId);
+    if (idx !== -1) {
+      list[idx].pin = pinBaru.trim();
+      localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(list));
+
+      this.catatAktivitas({
+        kategori: 'keamanan_pin',
+        judul: 'Pembaruan PIN Tenaga Ahli',
+        deskripsi: `PIN login untuk Tenaga Ahli "${list[idx].nama}" (${list[idx].spesialisasiLabel}) berhasil diperbarui.`,
+        pelaku: list[idx].nama,
+        rolePelaku: 'terapis',
+        icon: '🔐'
+      });
+
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  public gantiPinPeserta(pesertaId: string, pinBaru: string): boolean {
+    return this.resetPinPeserta(pesertaId, pinBaru);
+  }
+
+  public toggleSlotStatus(slotId: string): boolean {
+    const list = this.getSlotsList();
+    const idx = list.findIndex(s => s.id === slotId);
+    if (idx !== -1) {
+      // Toggle antara 'tersedia' dan 'dibatalkan' (matikan / hidupkan sesi)
+      if (list[idx].statusSlot === 'dibatalkan') {
+        list[idx].statusSlot = list[idx].kuotaTerisi >= list[idx].kuotaMaksimal ? 'penuh' : 'tersedia';
+      } else {
+        list[idx].statusSlot = 'dibatalkan';
+      }
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(list));
+
+      const statusNow = list[idx].statusSlot;
+      this.catatAktivitas({
+        kategori: 'jadwal_slot',
+        judul: statusNow === 'dibatalkan' ? 'Penutupan Slot Sesi Terapi' : 'Pembukaan Kembali Slot Sesi Terapi',
+        deskripsi: `Sesi ${list[idx].jamMulai} - ${list[idx].jamSelesai} WIB (${list[idx].tanggal}) statusnya diubah menjadi "${statusNow}".`,
+        pelaku: 'Tenaga Ahli / Petugas ULD',
+        rolePelaku: 'terapis',
+        icon: statusNow === 'dibatalkan' ? '🔒' : '🔓'
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
+
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  public matikanSemuaSlotTanggal(terapisId: string, tanggal: string): boolean {
+    const list = this.getSlotsList(tanggal);
+    let changed = false;
+    list.forEach(s => {
+      if (s.terapisId === terapisId && s.tanggal === tanggal && s.statusSlot !== 'dibatalkan') {
+        s.statusSlot = 'dibatalkan';
+        changed = true;
+      }
+    });
+    if (changed) {
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(list));
+      this.catatAktivitas({
+        kategori: 'jadwal_slot',
+        judul: 'Penonaktifan Seluruh Sesi Tanggal',
+        deskripsi: `Seluruh sesi terapi pada tanggal ${tanggal} dimatikan oleh Tenaga Ahli.`,
+        pelaku: 'Tenaga Ahli ULD',
+        rolePelaku: 'terapis',
+        icon: '🛑'
+      });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
+      this.triggerAutoSync();
+    }
+    return changed;
+  }
+
+  public hidupkanSemuaSlotTanggal(terapisId: string, tanggal: string): boolean {
+    const list = this.getSlotsList(tanggal);
+    let changed = false;
+    list.forEach(s => {
+      if (s.terapisId === terapisId && s.tanggal === tanggal && s.statusSlot === 'dibatalkan') {
+        s.statusSlot = s.kuotaTerisi >= s.kuotaMaksimal ? 'penuh' : 'tersedia';
+        changed = true;
+      }
+    });
+    if (changed) {
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(list));
+      this.catatAktivitas({
+        kategori: 'jadwal_slot',
+        judul: 'Pengaktifan Kembali Seluruh Sesi Tanggal',
+        deskripsi: `Seluruh sesi terapi pada tanggal ${tanggal} diaktifkan kembali oleh Tenaga Ahli.`,
+        pelaku: 'Tenaga Ahli ULD',
+        rolePelaku: 'terapis',
+        icon: '🟢'
+      });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
+      this.triggerAutoSync();
+    }
+    return changed;
+  }
+
+  // --- PESERTA METHODS ---
+  public getPesertaList(): Peserta[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PESERTA);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public getPesertaById(id: string): Peserta | undefined {
+    return this.getPesertaList().find(p => p.id === id);
+  }
+
+  public loginPeserta(identitasOrId: string, pin: string): { success: boolean; peserta?: Peserta; error?: string } {
+    const list = this.getPesertaList();
+    const query = identitasOrId.trim().toLowerCase();
+    const cleanPin = pin.trim();
+
+    const matched = list.find(p => {
+      const matchId = p.id.toLowerCase() === query;
+      const matchName = p.namaLengkap.toLowerCase() === query || p.namaLengkap.toLowerCase().includes(query) || p.nomorRekamMedis.toLowerCase() === query;
+      const matchPin = p.pin === cleanPin;
+      return (matchId || matchName) && matchPin;
+    });
+
+    if (matched) {
+      if (matched.status !== 'aktif') {
+        return { success: false, error: 'Status akun peserta ini sedang tidak aktif. Harap hubungi Admin ULD Kota Probolinggo.' };
+      }
+      return { success: true, peserta: matched };
+    }
+
+    return { 
+      success: false, 
+      error: 'Nama atau PIN salah. Pastikan PIN yang dimasukkan sudah sesuai.' 
+    };
+  }
+
+  public tambahPeserta(peserta: Omit<Peserta, 'id' | 'terdaftarSejak'>): Peserta {
+    const list = this.getPesertaList();
+    const newPeserta: Peserta = {
+      ...peserta,
+      id: `peserta-${Date.now()}`,
+      terdaftarSejak: new Date().toISOString().split('T')[0]
+    };
+    list.unshift(newPeserta);
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+    this.triggerAutoSync();
+    return newPeserta;
+  }
+
+  // Buat akun siswa terapi rutin baru: cukup nama, nama ortu, dan PIN
+  public buatAkunSiswaBaru(namaAnak: string, namaOrtu: string, pin: string): Peserta {
+    const list = this.getPesertaList();
+    const year = new Date().getFullYear();
+    const noRM = `ULD-PROB-${year}-${String(list.length + 1).padStart(4, '0')}`;
+    const cleanPin = pin.trim() || Math.floor(100000 + Math.random() * 900000).toString();
+
+    const newPeserta: Peserta = {
+      id: `peserta-${Date.now()}`,
+      nomorRekamMedis: noRM,
+      namaLengkap: namaAnak.trim(),
+      pin: cleanPin,
+      tanggalLahir: '2020-01-01',
+      jenisKelamin: 'L',
+      namaWali: namaOrtu.trim(),
+      nomorTelepon: '',
+      alamat: 'Kota Probolinggo',
+      kecamatan: 'Kota Probolinggo',
+      ragamDisabilitas: 'Terapi Rutin ULD',
+      status: 'aktif',
+      terdaftarSejak: new Date().toISOString().split('T')[0],
+      catatanKhusus: 'Akun resmi diterbitkan langsung oleh Petugas Admin ULD.'
+    };
+
+    list.unshift(newPeserta);
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+
+    this.catatAktivitas({
+      kategori: 'manajemen_siswa',
+      judul: 'Pembuatan Akun Siswa Baru',
+      deskripsi: `Akun baru diterbitkan untuk ananda "${namaAnak.trim()}" (Wali: ${namaOrtu.trim()}) dengan nomor RM ${noRM}.`,
+      pelaku: 'Petugas Admin Loket',
+      rolePelaku: 'admin',
+      icon: '🧒'
+    });
+
+    this.triggerAutoSync();
+    return newPeserta;
+  }
+
+  public resetPinPeserta(pesertaId: string, pinBaru: string): boolean {
+    const list = this.getPesertaList();
+    const idx = list.findIndex(p => p.id === pesertaId);
+    if (idx !== -1) {
+      list[idx].pin = pinBaru;
+      localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+
+      this.catatAktivitas({
+        kategori: 'keamanan_pin',
+        judul: 'Pembaruan PIN Login Siswa',
+        deskripsi: `PIN login siswa an. "${list[idx].namaLengkap}" (${list[idx].nomorRekamMedis}) berhasil diperbarui.`,
+        pelaku: 'Siswa / Petugas Admin',
+        rolePelaku: 'admin',
+        icon: '🔑'
+      });
+
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  // Hapus akun siswa lama yang sudah lulus / selesai program
+  public hapusPeserta(pesertaId: string, alasanLulus?: string): boolean {
+    const list = this.getPesertaList();
+    const targetStudent = list.find(p => p.id === pesertaId);
+    const filtered = list.filter(p => p.id !== pesertaId);
+    if (filtered.length !== list.length) {
+      localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(filtered));
+
+      // Bebaskan kuota jadwal terapi aktif siswa tersebut jika ada
+      const bookings = this.getBookingsList();
+      const slots = this.getSlotsList();
+
+      bookings.forEach(b => {
+        if (b.pesertaId === pesertaId && (b.status === 'terjadwal' || b.status === 'menunggu_konfirmasi')) {
+          b.status = 'batal';
+          b.catatanSesiTerapis = `Siswa telah lulus / selesai program (${alasanLulus || 'Kelulusan oleh Admin ULD'})`;
+
+          const slotIdx = slots.findIndex(s => s.id === b.slotId);
+          if (slotIdx !== -1 && slots[slotIdx].kuotaTerisi > 0) {
+            slots[slotIdx].kuotaTerisi -= 1;
+            if (slots[slotIdx].statusSlot === 'penuh') {
+              slots[slotIdx].statusSlot = 'tersedia';
+            }
+          }
+        }
+      });
+
+      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+
+      this.catatAktivitas({
+        kategori: 'manajemen_siswa',
+        judul: 'Kelulusan & Hapus Siswa Terapi',
+        deskripsi: `Siswa an. "${targetStudent?.namaLengkap || pesertaId}" telah dinyatakan LULUS dan dihapus dari daftar aktif. Kuota sesi otomatis dibebaskan. (${alasanLulus || 'Selesai program'})`,
+        pelaku: 'Petugas Admin Loket',
+        rolePelaku: 'admin',
+        icon: '🎓'
+      });
+
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  // --- TERAPIS METHODS ---
+  public getTerapisList(): Terapis[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.TERAPIS);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public getTerapisById(id: string): Terapis | undefined {
+    return this.getTerapisList().find(t => t.id === id);
+  }
+
+  public loginTerapis(nipOrNama: string, pin: string): { success: boolean; terapis?: Terapis; error?: string } {
+    const list = this.getTerapisList();
+    const query = nipOrNama.trim().toLowerCase();
+    const cleanPin = pin.trim();
+
+    const matched = list.find(t => {
+      const matchId = t.nipOrId.toLowerCase() === query || t.nama.toLowerCase().includes(query) || t.id.toLowerCase() === query;
+      const matchPin = t.pin === cleanPin;
+      return matchId && matchPin;
+    });
+
+    if (matched) {
+      return { success: true, terapis: matched };
+    }
+
+    return {
+      success: false,
+      error: 'ID/NIP atau PIN terapis tidak cocok. Silakan periksa kredensial Anda.'
+    };
+  }
+
+  // --- PENUGASAN (ASSIGN) SISWA KE TERAPIS TETAP ---
+  // Aturan 2: masing-masing terapis bisa assign anak mana aja yang bisa mendaftar ke mereka secara tetap
+  public assignPesertaKeTerapis(
+    pesertaId: string, 
+    terapisId: string, 
+    actor?: { nama: string; role: 'terapis' | 'admin' }
+  ): { success: boolean; peserta?: Peserta; error?: string } {
+    const list = this.getPesertaList();
+    const pIdx = list.findIndex(p => p.id === pesertaId);
+    if (pIdx === -1) return { success: false, error: 'Data siswa tidak ditemukan.' };
+
+    const terapis = this.getTerapisById(terapisId);
+    if (!terapis) return { success: false, error: 'Data tenaga ahli/terapis tidak ditemukan.' };
+
+    const peserta = list[pIdx];
+    peserta.assignedTerapisId = terapis.id;
+    peserta.assignedTerapisNama = terapis.nama;
+    peserta.assignedAt = new Date().toISOString();
+    list[pIdx] = peserta;
+
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+
+    this.catatAktivitas({
+      kategori: 'penugasan_terapis',
+      judul: 'Penetapan Siswa Binaan Tetap Terapis',
+      deskripsi: `Siswa an. "${peserta.namaLengkap}" (${peserta.nomorRekamMedis}) resmi ditetapkan sebagai siswa binaan tetap kepada ${terapis.nama} (${terapis.spesialisasiLabel}). Siswa hanya dapat mendaftar sesi ke terapis ini.`,
+      pelaku: actor ? `${actor.role === 'admin' ? 'Petugas Admin ' : ''}${actor.nama}` : terapis.nama,
+      rolePelaku: actor?.role || 'terapis',
+      icon: '📌'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    this.triggerAutoSync();
+    return { success: true, peserta };
+  }
+
+  public lepasPenugasanPeserta(
+    pesertaId: string,
+    actor?: { nama: string; role: 'terapis' | 'admin' }
+  ): { success: boolean; peserta?: Peserta; error?: string } {
+    const list = this.getPesertaList();
+    const pIdx = list.findIndex(p => p.id === pesertaId);
+    if (pIdx === -1) return { success: false, error: 'Data siswa tidak ditemukan.' };
+
+    const peserta = list[pIdx];
+    const prevTerapis = peserta.assignedTerapisNama || 'Terapis';
+    delete peserta.assignedTerapisId;
+    delete peserta.assignedTerapisNama;
+    delete peserta.assignedAt;
+    list[pIdx] = peserta;
+
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+
+    this.catatAktivitas({
+      kategori: 'penugasan_terapis',
+      judul: 'Pelepasan Siswa Binaan Tetap',
+      deskripsi: `Penetapan siswa binaan tetap an. "${peserta.namaLengkap}" (${peserta.nomorRekamMedis}) dari ${prevTerapis} telah dilepas. Siswa kini berstatus belum di-assign.`,
+      pelaku: actor ? `${actor.role === 'admin' ? 'Petugas Admin ' : ''}${actor.nama}` : 'Staf ULD',
+      rolePelaku: actor?.role || 'terapis',
+      icon: '🔓'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    this.triggerAutoSync();
+    return { success: true, peserta };
+  }
+
+  public getSiswaBinaanTerapis(terapisId: string): Peserta[] {
+    return this.getPesertaList().filter(p => p.assignedTerapisId === terapisId && p.status === 'aktif');
+  }
+
+  public getSiswaBelumDiassign(): Peserta[] {
+    return this.getPesertaList().filter(p => !p.assignedTerapisId && p.status === 'aktif');
+  }
+
+  // --- SLOTS HARIAN METHODS (AUTO-OPEN SETIAP MINGGU SENIN - JUMAT) ---
+  public ensureAutoOpenWeekdaySlots(targetDate?: string): SlotHarian[] {
+    let list: SlotHarian[] = [];
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.SLOTS);
+      list = data ? JSON.parse(data) : [];
+    } catch {
+      list = [];
+    }
+
+    const { dateStr } = getWIBDate();
+    const currentBounds = getWeekBounds(dateStr);
+    const startMonday = new Date(currentBounds.monday + 'T00:00:00');
+
+    // Generate tanggal Senin - Jumat untuk 4 pekan (pekan berjalan + 3 pekan ke depan = 20 hari kerja)
+    const datesToEnsure: string[] = [];
+    for (let w = 0; w < 4; w++) {
+      for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
+        const d = new Date(startMonday);
+        d.setDate(startMonday.getDate() + (w * 7) + dayOffset);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        datesToEnsure.push(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+
+    // Jika targetDate ditentukan dan jatuh pada hari kerja (Senin - Jumat), sertakan dalam pengecekan
+    if (targetDate && /^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+      try {
+        const td = new Date(targetDate + 'T00:00:00');
+        const dayNum = td.getDay();
+        if (dayNum >= 1 && dayNum <= 5 && !datesToEnsure.includes(targetDate)) {
+          datesToEnsure.push(targetDate);
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    let hasAdded = false;
+    const terapisList = this.getTerapisList();
+
+    datesToEnsure.forEach(dStr => {
+      terapisList.forEach(t => {
+        DEFAULT_TERAPI_SESSIONS.forEach(sess => {
+          const exists = list.some(s => s.terapisId === t.id && s.tanggal === dStr && s.jamMulai === sess.start);
+          if (!exists) {
+            list.push({
+              id: `slot-auto-${t.id}-${dStr}-${sess.start.replace(':', '')}`,
+              terapisId: t.id,
+              tanggal: dStr,
+              jamMulai: sess.start,
+              jamSelesai: sess.end,
+              spesialisasi: t.spesialisasi,
+              ruang: t.ruangPraktek,
+              kuotaMaksimal: 1,
+              kuotaTerisi: 0,
+              statusSlot: 'tersedia',
+              catatanTerapis: 'Jadwal reguler otomatis ULD (Senin - Jumat 09.00 - 13.00 WIB)',
+              createdAt: new Date().toISOString()
+            });
+            hasAdded = true;
+          }
+        });
+      });
+    });
+
+    if (hasAdded) {
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(list));
+    }
+
+    return list;
+  }
+
+  public getSlotsList(targetDate?: string): SlotHarian[] {
+    return this.ensureAutoOpenWeekdaySlots(targetDate);
+  }
+
+  public bukaSlotHarian(slot: Omit<SlotHarian, 'id' | 'kuotaTerisi' | 'statusSlot' | 'createdAt'>): SlotHarian {
+    const list = this.getSlotsList();
+    const newSlot: SlotHarian = {
+      ...slot,
+      id: `slot-${Date.now()}`,
+      kuotaTerisi: 0,
+      statusSlot: 'tersedia',
+      createdAt: new Date().toISOString()
+    };
+    list.unshift(newSlot);
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(list));
+
+    this.catatAktivitas({
+      kategori: 'jadwal_slot',
+      judul: 'Pembukaan Slot Baru Layanan Terapi',
+      deskripsi: `Slot baru sesi ${slot.jamMulai} - ${slot.jamSelesai} WIB dibuka pada tanggal ${slot.tanggal} (${slot.spesialisasi}).`,
+      pelaku: 'Terapis / Petugas Loket',
+      rolePelaku: 'admin',
+      icon: '🗓️'
+    });
+
+    this.triggerAutoSync();
+    return newSlot;
+  }
+
+  public batalkanSlot(slotId: string): boolean {
+    const list = this.getSlotsList();
+    const idx = list.findIndex(s => s.id === slotId);
+    if (idx !== -1) {
+      list[idx].statusSlot = 'dibatalkan';
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(list));
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  // --- BOOKING METHODS ---
+  public getBookingsList(): BookingTerapi[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public buatBookingTerapi(
+    pesertaId: string, 
+    slotId: string, 
+    keluhanHariIni?: string,
+    options?: { isAdminBooking?: boolean; adminName?: string }
+  ): { success: boolean; booking?: BookingTerapi; error?: string } {
+    const slots = this.getSlotsList();
+    const slotIdx = slots.findIndex(s => s.id === slotId);
+
+    if (slotIdx === -1) {
+      return { success: false, error: 'Jadwal slot terapi tidak ditemukan.' };
+    }
+
+    const slot = slots[slotIdx];
+
+    // ATURAN 3: Pendaftaran terapi paling minimal dilakukan H-1 hari di maksimal jam 24.00 WIB
+    const deadlineCheck = checkBatasPendaftaranHMinus1(slot.tanggal);
+    if (!deadlineCheck.bisaDaftar) {
+      return { success: false, error: deadlineCheck.pesan };
+    }
+
+    // Ambil data siswa
+    const peserta = this.getPesertaById(pesertaId);
+    if (!peserta) {
+      return { success: false, error: 'Data siswa tidak ditemukan.' };
+    }
+    const namaSiswa = peserta.namaLengkap;
+
+    // ATURAN 2: masing-masing terapis bisa assign anak mana aja yang bisa mendaftar ke mereka secara tetap,
+    // selain itu ga bisa daftar ke mereka. dan siswa tersebut hanya bisa daftar ke terapis tersebut setelahnya.
+    if (!peserta.assignedTerapisId) {
+      return {
+        success: false,
+        error: `Siswa "${namaSiswa}" belum di-assign secara tetap ke salah satu Tenaga Ahli/Terapis. Terapis yang bersangkutan harus menetapkan siswa terlebih dahulu sebelum dapat mendaftar.`
+      };
+    }
+
+    if (peserta.assignedTerapisId !== slot.terapisId) {
+      const assignedTerapis = this.getTerapisById(peserta.assignedTerapisId);
+      const targetTerapis = this.getTerapisById(slot.terapisId);
+      return {
+        success: false,
+        error: `Siswa "${namaSiswa}" telah ditetapkan secara tetap kepada ${assignedTerapis?.nama || 'Terapis Pembina'} (${assignedTerapis?.spesialisasiLabel || ''}). Siswa hanya dapat mendaftar ke terapis tersebut dan tidak dapat mendaftar ke ${targetTerapis?.nama || 'terapis lain'}.`
+      };
+    }
+
+    // Khusus konsultasi/asesmen Psikolog: jika bukan siswa binaan tetap, wajib didaftarkan oleh admin loket
+    if (slot.spesialisasi === 'psikolog' && !options?.isAdminBooking && peserta.assignedTerapisId !== slot.terapisId) {
+      return { 
+        success: false, 
+        error: 'Pendaftaran konsultasi Psikolog untuk umum hanya dapat dilakukan melalui Petugas Admin ULD di loket atau jika siswa telah ditetapkan sebagai siswa binaan tetap.' 
+      };
+    }
+
+    if (slot.statusSlot !== 'tersedia' || slot.kuotaTerisi >= slot.kuotaMaksimal) {
+      return { success: false, error: 'Maaf, kuota slot terapi ini sudah penuh atau sudah ditutup.' };
+    }
+
+    const bookings = this.getBookingsList();
+
+    // Check if user already booked same slot or same date & time
+    const existingSameTime = bookings.find(b => b.pesertaId === pesertaId && b.tanggal === slot.tanggal && b.jamMulai === slot.jamMulai && b.status !== 'batal');
+    if (existingSameTime) {
+      return { success: false, error: 'Anda sudah memiliki pendaftaran jadwal terapi pada jam yang sama di tanggal ini.' };
+    }
+
+    // ATURAN 2: Siswa terdaftar hanya bisa mendaftar maksimal 1x dalam seminggu
+    const targetWeek = getWeekBounds(slot.tanggal);
+    const existingInSameWeek = bookings.find(b => {
+      if (b.pesertaId !== pesertaId) return false;
+      if (b.status === 'batal') return false; // Abaikan booking yang dibatalkan
+      const bWeek = getWeekBounds(b.tanggal);
+      return bWeek.monday === targetWeek.monday;
+    });
+
+    if (existingInSameWeek) {
+      return {
+        success: false,
+        error: `Siswa terdaftar hanya bisa mendaftar maksimal 1x dalam seminggu. ${namaSiswa} sudah memiliki jadwal terapi pada ${existingInSameWeek.tanggal} (Pukul ${existingInSameWeek.jamMulai} - ${existingInSameWeek.jamSelesai} WIB). Silakan pilih pekan berikutnya atau batalkan jadwal sebelumnya.`
+      };
+    }
+
+    const counter = bookings.length + 1;
+    const kodeBooking = `TRP-${slot.tanggal.replace(/-/g, '').slice(2)}-${String(counter).padStart(3, '0')}`;
+
+    const newBooking: BookingTerapi = {
+      id: `booking-${Date.now()}`,
+      slotId: slot.id,
+      pesertaId: pesertaId,
+      terapisId: slot.terapisId,
+      kodeBooking: kodeBooking,
+      tanggal: slot.tanggal,
+      jamMulai: slot.jamMulai,
+      jamSelesai: slot.jamSelesai,
+      spesialisasi: slot.spesialisasi,
+      ruang: slot.ruang,
+      status: 'terjadwal',
+      keluhanHariIni: keluhanHariIni || '',
+      didaftarkanOlehAdmin: options?.isAdminBooking ? (options.adminName || 'Admin ULD') : undefined,
+      createdAt: new Date().toISOString()
+    };
+
+    // Update slot filled count
+    slot.kuotaTerisi += 1;
+    if (slot.kuotaTerisi >= slot.kuotaMaksimal) {
+      slot.statusSlot = 'penuh';
+    }
+    slots[slotIdx] = slot;
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+
+    bookings.unshift(newBooking);
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+    this.catatAktivitas({
+      kategori: 'pendaftaran_terapi',
+      judul: options?.isAdminBooking ? 'Pendaftaran Terapi di Loket ULD' : 'Pendaftaran Terapi Mandiri',
+      deskripsi: `Siswa "${namaSiswa}" didaftarkan ke sesi ${slot.spesialisasi} (${slot.tanggal}, ${slot.jamMulai}-${slot.jamSelesai} WIB). Kode: ${kodeBooking}.`,
+      pelaku: options?.adminName ? `Petugas Admin ${options.adminName}` : namaSiswa,
+      rolePelaku: options?.isAdminBooking ? 'admin' : 'peserta',
+      icon: '🏥'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    this.triggerAutoSync();
+    return { success: true, booking: newBooking };
+  }
+
+  public getPesertaWeeklyBooking(pesertaId: string, dateStr: string): BookingTerapi | undefined {
+    const targetWeek = getWeekBounds(dateStr);
+    const bookings = this.getBookingsList();
+    return bookings.find(b => {
+      if (b.pesertaId !== pesertaId) return false;
+      if (b.status === 'batal') return false;
+      const bWeek = getWeekBounds(b.tanggal);
+      return bWeek.monday === targetWeek.monday;
+    });
+  }
+
+  public updateBookingStatus(bookingId: string, status: BookingTerapi['status'], catatanSesi?: string): boolean {
+    const bookings = this.getBookingsList();
+    const idx = bookings.findIndex(b => b.id === bookingId);
+    if (idx !== -1) {
+      bookings[idx].status = status;
+      if (catatanSesi !== undefined) {
+        bookings[idx].catatanSesiTerapis = catatanSesi;
+      }
+      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+      this.catatAktivitas({
+        kategori: 'jadwal_slot',
+        judul: status === 'batal' ? 'Pembatalan Sesi Terapi' : `Pembaruan Sesi: ${status.toUpperCase()}`,
+        deskripsi: `Sesi terapi (${bookings[idx].kodeBooking}) diperbarui menjadi "${status}". ${catatanSesi ? `Catatan: ${catatanSesi}` : ''}`,
+        pelaku: catatanSesi?.includes('Sugeng') ? 'Petugas Admin Sugeng' : catatanSesi?.includes('Helmi') ? 'Petugas Admin Helmi' : 'Staf ULD',
+        rolePelaku: 'admin',
+        icon: status === 'batal' ? '❌' : '📋'
+      });
+
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  public batalkanBooking(bookingId: string, alasan?: string): boolean {
+    const bookings = this.getBookingsList();
+    const idx = bookings.findIndex(b => b.id === bookingId);
+    if (idx !== -1) {
+      const b = bookings[idx];
+      b.status = 'batal';
+      b.catatanSesiTerapis = alasan || 'Dibatalkan oleh siswa/wali';
+      bookings[idx] = b;
+      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+      // Restore slot kuota
+      const slots = this.getSlotsList();
+      const slotIdx = slots.findIndex(s => s.id === b.slotId);
+      if (slotIdx !== -1) {
+        slots[slotIdx].kuotaTerisi = Math.max(0, slots[slotIdx].kuotaTerisi - 1);
+        if (slots[slotIdx].statusSlot === 'penuh') {
+          slots[slotIdx].statusSlot = 'tersedia';
+        }
+        localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+      }
+
+      this.catatAktivitas({
+        kategori: 'pendaftaran_terapi',
+        judul: 'Pembatalan Jadwal Terapi',
+        deskripsi: `Sesi terapi (${b.kodeBooking}) pada ${b.tanggal} (${b.jamMulai} - ${b.jamSelesai} WIB) telah dibatalkan. Kuota slot dikembalikan.`,
+        pelaku: 'Siswa / Orang Tua',
+        rolePelaku: 'peserta',
+        icon: '❌'
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
+      this.triggerAutoSync();
+      return true;
+    }
+    return false;
+  }
+
+  // ATURAN 2: Peserta terapi rutin boleh mengganti sendiri jadwalnya maksimal 1 kali apabila salah memilih hari dan waktu
+  public gantiJadwalTerapiMandiri(
+    bookingId: string, 
+    newSlotId: string, 
+    alasan?: string
+  ): { success: boolean; booking?: BookingTerapi; error?: string } {
+    const bookings = this.getBookingsList();
+    const bIdx = bookings.findIndex(b => b.id === bookingId);
+    if (bIdx === -1) {
+      return { success: false, error: 'Data pendaftaran jadwal terapi tidak ditemukan.' };
+    }
+
+    const b = bookings[bIdx];
+    if (b.status === 'batal') {
+      return { success: false, error: 'Jadwal yang telah dibatalkan tidak dapat dipindahkan.' };
+    }
+
+    // Maksimal 1 kali ganti jadwal mandiri oleh peserta
+    const currentCount = b.rescheduleCount || 0;
+    if (currentCount >= 1) {
+      return { 
+        success: false, 
+        error: 'Batas penggantian jadwal mandiri telah tercapai (maksimal 1 kali per tiket sesi terapi). Silakan hubungi loket ULD jika ada kendala mendesak.' 
+      };
+    }
+
+    const slots = this.getSlotsList();
+    const newSlotIdx = slots.findIndex(s => s.id === newSlotId);
+    if (newSlotIdx === -1) {
+      return { success: false, error: 'Slot jadwal baru tidak ditemukan.' };
+    }
+
+    const newSlot = slots[newSlotIdx];
+
+    // Cek Aturan 3: Batas H-1 jam 24.00 WIB untuk slot baru
+    const deadlineCheck = checkBatasPendaftaranHMinus1(newSlot.tanggal);
+    if (!deadlineCheck.bisaDaftar) {
+      return { success: false, error: `Slot baru tidak dapat dipilih: ${deadlineCheck.pesan}` };
+    }
+
+    // Cek apakah slot baru adalah terapis pembina yang sama (Aturan 2)
+    if (newSlot.terapisId !== b.terapisId) {
+      return { success: false, error: 'Jadwal hanya dapat dipindahkan ke sesi tenaga ahli / terapis pembina tetap Anda.' };
+    }
+
+    // Cek kuota slot baru
+    if (newSlot.statusSlot !== 'tersedia' || newSlot.kuotaTerisi >= newSlot.kuotaMaksimal) {
+      return { success: false, error: 'Slot waktu baru yang dipilih sudah terisi penuh atau ditutup.' };
+    }
+
+    // Lepaskan kuota slot lama
+    const oldSlotIdx = slots.findIndex(s => s.id === b.slotId);
+    if (oldSlotIdx !== -1 && slots[oldSlotIdx].kuotaTerisi > 0) {
+      slots[oldSlotIdx].kuotaTerisi -= 1;
+      if (slots[oldSlotIdx].statusSlot === 'penuh') {
+        slots[oldSlotIdx].statusSlot = 'tersedia';
+      }
+    }
+
+    // Tambahkan kuota slot baru
+    newSlot.kuotaTerisi += 1;
+    if (newSlot.kuotaTerisi >= newSlot.kuotaMaksimal) {
+      newSlot.statusSlot = 'penuh';
+    }
+    slots[newSlotIdx] = newSlot;
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+
+    const oldTanggal = b.tanggal;
+    const oldJam = `${b.jamMulai} - ${b.jamSelesai} WIB`;
+
+    // Update data booking
+    b.slotId = newSlot.id;
+    b.tanggal = newSlot.tanggal;
+    b.jamMulai = newSlot.jamMulai;
+    b.jamSelesai = newSlot.jamSelesai;
+    b.ruang = newSlot.ruang;
+    b.rescheduleCount = currentCount + 1;
+    b.catatanSesiTerapis = `[Reschedule Mandiri 1/1]: Dipindahkan oleh siswa dari ${oldTanggal} (${oldJam}) ke ${newSlot.tanggal} (${newSlot.jamMulai} - ${newSlot.jamSelesai} WIB). ${alasan ? `Alasan: ${alasan}` : ''}`;
+    bookings[bIdx] = b;
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+    const peserta = this.getPesertaById(b.pesertaId);
+
+    this.catatAktivitas({
+      kategori: 'pendaftaran_terapi',
+      judul: 'Ganti Jadwal Terapi Mandiri Siswa (Reschedule 1/1)',
+      deskripsi: `Siswa an. "${peserta?.namaLengkap || b.pesertaId}" memindahkan jadwal sesi dari ${oldTanggal} (${oldJam}) ke ${newSlot.tanggal} (${newSlot.jamMulai} - ${newSlot.jamSelesai} WIB). Batas ganti mandiri 1/1 tercapai.`,
+      pelaku: peserta?.namaLengkap || 'Siswa / Orang Tua',
+      rolePelaku: 'peserta',
+      icon: '🔄'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    this.triggerAutoSync();
+
+    return { success: true, booking: b };
+  }
+
+  // ATURAN 3: Terapis bisa membatalkan jadwal apabila mendadak soalnya butuh
+  public batalkanBookingOlehTerapis(
+    bookingId: string, 
+    terapisNama: string, 
+    alasanMendadak: string
+  ): { success: boolean; error?: string } {
+    const bookings = this.getBookingsList();
+    const idx = bookings.findIndex(b => b.id === bookingId);
+    if (idx === -1) {
+      return { success: false, error: 'Data sesi pendaftaran tidak ditemukan.' };
+    }
+
+    const b = bookings[idx];
+    b.status = 'batal';
+    b.catatanSesiTerapis = `Dibatalkan mendadak oleh Tenaga Ahli (${terapisNama}): ${alasanMendadak || 'Keperluan mendesak / dinas luar kota'}`;
+    bookings[idx] = b;
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
+    // Bebaskan kuota slot
+    const slots = this.getSlotsList();
+    const slotIdx = slots.findIndex(s => s.id === b.slotId);
+    if (slotIdx !== -1) {
+      slots[slotIdx].kuotaTerisi = Math.max(0, slots[slotIdx].kuotaTerisi - 1);
+      if (slots[slotIdx].statusSlot === 'penuh') {
+        slots[slotIdx].statusSlot = 'tersedia';
+      }
+      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+    }
+
+    const peserta = this.getPesertaById(b.pesertaId);
+
+    this.catatAktivitas({
+      kategori: 'pendaftaran_terapi',
+      judul: 'Pembatalan Sesi Terapi Mendadak oleh Tenaga Ahli',
+      deskripsi: `Sesi an. "${peserta?.namaLengkap || b.pesertaId}" (${b.tanggal} pukul ${b.jamMulai} - ${b.jamSelesai} WIB) dibatalkan mendadak oleh ${terapisNama}. Alasan: ${alasanMendadak || 'Keperluan mendesak'}. Kuota telah dikembalikan.`,
+      pelaku: terapisNama,
+      rolePelaku: 'terapis',
+      icon: '⚠️'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    this.triggerAutoSync();
+
+    return { success: true };
+  }
+
+  // --- GUEST ASESMEN METHODS ---
+  public getAsesmenGuestList(): PendaftaranAsesmenGuest[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ASESMEN);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public getAsesmenById(id: string): PendaftaranAsesmenGuest | undefined {
+    return this.getAsesmenGuestList().find(a => a.id === id || a.nomorRegistrasi === id);
+  }
+
+  public daftarAsesmenGuest(data: Omit<PendaftaranAsesmenGuest, 'id' | 'nomorRegistrasi' | 'status' | 'createdAt'>): PendaftaranAsesmenGuest {
+    const list = this.getAsesmenGuestList();
+    const year = new Date().getFullYear();
+    const counter = list.length + 1;
+    const nomorRegistrasi = `ASM-PROB-${year}-${String(counter).padStart(4, '0')}`;
+
+    const newGuest: PendaftaranAsesmenGuest = {
+      ...data,
+      id: `guest-${Date.now()}`,
+      nomorRegistrasi,
+      status: 'menunggu_verifikasi_fisik',
+      createdAt: new Date().toISOString()
+    };
+
+    list.unshift(newGuest);
+    localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(list));
+    return newGuest;
+  }
+
+  // Penjadwalan Asesmen Baru Khusus oleh Petugas Admin ULD
+  public jadwalkanAsesmenOlehAdmin(data: {
+    namaAnak: string;
+    namaOrangTua: string;
+    nomorWhatsApp: string;
+    tanggalRencanaDatang: string;
+    jamRencanaDatang: string;
+    indikasiAwal?: string;
+    petugasAdmin: string;
+  }): PendaftaranAsesmenGuest {
+    const list = this.getAsesmenGuestList();
+    const year = new Date().getFullYear();
+    const counter = list.length + 1;
+    const nomorRegistrasi = `ASM-PROB-${year}-${String(counter).padStart(4, '0')}`;
+
+    const newAsesmen: PendaftaranAsesmenGuest = {
+      id: `guest-${Date.now()}`,
+      nomorRegistrasi,
+      namaAnak: data.namaAnak.trim(),
+      tanggalLahir: '2020-01-01',
+      jenisKelamin: 'L',
+      namaOrangTua: data.namaOrangTua.trim(),
+      nikAnakOrKK: '',
+      nomorWhatsApp: data.nomorWhatsApp.trim(),
+      alamatDomisili: 'Kota Probolinggo',
+      kecamatan: 'Kota Probolinggo',
+      jenjangPendidikan: 'PAUD/TK',
+      asalSekolah: '',
+      nisnOrNpsn: '',
+      sudahTerdaftarDapodik: true,
+      indikasiAwal: data.indikasiAwal || 'Asesmen awal tumbuh kembang terjadwal loket ULD',
+      dokumenAkanDibawa: ['Kartu Keluarga (KK)', 'KTP Orang Tua/Wali', 'Buku KIA Pink'],
+      tanggalRencanaDatang: data.tanggalRencanaDatang,
+      jamRencanaDatang: data.jamRencanaDatang,
+      status: 'menunggu_verifikasi_fisik',
+      catatanPetugas: `Dijadwalkan oleh Petugas Admin: ${data.petugasAdmin}`,
+      createdAt: new Date().toISOString()
+    };
+
+    list.unshift(newAsesmen);
+    localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(list));
+
+    this.catatAktivitas({
+      kategori: 'asesmen',
+      judul: 'Penjadwalan Asesmen Baru',
+      deskripsi: `Calon siswa "${data.namaAnak}" (Wali: ${data.namaOrangTua}) dijadwalkan asesmen awal pada ${data.tanggalRencanaDatang} (${data.jamRencanaDatang}). No. Reg: ${nomorRegistrasi}.`,
+      pelaku: `Petugas Admin ${data.petugasAdmin || 'Loket'}`,
+      rolePelaku: 'admin',
+      icon: '📅'
+    });
+
+    return newAsesmen;
+  }
+
+  public verifikasiGuestDanTerbitkanPeserta(
+    guestId: string, 
+    pinBaru: string, 
+    nomorRMManual?: string,
+    catatanPetugas?: string
+  ): { success: boolean; peserta?: Peserta; error?: string } {
+    const guestList = this.getAsesmenGuestList();
+    const guestIdx = guestList.findIndex(g => g.id === guestId);
+
+    if (guestIdx === -1) {
+      return { success: false, error: 'Pendaftaran asesmen tidak ditemukan.' };
+    }
+
+    const guest = guestList[guestIdx];
+    const pesertaList = this.getPesertaList();
+
+    const noRM = nomorRMManual || `ULD-PROB-${new Date().getFullYear()}-${String(pesertaList.length + 1).padStart(4, '0')}`;
+    const generatedPin = pinBaru || Math.floor(100000 + Math.random() * 900000).toString();
+
+    const newPeserta: Peserta = {
+      id: `peserta-${Date.now()}`,
+      nomorRekamMedis: noRM,
+      namaLengkap: guest.namaAnak,
+      pin: generatedPin,
+      tanggalLahir: guest.tanggalLahir,
+      jenisKelamin: guest.jenisKelamin,
+      namaWali: guest.namaOrangTua,
+      nomorTelepon: guest.nomorWhatsApp,
+      alamat: guest.alamatDomisili,
+      kecamatan: guest.kecamatan,
+      asalSekolah: guest.asalSekolah,
+      ragamDisabilitas: guest.indikasiAwal,
+      status: 'aktif',
+      terdaftarSejak: new Date().toISOString().split('T')[0],
+      catatanKhusus: `Asal pendaftaran: ${guest.nomorRegistrasi} (${guest.jenjangPendidikan} - NISN/NPSN: ${guest.nisnOrNpsn || '-'}). Terdaftar DAPODIK.`
+    };
+
+    pesertaList.unshift(newPeserta);
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(pesertaList));
+
+    // Update guest record
+    guest.status = 'terbit_akun_peserta';
+    guest.pesertaIdDihasilkan = newPeserta.id;
+    guest.pinDihasilkan = generatedPin;
+    if (catatanPetugas) guest.catatanPetugas = catatanPetugas;
+    guestList[guestIdx] = guest;
+    localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(guestList));
+
+    return { success: true, peserta: newPeserta };
+  }
+
+  // --- STATISTIK ---
+  public getStatistik(): StatistikULD {
+    const peserta = this.getPesertaList();
+    const terapis = this.getTerapisList();
+    const bookings = this.getBookingsList();
+    const asesmen = this.getAsesmenGuestList();
+
+    return {
+      totalPesertaAktif: peserta.filter(p => p.status === 'aktif').length,
+      totalTerapis: terapis.filter(t => t.isActive).length,
+      totalBookingBulanIni: bookings.length,
+      totalAsesmenMenungguVerifikasi: asesmen.filter(a => a.status === 'menunggu_verifikasi_fisik').length
+    };
+  }
+
+  // --- LOG AKTIVITAS SISTEM ---
+  public generateInitialLogs(): LogAktivitas[] {
+    const today = new Date().toISOString().split('T')[0];
+    return [
+      {
+        id: 'log-init-1',
+        waktu: `${today} 09:30 WIB`,
+        kategori: 'pendaftaran_terapi',
+        judul: 'Pendaftaran Terapi di Loket ULD',
+        deskripsi: 'Siswa Muhammad Rayhan Pratama (ULD-PROB-2026-0001) didaftarkan ke sesi Terapi Perilaku (ABA) di Loket ULD.',
+        pelaku: 'Petugas Admin Sugeng',
+        rolePelaku: 'admin',
+        icon: '🏥'
+      },
+      {
+        id: 'log-init-2',
+        waktu: `${today} 09:15 WIB`,
+        kategori: 'pendaftaran_terapi',
+        judul: 'Pendaftaran Terapi di Loket ULD',
+        deskripsi: 'Siswa Siti Aisyah Nur (ULD-PROB-2026-0002) didaftarkan ke sesi Fisioterapi di Loket ULD.',
+        pelaku: 'Petugas Admin Helmi',
+        rolePelaku: 'admin',
+        icon: '🏥'
+      },
+      {
+        id: 'log-init-3',
+        waktu: `${today} 08:45 WIB`,
+        kategori: 'asesmen',
+        judul: 'Penjadwalan Asesmen Baru',
+        deskripsi: 'Calon siswa Bima Sakti Wardhana (Wali: Ibu Wardani) dijadwalkan untuk asesmen awal tumbuh kembang loket.',
+        pelaku: 'Petugas Admin Sugeng',
+        rolePelaku: 'admin',
+        icon: '📅'
+      },
+      {
+        id: 'log-init-4',
+        waktu: `${today} 08:20 WIB`,
+        kategori: 'jadwal_slot',
+        judul: 'Pembukaan Sesi Harian Terapi',
+        deskripsi: 'Tenaga Ahli membuka sesi pelayanan reguler Senin-Jumat pukul 09.00 - 13.00 WIB.',
+        pelaku: 'Sri Wahyuni, S.Tr.Kes. (Terapis Wicara)',
+        rolePelaku: 'terapis',
+        icon: '🗓️'
+      },
+      {
+        id: 'log-init-5',
+        waktu: `${today} 08:00 WIB`,
+        kategori: 'sistem',
+        judul: 'Inisialisasi Sistem Loket & Layanan ULD',
+        deskripsi: 'Sistem operasional Unit Layanan Disabilitas Kota Probolinggo aktif dengan sinkronisasi data 4 Tenaga Ahli dan Loket Administrasi.',
+        pelaku: 'Sistem ULD',
+        rolePelaku: 'sistem',
+        icon: '🚀'
+      }
+    ];
+  }
+
+  public getAktivitasLogs(): LogAktivitas[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.LOGS);
+      if (data) return JSON.parse(data);
+      const initialLogs = this.generateInitialLogs();
+      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(initialLogs));
+      return initialLogs;
+    } catch {
+      return this.generateInitialLogs();
+    }
+  }
+
+  public catatAktivitas(log: Omit<LogAktivitas, 'id' | 'waktu'> & { waktu?: string }): LogAktivitas {
+    const list = this.getAktivitasLogs();
+    const { fullStr } = getWIBDate();
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    const timeFormatted = `${dateFormatted} ${fullStr.split(' ')[1] || 'WIB'}`;
+
+    const newLog: LogAktivitas = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      waktu: log.waktu || timeFormatted,
+      ...log
+    };
+
+    list.unshift(newLog);
+    // Keep max 500 logs
+    const trimmed = list.slice(0, 500);
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(trimmed));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_log_updated', { detail: newLog }));
+    }
+
+    this.triggerAutoSync();
+    return newLog;
+  }
+
+  public bersihkanSemuaLog(): void {
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_log_updated', { detail: [] }));
+    }
+  }
+
+  public resetLogsToInitial(): void {
+    const init = this.generateInitialLogs();
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(init));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_log_updated', { detail: init }));
+    }
+  }
+
+  // --- SQL SCHEMA EXPORT FOR SUPABASE ---
+  public generateSupabaseSqlSchema(): string {
+    return `-- ========================================================
+-- SKEMA BASIS DATA SUPABASE (POSTGRESQL)
+-- UNIT LAYANAN DISABILITAS (ULD) KOTA PROBOLINGGO
+-- ========================================================
+
+-- 1. Tabel Tenaga Ahli / Terapis
+CREATE TABLE IF NOT EXISTS public.terapis (
+    id TEXT PRIMARY KEY,
+    nip_or_id TEXT UNIQUE NOT NULL,
+    nama TEXT NOT NULL,
+    gelar TEXT NOT NULL,
+    spesialisasi VARCHAR(50) NOT NULL CHECK (spesialisasi IN ('terapis_perilaku', 'fisioterapis', 'tenaga_plb', 'psikolog')),
+    spesialisasi_label TEXT NOT NULL,
+    pin VARCHAR(6) NOT NULL,
+    nomor_telepon TEXT NOT NULL,
+    deskripsi TEXT,
+    ruang_praktek TEXT NOT NULL,
+    foto_url TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 2. Tabel Petugas Admin Loket (Sugeng & Helmi)
+CREATE TABLE IF NOT EXISTS public.admin_users (
+    id TEXT PRIMARY KEY,
+    nama TEXT NOT NULL,
+    role_title TEXT NOT NULL,
+    pin VARCHAR(6) NOT NULL,
+    nomor_telepon TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 3. Tabel Peserta / Siswa Terapi Rutin
+CREATE TABLE IF NOT EXISTS public.peserta (
+    id TEXT PRIMARY KEY,
+    nomor_rekam_medis TEXT UNIQUE NOT NULL,
+    nama_lengkap TEXT NOT NULL,
+    pin VARCHAR(6) NOT NULL,
+    tanggal_lahir DATE NOT NULL,
+    jenis_kelamin VARCHAR(1) CHECK (jenis_kelamin IN ('L', 'P')),
+    nama_wali TEXT NOT NULL,
+    nomor_telepon TEXT NOT NULL,
+    alamat TEXT NOT NULL,
+    kecamatan TEXT NOT NULL,
+    asal_sekolah TEXT,
+    ragam_disabilitas TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'aktif' CHECK (status IN ('aktif', 'nonaktif', 'selesai_program', 'lulus')),
+    terdaftar_sejak DATE DEFAULT CURRENT_DATE,
+    catatan_khusus TEXT,
+    assigned_terapis_id TEXT REFERENCES public.terapis(id) ON DELETE SET NULL,
+    assigned_terapis_nama TEXT,
+    assigned_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 4. Tabel Slot Harian Layanan Terapi (Senin - Jumat 09.00 - 13.00 WIB)
+CREATE TABLE IF NOT EXISTS public.slots_harian (
+    id TEXT PRIMARY KEY,
+    terapis_id TEXT NOT NULL REFERENCES public.terapis(id) ON DELETE CASCADE,
+    tanggal DATE NOT NULL,
+    jam_mulai VARCHAR(5) NOT NULL,
+    jam_selesai VARCHAR(5) NOT NULL,
+    spesialisasi VARCHAR(50) NOT NULL,
+    ruang TEXT NOT NULL,
+    kuota_maksimal INTEGER DEFAULT 1,
+    kuota_terisi INTEGER DEFAULT 0,
+    catatan_terapis TEXT,
+    status_slot VARCHAR(20) DEFAULT 'tersedia' CHECK (status_slot IN ('tersedia', 'penuh', 'dibatalkan')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 5. Tabel Booking Pendaftaran Terapi
+CREATE TABLE IF NOT EXISTS public.booking_terapi (
+    id TEXT PRIMARY KEY,
+    slot_id TEXT NOT NULL REFERENCES public.slots_harian(id) ON DELETE CASCADE,
+    peserta_id TEXT NOT NULL REFERENCES public.peserta(id) ON DELETE CASCADE,
+    terapis_id TEXT NOT NULL REFERENCES public.terapis(id) ON DELETE CASCADE,
+    kode_booking TEXT UNIQUE NOT NULL,
+    tanggal DATE NOT NULL,
+    jam_mulai VARCHAR(5) NOT NULL,
+    jam_selesai VARCHAR(5) NOT NULL,
+    spesialisasi VARCHAR(50) NOT NULL,
+    ruang TEXT NOT NULL,
+    status VARCHAR(30) DEFAULT 'terjadwal' CHECK (status IN ('menunggu_konfirmasi', 'terjadwal', 'hadir', 'selesai', 'tidak_hadir', 'batal')),
+    keluhan_hari_ini TEXT,
+    catatan_sesi_terapis TEXT,
+    didaftarkan_oleh_admin TEXT,
+    reschedule_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 6. Tabel Pendaftaran Asesmen Awal Guest
+CREATE TABLE IF NOT EXISTS public.pendaftaran_asesmen_guest (
+    id TEXT PRIMARY KEY,
+    nomor_registrasi TEXT UNIQUE NOT NULL,
+    nama_anak TEXT NOT NULL,
+    tanggal_lahir DATE NOT NULL,
+    jenis_kelamin VARCHAR(1) CHECK (jenis_kelamin IN ('L', 'P')),
+    nama_orang_tua TEXT NOT NULL,
+    nik_anak_or_kk TEXT NOT NULL,
+    nomor_whatsapp TEXT NOT NULL,
+    alamat_domisili TEXT NOT NULL,
+    kecamatan TEXT NOT NULL,
+    jenjang_pendidikan TEXT,
+    asal_sekolah TEXT,
+    nisn_or_npsn TEXT,
+    sudah_terdaftar_dapodik BOOLEAN DEFAULT FALSE,
+    indikasi_awal TEXT NOT NULL,
+    dokumen_akan_dibawa TEXT[] NOT NULL DEFAULT '{}',
+    tanggal_rencana_datang DATE NOT NULL,
+    jam_rencana_datang TEXT NOT NULL,
+    status VARCHAR(30) DEFAULT 'menunggu_verifikasi_fisik' CHECK (status IN ('menunggu_verifikasi_fisik', 'dokumen_diverifikasi', 'terbit_akun_peserta', 'batal')),
+    peserta_id_dihasilkan TEXT REFERENCES public.peserta(id),
+    pin_dihasilkan VARCHAR(6),
+    catatan_petugas TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 7. Tabel Audit Log Aktivitas Sistem Operasional ULD
+CREATE TABLE IF NOT EXISTS public.log_aktivitas (
+    id TEXT PRIMARY KEY,
+    waktu TEXT NOT NULL,
+    kategori TEXT NOT NULL,
+    judul TEXT NOT NULL,
+    deskripsi TEXT NOT NULL,
+    pelaku TEXT NOT NULL,
+    role_pelaku TEXT,
+    icon TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- RLS Policies
+ALTER TABLE public.terapis ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.peserta ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.slots_harian ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.booking_terapi ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pendaftaran_asesmen_guest ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.log_aktivitas ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public Read/Write Terapis" ON public.terapis FOR ALL USING (true);
+CREATE POLICY "Public Read/Write Admin" ON public.admin_users FOR ALL USING (true);
+CREATE POLICY "Public Read/Write Peserta" ON public.peserta FOR ALL USING (true);
+CREATE POLICY "Public Read/Write Slots" ON public.slots_harian FOR ALL USING (true);
+CREATE POLICY "Public Read/Write Bookings" ON public.booking_terapi FOR ALL USING (true);
+CREATE POLICY "Public Read/Write Asesmen" ON public.pendaftaran_asesmen_guest FOR ALL USING (true);
+CREATE POLICY "Public Read/Write Logs" ON public.log_aktivitas FOR ALL USING (true);
+`;
+  }
+}
+
+export const db = new SupabaseDataService();
