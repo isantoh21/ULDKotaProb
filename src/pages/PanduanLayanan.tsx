@@ -94,8 +94,11 @@ export const PanduanLayanan: React.FC = () => {
 
       {/* Tata Tertib Sesi Terapi */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
-        <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
-          Tata Tertib Kehadiran Sesi Terapi
+        <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-2">
+          <span>Tata Tertib Kehadiran & Penjemputan Sesi Terapi</span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+            Disiplin Waktu & Kenyamanan Siswa
+          </span>
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
@@ -106,11 +109,16 @@ export const PanduanLayanan: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-            <div className="font-bold text-slate-900">Kehadiran Tepat Waktu</div>
-            <p className="text-slate-500">
-              Orang tua dan anak diharapkan tiba di lokasi 10 menit sebelum jam sesi dimulai untuk penyesuaian lingkungan.
-            </p>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="font-bold text-slate-900">Kehadiran & Penjemputan Tepat Waktu</div>
+            <div className="text-slate-500 space-y-1.5 leading-relaxed">
+              <p>
+                <strong>Kehadiran:</strong> Tiba di gedung ULD 10–15 menit sebelum jam sesi dimulai agar anak memiliki waktu adaptasi lingkungan dan sesi terapi berjalan penuh 60 menit.
+              </p>
+              <p>
+                <strong>Penjemputan:</strong> Orang tua/wali wajib menjemput anak tepat waktu saat jam sesi berakhir (atau mendampingi di ruang tunggu) demi menjaga rasa aman dan kenyamanan emosional anak serta ketertiban transisi ke sesi terapi berikutnya.
+              </p>
+            </div>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
