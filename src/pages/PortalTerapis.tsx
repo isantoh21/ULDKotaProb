@@ -130,6 +130,15 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   const unassignedStudents = pesertaList.filter(p => !p.assignedTerapisId && p.status === 'aktif');
 
   const handleAssignStudent = (pesertaId: string, namaAnak: string) => {
+    const targetStudent = pesertaList.find(p => p.id === pesertaId);
+    if (targetStudent?.assignedTerapisId && targetStudent.assignedTerapisId !== terapis.id) {
+      setStudentAssignMsg({
+        type: 'error',
+        text: `Siswa an. "${namaAnak}" sudah menjadi siswa binaan tetap ${targetStudent.assignedTerapisNama || 'terapis lain'} dan tidak dapat dipilih lagi oleh terapis lain.`
+      });
+      return;
+    }
+
     const res = db.assignPesertaKeTerapis(pesertaId, terapis.id, { nama: terapis.nama, role: 'terapis' });
     if (res.success) {
       confetti({ particleCount: 60, spread: 60 });
@@ -1206,21 +1215,24 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                         <button
                           type="button"
                           onClick={() => handleUnassignStudent(p.id, p.namaLengkap)}
-                          className="px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-700 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs"
+                          className="px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-700 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
                         >
                           <span>✕ Lepas Binaan</span>
                         </button>
+                      ) : isAssignedToOther ? (
+                        <div 
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 text-xs font-semibold flex items-center gap-1.5 select-none"
+                          title={`Siswa ini sudah menjadi binaan tetap ${p.assignedTerapisNama} dan tidak dapat dipilih oleh terapis lain.`}
+                        >
+                          <span>🔒 Terkunci (Binaan {p.assignedTerapisNama})</span>
+                        </div>
                       ) : (
                         <button
                           type="button"
                           onClick={() => handleAssignStudent(p.id, p.namaLengkap)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-2xs ${
-                            isAssignedToOther
-                              ? 'bg-slate-800 hover:bg-slate-700 text-white'
-                              : 'bg-sky-700 hover:bg-sky-600 text-white'
-                          }`}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-2xs bg-sky-700 hover:bg-sky-600 text-white cursor-pointer"
                         >
-                          <span>{isAssignedToOther ? '⇄ Alihkan ke Saya' : '+ Tetapkan Binaan'}</span>
+                          <span>+ Tetapkan Binaan</span>
                         </button>
                       )}
                     </div>

@@ -183,7 +183,7 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO public.terapis (id, nip_or_id, nama, gelar, spesialisasi, spesialisasi_label, pin, nomor_telepon, deskripsi, ruang_praktek, is_active)
 VALUES
     ('terapis-1', 'TP-AHMAD-01', 'Ahmad Hafizul Adly, S.Pd.', 'Terapis Perilaku (Behavior Therapist)', 'terapis_perilaku', 'Terapis Perilaku', '223344', '081234567891', 'Fokus intervensi perilaku terapan (ABA), pembiasaan instruksi, bina diri, dan modifikasi tantrum.', 'Ruang Terapi Perilaku & Sensori 1', true),
-    ('terapis-2', 'FT-INDARYATI-02', 'Indaryati Machmudi A.Md.Ft.', 'Fisioterapis Pediatrik', 'fisioterapis', 'Fisioterapis', '445566', '081234567892', 'Spesialis stimulasi motorik kasar, latihan penguatan otot, postur, keseimbangan dinamis, dan fisioterapi.', 'Ruang Fisioterapi Gimnasium Inklusif', true),
+    ('terapis-2', 'FT-INDARYATI-02', 'Indaryati Machmudi, A.Md.Kes', 'Fisioterapis Pediatrik', 'fisioterapis', 'Fisioterapis', '445566', '081234567892', 'Spesialis stimulasi motorik kasar, latihan penguatan otot, postur, keseimbangan dinamis, dan fisioterapi.', 'Ruang Fisioterapi Gimnasium Inklusif', true),
     ('terapis-3', 'PLB-SALMA-03', 'Salma Salwa Salsabila, S.Pd.', 'Tenaga Pendidikan Luar Biasa (PLB)', 'tenaga_plb', 'Tenaga PLB', '334455', '081234567893', 'Bimbingan kesiapan sekolah inklusi, PPI individual, simbol visual alternatif, dan remedial pra-akademik.', 'Ruang Edukasi & Remedial PLB', true),
     ('terapis-4', 'PSI-IKHSAN-04', 'Muhammad Ikhsan, M.Psi., Psikolog', 'Psikolog', 'psikolog', 'Psikolog', '112233', '081234567894', 'Pemeriksaan psikologis komprehensif, asesmen kognitif (IQ), diagnosa autisme/ADHD, konseling keluarga.', 'Ruang Konseling & Observasi Psikologi', true)
 ON CONFLICT (id) DO UPDATE SET
@@ -199,8 +199,8 @@ INSERT INTO public.peserta (id, nomor_rekam_medis, nama_lengkap, pin, tanggal_la
 VALUES
     ('peserta-01', 'ULD-PROB-2026-0001', 'Abimanyu Tri Yoga', '100001', '2019-03-15', 'L', 'Bambang Triyono', '081234567801', 'Jl. Mastrip No. 12', 'Kedopok', 'TK Dharma Wanita 1', 'Autism Spectrum Disorder (ASD)', 'aktif', 'terapis-1', 'Ahmad Hafizul Adly, S.Pd.', '2026-09-01T08:00:00Z'),
     ('peserta-02', 'ULD-PROB-2026-0002', 'Aisyah Putri Rahmadani', '100002', '2020-07-22', 'P', 'Siti Rahmawati', '081234567802', 'Jl. Hayam Wuruk No. 45', 'Mayangan', 'PAUD Terpadu Kasih Ibu', 'Speech Delay / Keterlambatan Bicara', 'aktif', 'terapis-1', 'Ahmad Hafizul Adly, S.Pd.', '2026-09-01T08:00:00Z'),
-    ('peserta-03', 'ULD-PROB-2026-0003', 'Alvaro Devano Pratama', '100003', '2018-11-05', 'L', 'Hendra Pratama', '081234567803', 'Jl. Cokroaminoto Gg. 3', 'Kanigaran', 'SDN Sukabumi 2 (Inklusi)', 'Cerebral Palsy (Diplegia Ringan)', 'aktif', 'terapis-2', 'Indaryati Machmudi A.Md.Ft.', '2026-09-01T08:00:00Z'),
-    ('peserta-04', 'ULD-PROB-2026-0004', 'Aqila Bilqis Humaira', '100004', '2019-09-30', 'P', 'Nur Hidayah', '081234567804', 'Jl. Sunan Kalijaga No. 18', 'Wonoasih', 'TK Pertiwi Kanigaran', 'Down Syndrome', 'aktif', 'terapis-2', 'Indaryati Machmudi A.Md.Ft.', '2026-09-01T08:00:00Z'),
+    ('peserta-03', 'ULD-PROB-2026-0003', 'Alvaro Devano Pratama', '100003', '2018-11-05', 'L', 'Hendra Pratama', '081234567803', 'Jl. Cokroaminoto Gg. 3', 'Kanigaran', 'SDN Sukabumi 2 (Inklusi)', 'Cerebral Palsy (Diplegia Ringan)', 'aktif', 'terapis-2', 'Indaryati Machmudi, A.Md.Kes', '2026-09-01T08:00:00Z'),
+    ('peserta-04', 'ULD-PROB-2026-0004', 'Aqila Bilqis Humaira', '100004', '2019-09-30', 'P', 'Nur Hidayah', '081234567804', 'Jl. Sunan Kalijaga No. 18', 'Wonoasih', 'TK Pertiwi Kanigaran', 'Down Syndrome', 'aktif', 'terapis-2', 'Indaryati Machmudi, A.Md.Kes', '2026-09-01T08:00:00Z'),
     ('peserta-05', 'ULD-PROB-2026-0005', 'Bagus Satria Wibowo', '100005', '2017-05-14', 'L', 'Agus Wibowo', '081234567805', 'Jl. Supriyadi No. 89', 'Kademangan', 'SDN Wonoasih 1', 'ADHD & Disregulasi Sensori', 'aktif', 'terapis-3', 'Salma Salwa Salsabila, S.Pd.', '2026-09-01T08:00:00Z'),
     ('peserta-06', 'ULD-PROB-2026-0006', 'Cantika Dewi Lestari', '100006', '2020-01-18', 'P', 'Dewi Sartika', '081234567806', 'Jl. Ikan Kerapu No. 23', 'Mayangan', 'TK Al-Irsyad', 'Global Developmental Delay (GDD)', 'aktif', 'terapis-3', 'Salma Salwa Salsabila, S.Pd.', '2026-09-01T08:00:00Z'),
     ('peserta-07', 'ULD-PROB-2026-0007', 'Daffa Danendra Kusuma', '100007', '2018-08-09', 'L', 'Kuswanto', '081234567807', 'Jl. Basuki Rahmat No. 67', 'Kanigaran', 'SDN Tisnonegaran 1', 'Hambatan Intelektual Ringan', 'aktif', 'terapis-4', 'Muhammad Ikhsan, M.Psi., Psikolog', '2026-09-01T08:00:00Z'),
@@ -240,3 +240,8 @@ ALTER TABLE public.log_aktivitas ADD COLUMN IF NOT EXISTS metadata JSONB;
 
 -- 4. Pembaruan gelar Muhammad Ikhsan, M.Psi., Psikolog menjadi 'Psikolog'
 UPDATE public.terapis SET gelar = 'Psikolog' WHERE id = 'terapis-4';
+
+-- 5. Pembaruan titel Indaryati Machmudi menjadi 'Indaryati Machmudi, A.Md.Kes'
+UPDATE public.terapis SET nama = 'Indaryati Machmudi, A.Md.Kes' WHERE id = 'terapis-2';
+UPDATE public.peserta SET assigned_terapis_nama = 'Indaryati Machmudi, A.Md.Kes' WHERE assigned_terapis_id = 'terapis-2';
+

@@ -82,7 +82,7 @@ def extract_data_from_initial_data():
         {
             "id": "terapis-2",
             "nipOrId": "FT-INDARYATI-02",
-            "nama": "Indaryati Machmudi A.Md.Ft.",
+            "nama": "Indaryati Machmudi, A.Md.Kes",
             "gelar": "Fisioterapis Pediatrik",
             "spesialisasiLabel": "Fisioterapis",
             "pin": "445566",

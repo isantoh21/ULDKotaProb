@@ -34,7 +34,7 @@ export const INITIAL_TERAPIS: Terapis[] = [
   {
     id: 'terapis-2',
     nipOrId: 'FT-INDARYATI-02',
-    nama: 'Indaryati Machmudi A.Md.Ft.',
+    nama: 'Indaryati Machmudi, A.Md.Kes',
     gelar: 'Fisioterapis Pediatrik',
     spesialisasi: 'fisioterapis',
     spesialisasiLabel: 'Fisioterapis',
@@ -128,7 +128,7 @@ export const INITIAL_PESERTA: Peserta[] = [
     status: 'aktif',
     terdaftarSejak: '2026-08-01',
     assignedTerapisId: 'terapis-2',
-    assignedTerapisNama: 'Indaryati Machmudi A.Md.Ft.',
+    assignedTerapisNama: 'Indaryati Machmudi, A.Md.Kes',
     assignedAt: '2026-08-01'
   },
   {
@@ -186,7 +186,7 @@ export const INITIAL_PESERTA: Peserta[] = [
     terdaftarSejak: '2026-08-01',
     catatanKhusus: 'Fokus penguatan postur dan ambulasi fisioterapi.',
     assignedTerapisId: 'terapis-2',
-    assignedTerapisNama: 'Indaryati Machmudi A.Md.Ft.',
+    assignedTerapisNama: 'Indaryati Machmudi, A.Md.Kes',
     assignedAt: '2026-08-01'
   },
   {
@@ -423,7 +423,7 @@ export const INITIAL_PESERTA: Peserta[] = [
     terdaftarSejak: '2026-08-01',
     catatanKhusus: 'Fokus latihan peregangan & mobilisasi fisik di ruang gimnasium.',
     assignedTerapisId: 'terapis-2',
-    assignedTerapisNama: 'Indaryati Machmudi A.Md.Ft.',
+    assignedTerapisNama: 'Indaryati Machmudi, A.Md.Kes',
     assignedAt: '2026-08-01'
   },
   {

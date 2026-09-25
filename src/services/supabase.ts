@@ -395,7 +395,7 @@ class SupabaseDataService {
         const mapped: Terapis[] = terapisData.map((t: any) => ({
           id: t.id,
           nipOrId: t.nip_or_id,
-          nama: t.nama,
+          nama: (t.id === 'terapis-2' || (t.nama && t.nama.toLowerCase().includes('indaryati'))) ? 'Indaryati Machmudi, A.Md.Kes' : t.nama,
           gelar: (t.spesialisasi === 'psikolog' || t.id === 'terapis-4' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) ? 'Psikolog' : t.gelar,
           spesialisasi: t.spesialisasi,
           spesialisasiLabel: t.spesialisasi_label || t.spesialisasi,
@@ -443,7 +443,7 @@ class SupabaseDataService {
           terdaftarSejak: p.terdaftar_sejak,
           catatanKhusus: p.catatan_khusus,
           assignedTerapisId: p.assigned_terapis_id,
-          assignedTerapisNama: p.assigned_terapis_nama,
+          assignedTerapisNama: (p.assigned_terapis_id === 'terapis-2' || (p.assigned_terapis_nama && p.assigned_terapis_nama.toLowerCase().includes('indaryati'))) ? 'Indaryati Machmudi, A.Md.Kes' : p.assigned_terapis_nama,
           assignedAt: p.assigned_at
         }));
         localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(mapped));
@@ -609,6 +609,12 @@ class SupabaseDataService {
           if (t.id === 'terapis-4' || t.spesialisasi === 'psikolog' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) {
             if (t.gelar !== 'Psikolog') {
               t.gelar = 'Psikolog';
+              updated = true;
+            }
+          }
+          if (t.id === 'terapis-2' || (t.nama && t.nama.toLowerCase().includes('indaryati'))) {
+            if (t.nama !== 'Indaryati Machmudi, A.Md.Kes') {
+              t.nama = 'Indaryati Machmudi, A.Md.Kes';
               updated = true;
             }
           }
@@ -1044,7 +1050,18 @@ class SupabaseDataService {
   public getPesertaList(): Peserta[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.PESERTA);
-      return data ? JSON.parse(data) : [];
+      const list: Peserta[] = data ? JSON.parse(data) : [];
+      let needsSave = false;
+      list.forEach(p => {
+        if ((p.assignedTerapisId === 'terapis-2' || (p.assignedTerapisNama && p.assignedTerapisNama.toLowerCase().includes('indaryati'))) && p.assignedTerapisNama !== 'Indaryati Machmudi, A.Md.Kes') {
+          p.assignedTerapisNama = 'Indaryati Machmudi, A.Md.Kes';
+          needsSave = true;
+        }
+      });
+      if (needsSave) {
+        localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+      }
+      return list;
     } catch {
       return [];
     }
@@ -1213,6 +1230,12 @@ class SupabaseDataService {
             needsSave = true;
           }
         }
+        if (t.id === 'terapis-2' || (t.nama && t.nama.toLowerCase().includes('indaryati'))) {
+          if (t.nama !== 'Indaryati Machmudi, A.Md.Kes') {
+            t.nama = 'Indaryati Machmudi, A.Md.Kes';
+            needsSave = true;
+          }
+        }
       });
       if (needsSave) {
         localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(list));
@@ -1263,6 +1286,15 @@ class SupabaseDataService {
     if (!terapis) return { success: false, error: 'Data tenaga ahli/terapis tidak ditemukan.' };
 
     const peserta = list[pIdx];
+
+    // ATURAN 1: Siswa binaan yang sudah dipilih terapis lain tidak bisa dipilih lagi oleh terapis lain
+    if (peserta.assignedTerapisId && peserta.assignedTerapisId !== terapis.id) {
+      return {
+        success: false,
+        error: `Siswa "${peserta.namaLengkap}" sudah menjadi siswa binaan tetap ${peserta.assignedTerapisNama || 'terapis lain'} dan tidak dapat dipilih lagi oleh terapis lain.`
+      };
+    }
+
     peserta.assignedTerapisId = terapis.id;
     peserta.assignedTerapisNama = terapis.nama;
     peserta.assignedAt = new Date().toISOString();
