@@ -347,27 +347,34 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-20">
       {/* Admin Header */}
-      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md">
+      <div className="bg-gradient-to-r from-sky-700 via-sky-600 to-sky-500 text-white rounded-3xl p-6 sm:p-8 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-teal-400 font-semibold tracking-wide">
-              <span>Pemerintah Kota Probolinggo</span>
-              <span aria-hidden="true">·</span>
-              <span>Loket Administrasi ULD</span>
+          <div className="flex items-center gap-4">
+            <img
+              src="/logo-uld.jpg"
+              alt="Logo ULD Kota Probolinggo"
+              className="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 shadow-md shrink-0"
+            />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs text-sky-100 font-semibold tracking-wide">
+                <span>Pemerintah Kota Probolinggo</span>
+                <span aria-hidden="true">·</span>
+                <span>Loket Administrasi ULD</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+                Petugas: {activeAdmin.nama}
+              </h1>
+              <p className="text-xs text-sky-100 flex items-center gap-2">
+                <span>No. WhatsApp Petugas:</span>
+                <span className="font-mono text-yellow-300 font-bold">+{activeAdmin.nomorTelepon}</span>
+                <span>·</span>
+                <span className="font-mono text-sky-200">PIN: {activeAdmin.pin}</span>
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Petugas: {activeAdmin.nama}
-            </h1>
-            <p className="text-xs text-slate-400 flex items-center gap-2">
-              <span>No. WhatsApp Petugas:</span>
-              <span className="font-mono text-teal-300 font-bold">+{activeAdmin.nomorTelepon}</span>
-              <span>·</span>
-              <span className="font-mono text-slate-400">PIN: {activeAdmin.pin}</span>
-            </p>
           </div>
 
           <div className="shrink-0 flex flex-wrap items-center gap-2">
-            <div className="flex items-center bg-slate-800 p-1 rounded-xl text-xs">
+            <div className="flex items-center bg-sky-800/60 p-1 rounded-xl text-xs">
               {adminList.map(adm => (
                 <button
                   key={adm.id}
@@ -375,7 +382,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                     setActiveAdminId(adm.id);
                     setBookingMsg(null);
                   }}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${activeAdminId === adm.id ? 'bg-teal-700 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${activeAdminId === adm.id ? 'bg-yellow-400 text-sky-900 shadow' : 'text-sky-200 hover:text-white'}`}
                 >
                   {adm.nama}
                 </button>
@@ -384,7 +391,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
 
             <button
               onClick={() => setShowAdminPinModal(true)}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 text-xs font-bold transition-colors"
+              className="px-3 py-2 rounded-xl bg-sky-800/60 hover:bg-sky-800 text-yellow-300 border border-sky-600 text-xs font-bold transition-colors"
             >
               🔑 PIN
             </button>
@@ -408,11 +415,11 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
         {/* TAB 1: PENDAFTARAN TERAPI LANGSUNG DI LOKET ULD (SEMUA LAYANAN) */}
         <button
           onClick={() => setActiveTab('pendaftaran_loket')}
-          className={`px-4 py-2.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${activeTab === 'pendaftaran_loket' ? 'bg-teal-900 text-white shadow-sm font-bold' : 'text-slate-700 hover:bg-slate-300/60'}`}
+          className={`px-4 py-2.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${activeTab === 'pendaftaran_loket' ? 'bg-sky-600 text-white shadow-sm font-bold' : 'text-slate-700 hover:bg-slate-300/60'}`}
         >
           <span>🏥</span>
           <span>Pendaftaran Terapi Loket ULD</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'pendaftaran_loket' ? 'bg-teal-700 text-white' : 'bg-slate-300 text-slate-900'}`}>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'pendaftaran_loket' ? 'bg-sky-500 text-white' : 'bg-slate-300 text-slate-900'}`}>
             {bookingsList.filter(b => b.status === 'terjadwal').length}
           </span>
         </button>
@@ -420,21 +427,22 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
         {/* TAB 2: MANAJEMEN PESERTA & PIN */}
         <button
           onClick={() => setActiveTab('peserta_pin')}
-          className={`px-4 py-2.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${activeTab === 'peserta_pin' ? 'bg-teal-900 text-white shadow-sm font-bold' : 'text-slate-700 hover:bg-slate-300/60'}`}
+          className={`px-4 py-2.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${activeTab === 'peserta_pin' ? 'bg-sky-600 text-white shadow-sm font-bold' : 'text-slate-700 hover:bg-slate-300/60'}`}
         >
           <span>👥</span>
           <span>Manajemen Siswa & PIN</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'peserta_pin' ? 'bg-teal-700 text-white' : 'bg-slate-300 text-slate-900'}`}>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'peserta_pin' ? 'bg-sky-500 text-white' : 'bg-slate-300 text-slate-900'}`}>
             {pesertaList.length}
           </span>
         </button>
       </div>
 
+
       {/* TAB 1: PENDAFTARAN TERAPI LANGSUNG DI LOKET ULD (SEMUA LAYANAN) */}
       {activeTab === 'pendaftaran_loket' && (
         <div className="space-y-6">
           {/* Banner Loket */}
-          <div className="p-5 rounded-3xl bg-gradient-to-r from-teal-950 via-teal-900 to-slate-900 text-white shadow space-y-3">
+          <div className="p-5 rounded-3xl bg-gradient-to-r from-sky-900 via-sky-800 to-slate-900 text-white shadow space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🏥</span>
@@ -442,14 +450,14 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                   Loket Pendaftaran Terapi Langsung ULD Kota Probolinggo
                 </h2>
               </div>
-              <span className="px-3 py-1 rounded-full bg-teal-800 border border-teal-700 text-teal-200 text-xs font-bold">
+              <span className="px-3 py-1 rounded-full bg-sky-700 border border-sky-600 text-sky-100 text-xs font-bold">
                 Petugas Loket: {activeAdmin.nama} ({activeAdmin.nomorTelepon})
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-teal-100 leading-relaxed">
+            <p className="text-xs sm:text-sm text-sky-50 leading-relaxed">
               Karena siswa <strong>tidak dapat mendaftar mandiri secara online</strong>, petugas admin melayani pendaftaran sesi terapi secara langsung bagi orang tua/siswa yang hadir di loket fisik ULD. Admin dapat mendaftarkan siswa ke <strong>seluruh 4 layanan spesialisasi</strong>.
             </p>
-            <div className="text-[11px] text-amber-300 font-medium flex items-center gap-2 pt-1 border-t border-teal-800">
+            <div className="text-[11px] text-amber-300 font-medium flex items-center gap-2 pt-1 border-t border-sky-700">
               <span>⚠️</span>
               <span>Ketentuan Kuota: Setiap siswa dibatasi maksimal 1 kali pendaftaran sesi per minggu kalender untuk asas pemerataan.</span>
             </div>
@@ -479,7 +487,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                   setNewSlotTerapisId(selectedTerapisIdForBooking);
                   setShowBukaSlotLoketModal(true);
                 }}
-                className="px-3.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-50 text-sky-800 border border-sky-100 text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-1.5"
               >
                 <span>+ Buka Slot Baru di Loket</span>
               </button>
@@ -496,7 +504,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                     required
                     value={selectedPesertaForBooking}
                     onChange={e => handleSelectPesertaForBooking(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600"
                   >
                     <option value="">-- Pilih Nama Siswa Terdaftar --</option>
                     {pesertaList.map(p => (
@@ -522,7 +530,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                       setSelectedTerapisIdForBooking(e.target.value);
                       setSelectedSlotForBooking('');
                     }}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600"
                   >
                     {availableTerapisForLoket.map(t => (
                       <option key={t.id} value={t.id}>
@@ -533,7 +541,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
 
                   {/* Keterangan Otomatis Sesuai Aturan User 2 */}
                   {currentSelectedPesertaForBooking?.assignedTerapisId ? (
-                    <span className="text-[11px] text-teal-800 font-bold mt-1 block bg-teal-50 px-2 py-1 rounded-lg border border-teal-200">
+                    <span className="text-[11px] text-sky-700 font-bold mt-1 block bg-sky-50 px-2 py-1 rounded-lg border border-sky-100">
                       🔒 Terkunci: Siswa binaan tetap {currentSelectedPesertaForBooking.assignedTerapisNama}. Hanya terapis ini yang muncul.
                     </span>
                   ) : currentSelectedPesertaForBooking ? (
@@ -545,13 +553,13 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                           setStudentToAssign(currentSelectedPesertaForBooking);
                           setSelectedAssignTerapisId(terapisList[0]?.id || '');
                         }}
-                        className="px-2 py-0.5 rounded bg-teal-800 text-white font-bold text-[10px]"
+                        className="px-2 py-0.5 rounded bg-sky-700 text-white font-bold text-[10px]"
                       >
                         + Assign Sekarang
                       </button>
                     </div>
                   ) : (
-                    <span className="text-[11px] text-teal-700 font-semibold mt-1 block">
+                    <span className="text-[11px] text-sky-600 font-semibold mt-1 block">
                       Ruang: {currentSelectedTerapis?.ruangPraktek}
                     </span>
                   )}
@@ -566,7 +574,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                     required
                     value={selectedSlotForBooking}
                     onChange={e => setSelectedSlotForBooking(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600"
                   >
                     <option value="">-- Pilih Slot Jam Tersedia --</option>
                     {availableSlotsForSelectedTerapis.map(s => {
@@ -596,14 +604,14 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                   value={catatanLoketAdmin}
                   onChange={e => setCatatanLoketAdmin(e.target.value)}
                   placeholder="Contoh: Orang tua datang langsung ke loket ULD mengonfirmasi jadwal terapi wicara..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600"
                 />
               </div>
 
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-2xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all transform active:scale-95 flex items-center gap-2"
+                  className="px-6 py-3 rounded-2xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all transform active:scale-95 flex items-center gap-2"
                 >
                   <span>✓ Daftarkan Siswa di Loket ULD</span>
                   <span>(Oleh {activeAdmin.nama})</span>
@@ -630,7 +638,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                 <button
                   type="button"
                   onClick={() => setFilterLayananTable('all')}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition-all ${filterLayananTable === 'all' ? 'bg-teal-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all ${filterLayananTable === 'all' ? 'bg-sky-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                 >
                   Semua Layanan
                 </button>
@@ -639,7 +647,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                     key={t.id}
                     type="button"
                     onClick={() => setFilterLayananTable(t.id)}
-                    className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${filterLayananTable === t.id ? 'bg-teal-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                    className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${filterLayananTable === t.id ? 'bg-sky-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                   >
                     {t.spesialisasiLabel}
                   </button>
@@ -670,7 +678,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                       const p = pesertaList.find(x => x.id === b.pesertaId);
                       return (
                         <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-4 py-3 font-mono font-bold text-teal-900">
+                          <td className="px-4 py-3 font-mono font-bold text-sky-800">
                             {b.kodeBooking}
                           </td>
                           <td className="px-4 py-3">
@@ -693,7 +701,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                             <div className="font-bold text-slate-800">{b.tanggal}</div>
                             <div className="text-[11px] text-slate-500">{b.jamMulai} - {b.jamSelesai} WIB</div>
                           </td>
-                          <td className="px-4 py-3 text-[11px] font-medium text-teal-800">
+                          <td className="px-4 py-3 text-[11px] font-medium text-sky-700">
                             {b.didaftarkanOlehAdmin || 'Loket ULD'}
                           </td>
                           <td className="px-4 py-3">
@@ -711,7 +719,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 onClick={() => setSelectedLoketTicket(b)}
-                                className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 text-[11px] font-bold transition-colors"
+                                className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-50 text-sky-700 text-[11px] font-bold transition-colors"
                               >
                                 Tiket
                               </button>
@@ -762,12 +770,12 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                 value={searchPeserta}
                 onChange={e => setSearchPeserta(e.target.value)}
                 placeholder="Cari nama siswa / wali..."
-                className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-teal-700"
+                className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-sky-600"
               />
               <a
                 href="/pdf/PIN_PESERTA_TERAPI_ULD.pdf"
                 download="PIN_PESERTA_TERAPI_ULD.pdf"
-                className="px-3 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-300 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-2xs"
+                className="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-50 text-sky-800 border border-sky-200 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-2xs"
                 title="Download Dokumen PDF Daftar PIN Semua Siswa Terapi"
               >
                 <span>📄 Unduh PDF PIN Siswa</span>
@@ -782,7 +790,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </a>
               <button
                 onClick={handleOpenSimpleAddStudent}
-                className="px-4 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs transition-colors shadow-sm whitespace-nowrap flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs transition-colors shadow-sm whitespace-nowrap flex items-center gap-1.5"
               >
                 <span>+ Buat Akun Siswa Baru</span>
               </button>
@@ -815,7 +823,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                       <td className="px-4 py-3">
                         {p.assignedTerapisId ? (
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded-full bg-teal-100 text-teal-950 font-bold text-[11px] border border-teal-200">
+                            <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-900 font-bold text-[11px] border border-sky-100">
                               📌 {p.assignedTerapisNama}
                             </span>
                             <button
@@ -824,7 +832,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                                 setStudentToAssign(p);
                                 setSelectedAssignTerapisId(p.assignedTerapisId || terapisList[0].id);
                               }}
-                              className="text-[10px] text-teal-700 hover:text-teal-900 font-bold hover:underline"
+                              className="text-[10px] text-sky-600 hover:text-sky-800 font-bold hover:underline"
                             >
                               Ubah
                             </button>
@@ -840,7 +848,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                                 setStudentToAssign(p);
                                 setSelectedAssignTerapisId(terapisList[0].id);
                               }}
-                              className="px-2 py-0.5 rounded bg-teal-800 text-white text-[10px] font-bold hover:bg-teal-700 shadow-2xs"
+                              className="px-2 py-0.5 rounded bg-sky-700 text-white text-[10px] font-bold hover:bg-sky-600 shadow-2xs"
                             >
                               + Assign
                             </button>
@@ -851,7 +859,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                         {p.namaWali}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-mono font-extrabold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md tracking-widest text-xs border border-teal-200">
+                        <span className="font-mono font-extrabold text-sky-700 bg-sky-50 px-2.5 py-1 rounded-md tracking-widest text-xs border border-sky-100">
                           {p.pin}
                         </span>
                       </td>
@@ -893,7 +901,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
       {/* MODAL 1: BUAT AKUN SISWA TERAPI RUTIN BARU (CUKUP NAMA, NAMA ORTU, PIN) */}
       {showSimpleAddPesertaModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleSaveSimpleStudent} className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl animate-in zoom-in-95 border-2 border-teal-600">
+          <form onSubmit={handleSaveSimpleStudent} className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl animate-in zoom-in-95 border-2 border-sky-500">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
@@ -923,7 +931,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                   value={simpleNamaAnak}
                   onChange={e => setSimpleNamaAnak(e.target.value)}
                   placeholder="Contoh: Muhammad Rayhan Pratama"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
                 />
               </div>
 
@@ -937,7 +945,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                   value={simpleNamaOrtu}
                   onChange={e => setSimpleNamaOrtu(e.target.value)}
                   placeholder="Contoh: Ibu Rina Wati / Bapak Hendra"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
                 />
               </div>
 
@@ -949,7 +957,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                   <button
                     type="button"
                     onClick={() => setSimplePin(Math.floor(100000 + Math.random() * 900000).toString())}
-                    className="text-[11px] text-teal-800 font-bold hover:underline"
+                    className="text-[11px] text-sky-700 font-bold hover:underline"
                   >
                     Acak PIN
                   </button>
@@ -961,7 +969,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                   value={simplePin}
                   onChange={e => setSimplePin(e.target.value.replace(/\D/g, ''))}
                   placeholder="Contoh: 123456"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-center font-bold text-lg tracking-widest text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-700 bg-slate-50"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-center font-bold text-lg tracking-widest text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 bg-slate-50"
                 />
                 <span className="text-[11px] text-slate-400 mt-1 block">
                   PIN ini akan digunakan oleh orang tua untuk login mengubah PIN dan melihat jadwal resmi.
@@ -979,7 +987,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow transition-all active:scale-95"
+                className="px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow transition-all active:scale-95"
               >
                 ✓ Simpan Akun Siswa Baru
               </button>
@@ -997,13 +1005,13 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               <span>Akun Siswa Resmi Berhasil Dibuat!</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-teal-950 text-white space-y-2">
-              <div className="text-xs text-teal-300">Nomor RM: {createdStudentCard.nomorRekamMedis}</div>
+            <div className="p-4 rounded-2xl bg-sky-900 text-white space-y-2">
+              <div className="text-xs text-sky-200">Nomor RM: {createdStudentCard.nomorRekamMedis}</div>
               <div className="text-lg font-bold text-white">{createdStudentCard.namaLengkap}</div>
-              <div className="text-xs text-teal-200">Wali: {createdStudentCard.namaWali}</div>
-              <div className="pt-2 border-t border-teal-800 flex justify-between items-center text-xs">
-                <span className="text-teal-300">PIN Login Siswa:</span>
-                <span className="font-mono font-black text-amber-300 text-base bg-teal-900 px-3 py-0.5 rounded-lg border border-teal-700">
+              <div className="text-xs text-sky-100">Wali: {createdStudentCard.namaWali}</div>
+              <div className="pt-2 border-t border-sky-700 flex justify-between items-center text-xs">
+                <span className="text-sky-200">PIN Login Siswa:</span>
+                <span className="font-mono font-black text-amber-300 text-base bg-sky-800 px-3 py-0.5 rounded-lg border border-sky-600">
                   {createdStudentCard.pin}
                 </span>
               </div>
@@ -1154,7 +1162,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
       {/* MODAL 3: BUKA SLOT BARU DI LOKET */}
       {showBukaSlotLoketModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleBukaSlotLoket} className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-teal-600">
+          <form onSubmit={handleBukaSlotLoket} className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-sky-500">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
@@ -1268,7 +1276,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-sm"
+                className="px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-sm"
               >
                 ✓ Buka Slot Sekarang
               </button>
@@ -1298,29 +1306,29 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-teal-950 text-white space-y-3">
-              <div className="flex justify-between items-center text-xs text-teal-300 font-mono">
+            <div className="p-4 rounded-2xl bg-sky-900 text-white space-y-3">
+              <div className="flex justify-between items-center text-xs text-sky-200 font-mono">
                 <span>TIKET RESMI LOKET ULD</span>
-                <span className="bg-teal-900 px-2 py-0.5 rounded">{selectedLoketTicket.kodeBooking}</span>
+                <span className="bg-sky-800 px-2 py-0.5 rounded">{selectedLoketTicket.kodeBooking}</span>
               </div>
               <div>
-                <div className="text-xs text-teal-200">Nama Siswa:</div>
+                <div className="text-xs text-sky-100">Nama Siswa:</div>
                 <div className="text-base font-bold text-white">
                   {pesertaList.find(p => p.id === selectedLoketTicket.pesertaId)?.namaLengkap || selectedLoketTicket.pesertaId}
                 </div>
-                <div className="text-xs text-teal-300 mt-0.5">
+                <div className="text-xs text-sky-200 mt-0.5">
                   Layanan: <strong className="text-white">{getSpesialisasiLabel(selectedLoketTicket.spesialisasi)}</strong>
                 </div>
               </div>
-              <div className="pt-2 border-t border-teal-800 text-xs flex justify-between items-end">
+              <div className="pt-2 border-t border-sky-700 text-xs flex justify-between items-end">
                 <div>
-                  <div className="text-teal-300 text-[10px]">JADWAL & RUANG</div>
+                  <div className="text-sky-200 text-[10px]">JADWAL & RUANG</div>
                   <div className="font-bold text-white">{selectedLoketTicket.tanggal}</div>
-                  <div className="text-teal-200">{selectedLoketTicket.jamMulai} - {selectedLoketTicket.jamSelesai} WIB · {selectedLoketTicket.ruang}</div>
+                  <div className="text-sky-100">{selectedLoketTicket.jamMulai} - {selectedLoketTicket.jamSelesai} WIB · {selectedLoketTicket.ruang}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-teal-300 text-[10px]">DIDAFTARKAN OLEH</div>
-                  <div className="font-bold text-teal-200">{selectedLoketTicket.didaftarkanOlehAdmin || 'Loket ULD'}</div>
+                  <div className="text-sky-200 text-[10px]">DIDAFTARKAN OLEH</div>
+                  <div className="font-bold text-sky-100">{selectedLoketTicket.didaftarkanOlehAdmin || 'Loket ULD'}</div>
                 </div>
               </div>
             </div>
@@ -1342,7 +1350,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               <button
                 type="button"
                 onClick={() => setSelectedLoketTicket(null)}
-                className="w-full py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold shadow-sm"
+                className="w-full py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold shadow-sm"
               >
                 Tutup
               </button>
@@ -1384,7 +1392,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </button>
               <button
                 onClick={handleResetPin}
-                className="px-4 py-2 text-xs rounded-xl bg-teal-800 text-white font-bold"
+                className="px-4 py-2 text-xs rounded-xl bg-sky-700 text-white font-bold"
               >
                 Simpan PIN Baru
               </button>
@@ -1401,7 +1409,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               Ubah PIN Admin: {activeAdmin.nama}
             </h3>
             <p className="text-xs text-slate-500">
-              PIN saat ini: <strong className="font-mono text-teal-800">{activeAdmin.pin}</strong>
+              PIN saat ini: <strong className="font-mono text-sky-700">{activeAdmin.pin}</strong>
             </p>
 
             {adminPinMsg && (
@@ -1436,7 +1444,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs"
+                className="px-5 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs"
               >
                 Simpan PIN
               </button>
@@ -1478,7 +1486,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">PIN Login:</span>
-                <span className="font-mono font-bold text-teal-800">{studentToDelete.pin}</span>
+                <span className="font-mono font-bold text-sky-700">{studentToDelete.pin}</span>
               </div>
             </div>
 
@@ -1495,7 +1503,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                 value={deleteReason}
                 onChange={e => setDeleteReason(e.target.value)}
                 placeholder="Contoh: Telah lulus & menyelesaikan program terapi di ULD"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-teal-700"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-sky-600"
               />
             </div>
 
@@ -1524,11 +1532,11 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <form
             onSubmit={handleConfirmAssignTerapis}
-            className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-teal-600"
+            className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-sky-500"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center text-lg shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center text-lg shrink-0">
                   📌
                 </div>
                 <div>
@@ -1565,7 +1573,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               <div className="flex justify-between pt-1 border-t border-slate-200">
                 <span className="text-slate-500">Status Saat Ini:</span>
                 {studentToAssign.assignedTerapisId ? (
-                  <span className="font-bold text-teal-800">
+                  <span className="font-bold text-sky-700">
                     📌 {studentToAssign.assignedTerapisNama}
                   </span>
                 ) : (
@@ -1583,7 +1591,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               <select
                 value={selectedAssignTerapisId}
                 onChange={e => setSelectedAssignTerapisId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600"
               >
                 {terapisList.map(t => (
                   <option key={t.id} value={t.id}>
@@ -1593,7 +1601,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
               </select>
             </div>
 
-            <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-xs text-teal-950 leading-relaxed">
+            <div className="p-3 bg-sky-50 border border-sky-100 rounded-xl text-xs text-sky-900 leading-relaxed">
               <strong>Aturan Sistem:</strong> Setelah ditetapkan, siswa ini <strong>hanya dapat mendaftar sesi terapi ke terapis ini saja</strong>. Di portal pendaftaran mandiri dan form loket admin, hanya nama terapis terpilih yang akan muncul untuk siswa ini.
             </div>
 
@@ -1619,7 +1627,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold shadow-sm transition-all active:scale-95"
+                  className="px-5 py-2 text-xs rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold shadow-sm transition-all active:scale-95"
                 >
                   ✓ Simpan Penugasan
                 </button>

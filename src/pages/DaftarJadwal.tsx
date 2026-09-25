@@ -219,7 +219,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
       {/* Header Banner - Terbuka untuk Umum */}
       <div className="bg-white rounded-3xl p-4 sm:p-7 border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-teal-800 uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-semibold text-sky-700 uppercase tracking-wider">
             <span>Jadwal Terbuka Umum</span>
             <span aria-hidden="true">·</span>
             <span>Senin - Jumat (09.00 - 13.00 WIB)</span>
@@ -242,19 +242,19 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
 
         {/* Status Siswa Login */}
         {activePeserta && (
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-teal-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-teal-800">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-sky-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-sky-700">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-800 flex items-center justify-center text-xl shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-sky-700 flex items-center justify-center text-xl shrink-0">
                 🧒
               </div>
               <div>
-                <div className="text-[10px] text-teal-300 font-bold uppercase tracking-wider">
+                <div className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">
                   Akun Siswa Terverifikasi · No. RM: {activePeserta.nomorRekamMedis}
                 </div>
                 <div className="text-base font-extrabold text-white">
                   {activePeserta.namaLengkap}
                 </div>
-                <div className="text-xs text-teal-200">
+                <div className="text-xs text-sky-100">
                   Wali: {activePeserta.namaWali} ({activePeserta.asalSekolah || 'Kota Probolinggo'})
                 </div>
               </div>
@@ -262,12 +262,12 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
 
             <div className="shrink-0 self-start sm:self-auto">
               {activePeserta.assignedTerapisId ? (
-                <div className="bg-teal-900 border border-teal-700 px-3.5 py-2 rounded-xl text-left sm:text-right">
-                  <div className="text-[10px] text-teal-300 font-bold uppercase tracking-wider">Tenaga Ahli Pembina Tetap:</div>
+                <div className="bg-sky-800 border border-sky-600 px-3.5 py-2 rounded-xl text-left sm:text-right">
+                  <div className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">Tenaga Ahli Pembina Tetap:</div>
                   <div className="font-extrabold text-amber-300 text-xs mt-0.5">
                     📌 {activePeserta.assignedTerapisNama}
                   </div>
-                  <div className="text-[10px] text-teal-200">Hanya dapat mendaftar ke sesi beliau</div>
+                  <div className="text-[10px] text-sky-100">Hanya dapat mendaftar ke sesi beliau</div>
                 </div>
               ) : (
                 <div className="bg-amber-950 border border-amber-700 px-3.5 py-2 rounded-xl text-xs text-amber-200">
@@ -283,7 +283,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
         <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
           <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-200">📅 Maks 1x/minggu</span>
           <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 font-semibold border border-rose-200">⏰ Daftar paling lambat H-1 jam 24.00</span>
-          <span className="px-2.5 py-1 rounded-full bg-teal-100 text-teal-900 font-semibold border border-teal-200">📌 Siswa binaan hanya ke terapis tetapnya</span>
+          <span className="px-2.5 py-1 rounded-full bg-sky-50 text-sky-800 font-semibold border border-sky-100">📌 Siswa binaan hanya ke terapis tetapnya</span>
           <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-900 font-semibold border border-indigo-200">🧠 Psikolog hanya via Admin</span>
         </div>
       </div>
@@ -304,7 +304,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
               <button
                 key={tab.id}
                 onClick={() => setSelectedSpesialisasi(tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${effectiveSpesialisasi === tab.id ? 'bg-teal-800 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${effectiveSpesialisasi === tab.id ? 'bg-sky-700 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
               >
                 {tab.label}
               </button>
@@ -318,7 +318,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                 Pilih Tanggal:
               </label>
-              <span className="text-[10px] text-teal-800 font-semibold bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full w-fit">
+              <span className="text-[10px] text-sky-700 font-semibold bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-full w-fit">
                 Pekan {minAllowedDate} s/d {maxAllowedDate}
               </span>
             </div>
@@ -330,7 +330,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                   <button
                     key={date}
                     onClick={() => setSelectedDateFilter(date)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono transition-all shrink-0 whitespace-nowrap flex items-center gap-1 ${isSelected ? 'bg-teal-900 text-white shadow-sm font-bold' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono transition-all shrink-0 whitespace-nowrap flex items-center gap-1 ${isSelected ? 'bg-sky-800 text-white shadow-sm font-bold' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
                   >
                     <span>{date}</span>
                     {isToday && (
@@ -388,16 +388,16 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                   >
                     {/* Header Terapis */}
                     <div className={`px-5 py-4 flex items-center gap-3 ${
-                      isPsikolog ? 'bg-indigo-50 border-b border-indigo-100' : 'bg-teal-50/60 border-b border-slate-100'
+                      isPsikolog ? 'bg-indigo-50 border-b border-indigo-100' : 'bg-sky-50/60 border-b border-slate-100'
                     }`}>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                        isPsikolog ? 'bg-indigo-100' : 'bg-teal-100'
+                        isPsikolog ? 'bg-indigo-100' : 'bg-sky-50'
                       }`}>
                         {isPsikolog ? '🧠' : '🩺'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-[10px] font-bold uppercase tracking-wider ${
-                          isPsikolog ? 'text-indigo-700' : 'text-teal-700'
+                          isPsikolog ? 'text-indigo-700' : 'text-sky-600'
                         }`}>
                           {getSpesialisasiLabel(group.slots[0].spesialisasi)}
                           {isPsikolog && <span className="ml-1.5 px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-900">Via Admin</span>}
@@ -408,7 +408,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                       </div>
                       <div className="text-right shrink-0">
                         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                          isPsikolog ? 'bg-indigo-100 text-indigo-800' : 'bg-teal-100 text-teal-800'
+                          isPsikolog ? 'bg-indigo-100 text-indigo-800' : 'bg-sky-50 text-sky-700'
                         }`}>
                           {group.slots.length} sesi
                         </span>
@@ -456,7 +456,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                               {bookedStudents.length > 0 && (
                                 <div className="flex flex-wrap gap-1 pt-1">
                                   {bookedStudents.map((st, idx) => (
-                                    <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-teal-100 text-teal-900 text-[10px] font-semibold border border-teal-200">
+                                    <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 text-sky-800 text-[10px] font-semibold border border-sky-100">
                                       🧒 {st.nama}
                                     </span>
                                   ))}
@@ -490,7 +490,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                                 isAssignedToThisTerapis ? (
                                   <button
                                     onClick={() => handleOpenBooking(slot)}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-teal-800 hover:bg-teal-700 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-700 hover:bg-sky-600 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
                                   >
                                     ✓ Daftar
                                   </button>
@@ -506,7 +506,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                               ) : (
                                 <button
                                   onClick={() => setShowDaftarChoiceModal(slot)}
-                                  className="px-4 py-2 rounded-xl text-xs font-bold bg-teal-800 hover:bg-teal-700 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                  className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-700 hover:bg-sky-600 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                   Daftar →
                                 </button>
@@ -527,10 +527,10 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
       {/* Modal Pilih Tipe Pendaftar (Siswa Binaan / Siswa Baru) */}
       {showDaftarChoiceModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border-2 border-teal-300">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border-2 border-sky-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <div className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">Pendaftaran Jadwal Terapi</div>
+                <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">Pendaftaran Jadwal Terapi</div>
                 <h3 className="font-extrabold text-slate-900 text-base mt-0.5">
                   {getTerapis(showDaftarChoiceModal.terapisId)?.nama} · {showDaftarChoiceModal.jamMulai}–{showDaftarChoiceModal.jamSelesai}
                 </h3>
@@ -552,15 +552,15 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                   setShowDaftarChoiceModal(null);
                   navigateTo('/login-peserta');
                 }}
-                className="w-full p-4 rounded-2xl border-2 border-teal-300 bg-teal-50 hover:bg-teal-100 text-left transition-all group"
+                className="w-full p-4 rounded-2xl border-2 border-sky-200 bg-sky-50 hover:bg-sky-50 text-left transition-all group"
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">🎒</span>
                   <div>
-                    <div className="font-extrabold text-teal-900 text-sm">Siswa Binaan / Rutin</div>
-                    <div className="text-xs text-teal-700 mt-0.5">Sudah terdaftar di ULD dan punya PIN siswa. Login untuk mendaftar sesi ini langsung.</div>
+                    <div className="font-extrabold text-sky-800 text-sm">Siswa Binaan / Rutin</div>
+                    <div className="text-xs text-sky-600 mt-0.5">Sudah terdaftar di ULD dan punya PIN siswa. Login untuk mendaftar sesi ini langsung.</div>
                   </div>
-                  <span className="ml-auto text-teal-600 group-hover:translate-x-1 transition-transform">→</span>
+                  <span className="ml-auto text-sky-500 group-hover:translate-x-1 transition-transform">→</span>
                 </div>
               </button>
 
@@ -661,7 +661,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
               ))}
             </div>
 
-            <div className="p-3 bg-teal-50/80 rounded-2xl border border-teal-200 text-[11px] text-teal-900 space-y-1">
+            <div className="p-3 bg-sky-50/80 rounded-2xl border border-sky-100 text-[11px] text-sky-800 space-y-1">
               <div>📍 <strong>Loket Fisik Kantor ULD:</strong></div>
               <div>Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo (Senin – Jumat 09.00 – 13.00 WIB).</div>
             </div>
@@ -714,7 +714,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
                 <div className="text-slate-500">Jadwal aktif ananda pada pekan ini:</div>
                 <div className="font-bold text-slate-900 text-sm">{currentPeserta.namaLengkap}</div>
-                <div className="text-teal-900 font-semibold">
+                <div className="text-sky-800 font-semibold">
                   📅 Tanggal: {weeklyLimitNoticeModal.existingTanggal} (Pukul {weeklyLimitNoticeModal.existingJam} WIB)
                 </div>
                 <div className="text-slate-500 text-[11px] pt-1">
@@ -730,7 +730,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                   setWeeklyLimitNoticeModal(null);
                   navigateTo('/portal-peserta');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold shadow"
+                className="px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold shadow"
               >
                 Lihat Jadwal Saya di Portal Peserta
               </button>
@@ -769,17 +769,17 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
               </div>
             )}
 
-            <div className="p-4 rounded-2xl bg-teal-50/80 border border-teal-200 space-y-2 text-xs">
-              <div className="font-bold text-teal-950 text-sm">
+            <div className="p-4 rounded-2xl bg-sky-50/80 border border-sky-100 space-y-2 text-xs">
+              <div className="font-bold text-sky-900 text-sm">
                 {getSpesialisasiLabel(bookingSlotModal.spesialisasi)}
               </div>
-              <div className="text-teal-900">
+              <div className="text-sky-800">
                 Terapis: <strong>{getTerapis(bookingSlotModal.terapisId)?.nama}</strong>
               </div>
-              <div className="text-teal-900">
+              <div className="text-sky-800">
                 Jadwal: <strong>{bookingSlotModal.tanggal}</strong> pukul <strong>{bookingSlotModal.jamMulai} - {bookingSlotModal.jamSelesai} WIB</strong>
               </div>
-              <div className="text-teal-800">
+              <div className="text-sky-700">
                 Ruangan: {bookingSlotModal.ruang}
               </div>
             </div>
@@ -801,7 +801,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                 value={keluhanFokus}
                 onChange={e => setKeluhanFokus(e.target.value)}
                 placeholder="Contoh: Beberapa hari ini anak sedang sulit tidur dan mudah lelah saat latihan fisik..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600"
               />
             </div>
 
@@ -818,7 +818,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleConfirmBooking}
-                className="px-6 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold shadow-md disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold shadow-md disabled:opacity-50"
               >
                 {isSubmitting ? 'Memproses...' : 'Ya, Daftarkan Jadwal'}
               </button>

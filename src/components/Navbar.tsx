@@ -32,21 +32,21 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
           }}
           className="text-left group flex items-center gap-2.5 focus:outline-none"
         >
-          <div className="w-8 h-8 rounded-lg bg-teal-800 text-white flex items-center justify-center font-bold text-sm tracking-wider">
+          <div className="w-8 h-8 rounded-lg bg-sky-700 text-white flex items-center justify-center font-bold text-sm tracking-wider">
             ULD
           </div>
           <div>
-            <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-teal-800 transition-colors block">
+            <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-sky-700 transition-colors block">
               ULD Kota Probolinggo
             </span>
             {currentUser.role === 'admin' && (
-              <span className="text-[10px] text-teal-700 font-bold -mt-1 block">Panel Loket Administrasi</span>
+              <span className="text-[10px] text-sky-600 font-bold -mt-1 block">Panel Loket Administrasi</span>
             )}
             {currentUser.role === 'terapis' && (
-              <span className="text-[10px] text-teal-700 font-bold -mt-1 block">Portal Tenaga Ahli / Psikolog</span>
+              <span className="text-[10px] text-sky-600 font-bold -mt-1 block">Portal Tenaga Ahli / Psikolog</span>
             )}
             {currentUser.role === 'peserta' && (
-              <span className="text-[10px] text-teal-700 font-bold -mt-1 block">Portal Mandiri Siswa Terapi</span>
+              <span className="text-[10px] text-sky-600 font-bold -mt-1 block">Portal Mandiri Siswa Terapi</span>
             )}
           </div>
         </button>
@@ -56,19 +56,19 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
             <button
               onClick={() => handleNav('/')}
-              className={`transition-colors hover:text-slate-900 whitespace-nowrap ${currentPath === '/' ? 'text-teal-800 font-semibold border-b-2 border-teal-800 pb-1' : ''}`}
+              className={`transition-colors hover:text-slate-900 whitespace-nowrap ${currentPath === '/' ? 'text-sky-700 font-semibold border-b-2 border-sky-700 pb-1' : ''}`}
             >
               Beranda
             </button>
             <button
               onClick={() => handleNav('/daftar-jadwal')}
-              className={`transition-colors hover:text-slate-900 whitespace-nowrap ${currentPath === '/daftar-jadwal' ? 'text-teal-800 font-semibold border-b-2 border-teal-800 pb-1' : ''}`}
+              className={`transition-colors hover:text-slate-900 whitespace-nowrap ${currentPath === '/daftar-jadwal' ? 'text-sky-700 font-semibold border-b-2 border-sky-700 pb-1' : ''}`}
             >
               Jadwal Terapi (Publik)
             </button>
             <button
               onClick={() => handleNav('/panduan-layanan')}
-              className={`transition-colors hover:text-slate-900 whitespace-nowrap ${currentPath === '/panduan-layanan' ? 'text-teal-800 font-semibold border-b-2 border-teal-800 pb-1' : ''}`}
+              className={`transition-colors hover:text-slate-900 whitespace-nowrap ${currentPath === '/panduan-layanan' ? 'text-sky-700 font-semibold border-b-2 border-sky-700 pb-1' : ''}`}
             >
               Panduan Layanan
             </button>
@@ -81,7 +81,7 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleNav('/login-peserta')}
-                className="px-3.5 py-2 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors whitespace-nowrap"
+                className="px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-50 rounded-lg transition-colors whitespace-nowrap"
               >
                 Masuk Siswa
               </button>
@@ -100,7 +100,7 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
                   {currentUser.role === 'terapis' && currentUser.terapis?.nama}
                   {currentUser.role === 'admin' && 'Petugas Loket ULD'}
                 </div>
-                <div className="text-[11px] text-teal-700 font-medium">
+                <div className="text-[11px] text-sky-600 font-medium">
                   {currentUser.role === 'peserta' && 'Siswa Terdaftar'}
                   {currentUser.role === 'terapis' && currentUser.terapis?.spesialisasiLabel}
                   {currentUser.role === 'admin' && 'Sugeng / Helmi'}
@@ -162,7 +162,7 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
             <button
               onClick={() => handleNav('/login-peserta')}
-              className="w-full text-left py-2 px-3 rounded-lg text-sm font-medium text-teal-800 bg-teal-50"
+              className="w-full text-left py-2 px-3 rounded-lg text-sm font-medium text-sky-700 bg-sky-50"
             >
               Masuk Peserta Terdaftar (PIN)
             </button>

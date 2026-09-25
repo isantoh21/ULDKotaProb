@@ -41,7 +41,7 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold transition-colors"
+            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-200 font-bold transition-colors"
           >
             {isOpen ? '✕ Tutup Akun' : '⚡ Beralih Akun'}
           </button>
@@ -56,7 +56,7 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
               navigateTo('/daftar-jadwal');
               setIsOpen(false);
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'guest' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'guest' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold">Umum / Tamu</div>
             <div className="text-[10px] text-slate-400">Jadwal & Peserta</div>
@@ -70,7 +70,7 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
                 setIsOpen(false);
               }
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'peserta' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'peserta' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold truncate">Siswa Terapi</div>
             <div className="text-[10px] text-slate-400 truncate">{samplePeserta?.namaLengkap?.split(' ')[0]} (PIN: {samplePeserta?.pin})</div>
@@ -84,10 +84,10 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
                 setIsOpen(false);
               }
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'psikolog' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'psikolog' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold truncate">Psikolog</div>
-            <div className="text-[10px] text-teal-300 truncate">M. Ikhsan (PIN: 112233)</div>
+            <div className="text-[10px] text-sky-200 truncate">M. Ikhsan (PIN: 112233)</div>
           </button>
 
           <button
@@ -98,10 +98,10 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
                 setIsOpen(false);
               }
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'terapis_perilaku' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'terapis_perilaku' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold truncate">Terapis Perilaku</div>
-            <div className="text-[10px] text-teal-300 truncate">Ahmad Hafizul (223344)</div>
+            <div className="text-[10px] text-sky-200 truncate">Ahmad Hafizul (223344)</div>
           </button>
 
           <button
@@ -112,10 +112,10 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
                 setIsOpen(false);
               }
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'tenaga_plb' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'tenaga_plb' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold truncate">Tenaga PLB</div>
-            <div className="text-[10px] text-teal-300 truncate">Salma Salwa (334455)</div>
+            <div className="text-[10px] text-sky-200 truncate">Salma Salwa (334455)</div>
           </button>
 
           <button
@@ -126,10 +126,10 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
                 setIsOpen(false);
               }
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'fisioterapis' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.terapis?.spesialisasi === 'fisioterapis' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold truncate">Fisioterapis</div>
-            <div className="text-[10px] text-teal-300 truncate">Indaryati (PIN: 445566)</div>
+            <div className="text-[10px] text-sky-200 truncate">Indaryati (PIN: 445566)</div>
           </button>
 
           <button
@@ -138,7 +138,7 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
               navigateTo('/admin');
               setIsOpen(false);
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'admin' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'admin' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold truncate">Admin 1</div>
             <div className="text-[10px] text-amber-300 truncate">Sugeng (PIN: 990011)</div>
@@ -150,7 +150,7 @@ export const SimulasiAkunBar: React.FC<Props> = ({ currentUser, onSwitchUser }) 
               navigateTo('/admin');
               setIsOpen(false);
             }}
-            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'admin' ? 'bg-teal-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+            className={`p-2 rounded-xl text-left transition-colors ${currentUser.role === 'admin' ? 'bg-sky-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
           >
             <div className="font-bold truncate">Admin 2</div>
             <div className="text-[10px] text-amber-300 truncate">Helmi (PIN: 990022)</div>

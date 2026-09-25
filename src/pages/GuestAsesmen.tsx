@@ -141,7 +141,7 @@ export const GuestAsesmen: React.FC = () => {
     <div className="max-w-3xl mx-auto space-y-6 pb-20">
       {/* Header Info */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-teal-800 uppercase tracking-wider">
+        <div className="flex items-center gap-2 text-xs font-semibold text-sky-700 uppercase tracking-wider">
           <span>Unit Layanan Disabilitas Kota Probolinggo</span>
           <span aria-hidden="true">·</span>
           <span>Pendaftaran Asesmen Guest</span>
@@ -152,12 +152,12 @@ export const GuestAsesmen: React.FC = () => {
         </h1>
 
         {/* Syarat Khusus DAPODIK PAUD - SMP Kota Probolinggo */}
-        <div className="p-4 rounded-2xl bg-teal-900 text-white space-y-2">
-          <div className="flex items-center gap-2 font-bold text-sm text-teal-300">
+        <div className="p-4 rounded-2xl bg-sky-800 text-white space-y-2">
+          <div className="flex items-center gap-2 font-bold text-sm text-sky-200">
             <span className="text-base">⚠️</span>
             <span>Ketentuan Wajib Pendaftaran Peserta Didik Baru:</span>
           </div>
-          <p className="text-xs text-teal-100 leading-relaxed">
+          <p className="text-xs text-sky-50 leading-relaxed">
             Pendaftaran asesmen baru <strong>hanya diperuntukkan bagi peserta didik jenjang PAUD/TK, SD/MI, dan SMP/MTs di wilayah Kota Probolinggo yang sudah terdaftar resmi di DAPODIK (Data Pokok Pendidikan)</strong>.
           </p>
         </div>
@@ -174,7 +174,7 @@ export const GuestAsesmen: React.FC = () => {
             href="https://maps.app.goo.gl/LJ7Ymhp9QqdEnoy57"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 bg-teal-800 hover:bg-teal-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors shrink-0"
+            className="px-4 py-2 bg-sky-700 hover:bg-sky-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors shrink-0"
           >
             <span>📍 Buka Google Maps ULD</span>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,7 +213,7 @@ export const GuestAsesmen: React.FC = () => {
                 value={formData.namaAnak}
                 onChange={e => setFormData({ ...formData, namaAnak: e.target.value })}
                 placeholder="Contoh: Muhammad Rayyan Firdaus"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
               />
             </div>
 
@@ -226,7 +226,7 @@ export const GuestAsesmen: React.FC = () => {
                 required
                 value={formData.tanggalLahir}
                 onChange={e => setFormData({ ...formData, tanggalLahir: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
               />
             </div>
 
@@ -238,14 +238,14 @@ export const GuestAsesmen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, jenisKelamin: 'L' })}
-                  className={`py-2 px-3 rounded-xl border text-xs font-medium transition-colors ${formData.jenisKelamin === 'L' ? 'bg-teal-50 border-teal-600 text-teal-900 font-semibold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-2 px-3 rounded-xl border text-xs font-medium transition-colors ${formData.jenisKelamin === 'L' ? 'bg-sky-50 border-sky-500 text-sky-800 font-semibold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   Laki-Laki
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, jenisKelamin: 'P' })}
-                  className={`py-2 px-3 rounded-xl border text-xs font-medium transition-colors ${formData.jenisKelamin === 'P' ? 'bg-teal-50 border-teal-600 text-teal-900 font-semibold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-2 px-3 rounded-xl border text-xs font-medium transition-colors ${formData.jenisKelamin === 'P' ? 'bg-sky-50 border-sky-500 text-sky-800 font-semibold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   Perempuan
                 </button>
@@ -262,7 +262,7 @@ export const GuestAsesmen: React.FC = () => {
                 onChange={e => setFormData({ ...formData, nikAnakOrKK: e.target.value })}
                 placeholder="3574xxxxxxxxxxxx"
                 maxLength={16}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm font-mono"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm font-mono"
               />
             </div>
           </div>
@@ -282,7 +282,7 @@ export const GuestAsesmen: React.FC = () => {
               <select
                 value={formData.jenjangPendidikan}
                 onChange={e => setFormData({ ...formData, jenjangPendidikan: e.target.value as any })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm bg-white font-medium"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm bg-white font-medium"
               >
                 <option value="PAUD/TK">PAUD / TK / RA</option>
                 <option value="SD/MI">SD / MI / SDLB</option>
@@ -300,7 +300,7 @@ export const GuestAsesmen: React.FC = () => {
                 value={formData.asalSekolah}
                 onChange={e => setFormData({ ...formData, asalSekolah: e.target.value })}
                 placeholder="Contoh: TK Kemuning / SDN Mangunharjo 10 / SMPN 3"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
               />
             </div>
 
@@ -314,7 +314,7 @@ export const GuestAsesmen: React.FC = () => {
                 value={formData.nisnOrNpsn}
                 onChange={e => setFormData({ ...formData, nisnOrNpsn: e.target.value })}
                 placeholder="Contoh NISN 10 digit atau NPSN Sekolah"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm font-mono"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm font-mono"
               />
               <span className="text-[11px] text-slate-500 mt-1 block">
                 Digunakan untuk sinkronisasi data dengan sistem DAPODIK Dinas Pendidikan Kota Probolinggo.
@@ -323,13 +323,13 @@ export const GuestAsesmen: React.FC = () => {
 
             {/* Checkbox Konfirmasi DAPODIK Wajib */}
             <div className="sm:col-span-2">
-              <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.sudahTerdaftarDapodik ? 'border-teal-600 bg-teal-50/70' : 'border-amber-300 bg-amber-50/60'}`}>
+              <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.sudahTerdaftarDapodik ? 'border-sky-500 bg-sky-50/70' : 'border-amber-300 bg-amber-50/60'}`}>
                 <input
                   type="checkbox"
                   required
                   checked={formData.sudahTerdaftarDapodik}
                   onChange={e => setFormData({ ...formData, sudahTerdaftarDapodik: e.target.checked })}
-                  className="w-5 h-5 text-teal-800 rounded focus:ring-teal-700 mt-0.5 shrink-0"
+                  className="w-5 h-5 text-sky-700 rounded focus:ring-sky-600 mt-0.5 shrink-0"
                 />
                 <div className="text-xs text-slate-800 leading-relaxed">
                   <strong className="text-slate-900 block font-bold mb-0.5">
@@ -359,7 +359,7 @@ export const GuestAsesmen: React.FC = () => {
                 value={formData.namaOrangTua}
                 onChange={e => setFormData({ ...formData, namaOrangTua: e.target.value })}
                 placeholder="Nama Ayah/Ibu/Wali"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
               />
             </div>
 
@@ -373,7 +373,7 @@ export const GuestAsesmen: React.FC = () => {
                 value={formData.nomorWhatsApp}
                 onChange={e => setFormData({ ...formData, nomorWhatsApp: e.target.value })}
                 placeholder="Contoh: 081234567890"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm font-mono"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm font-mono"
               />
             </div>
 
@@ -384,7 +384,7 @@ export const GuestAsesmen: React.FC = () => {
               <select
                 value={formData.kecamatan}
                 onChange={e => setFormData({ ...formData, kecamatan: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm bg-white"
               >
                 <option value="Kanigaran">Kecamatan Kanigaran</option>
                 <option value="Mayangan">Kecamatan Mayangan</option>
@@ -403,7 +403,7 @@ export const GuestAsesmen: React.FC = () => {
                 value={formData.alamatDomisili}
                 onChange={e => setFormData({ ...formData, alamatDomisili: e.target.value })}
                 placeholder="Nama jalan, RT/RW, Kelurahan"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
               />
             </div>
           </div>
@@ -433,7 +433,7 @@ export const GuestAsesmen: React.FC = () => {
                   key={item}
                   type="button"
                   onClick={() => setPresetIndikasi(item)}
-                  className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${formData.indikasiAwal === item ? 'bg-teal-700 text-white font-medium' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${formData.indikasiAwal === item ? 'bg-sky-600 text-white font-medium' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
                 >
                   {item}
                 </button>
@@ -446,7 +446,7 @@ export const GuestAsesmen: React.FC = () => {
               value={formData.indikasiAwal}
               onChange={e => setFormData({ ...formData, indikasiAwal: e.target.value })}
               placeholder="Deskripsikan kondisi anak, misalnya: anak sulit fokus saat pelajaran di sekolah, ada hambatan gerak motorik atau wicara..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm mt-2"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm mt-2"
             />
           </div>
         </div>
@@ -468,7 +468,7 @@ export const GuestAsesmen: React.FC = () => {
                 min={getMinDate()}
                 value={formData.tanggalRencanaDatang}
                 onChange={e => setFormData({ ...formData, tanggalRencanaDatang: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm"
               />
               <span className="text-[11px] text-slate-500 mt-1 block">
                 Senin - Jumat (08.00 - 14.30 WIB)
@@ -482,7 +482,7 @@ export const GuestAsesmen: React.FC = () => {
               <select
                 value={formData.jamRencanaDatang}
                 onChange={e => setFormData({ ...formData, jamRencanaDatang: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm bg-white"
               >
                 <option value="08:30 WIB">Sesi Pagi A: 08:30 WIB</option>
                 <option value="09:30 WIB">Sesi Pagi B: 09:30 WIB</option>
@@ -509,13 +509,13 @@ export const GuestAsesmen: React.FC = () => {
                 return (
                   <label
                     key={doc}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-colors ${checked ? 'bg-teal-50/70 border-teal-500 text-slate-900 font-medium' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer text-xs transition-colors ${checked ? 'bg-sky-50/70 border-sky-400 text-slate-900 font-medium' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => handleCheckboxChange(doc)}
-                      className="w-4 h-4 text-teal-800 rounded focus:ring-teal-700"
+                      className="w-4 h-4 text-sky-700 rounded focus:ring-sky-600"
                     />
                     <span>{doc}</span>
                   </label>
@@ -538,7 +538,7 @@ export const GuestAsesmen: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-sm transition-all shadow-md transform active:scale-95 disabled:opacity-50 min-h-[48px]"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-sm transition-all shadow-md transform active:scale-95 disabled:opacity-50 min-h-[48px]"
           >
             {isSubmitting ? 'Memproses...' : 'Kirim Pendaftaran & Dapatkan Bukti Asesmen'}
           </button>

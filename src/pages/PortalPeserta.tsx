@@ -234,13 +234,13 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
       {/* 1. Header Profil Siswa & Tombol Keluar (Tanpa Tautan ke Admin/Lainnya) */}
-      <div className="bg-gradient-to-r from-teal-950 via-teal-900 to-slate-900 text-white rounded-3xl p-4 sm:p-7 shadow-md space-y-3.5 sm:space-y-4">
+      <div className="bg-gradient-to-r from-sky-900 via-sky-800 to-slate-900 text-white rounded-3xl p-4 sm:p-7 shadow-md space-y-3.5 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-teal-300 font-semibold tracking-wide">
+            <div className="flex items-center gap-2 text-xs text-sky-200 font-semibold tracking-wide">
               <span>Siswa Terapi Rutin Resmi ULD</span>
               <span aria-hidden="true">·</span>
-              <span className="font-mono bg-teal-800/80 px-2 py-0.5 rounded text-[11px] font-bold">
+              <span className="font-mono bg-sky-700/80 px-2 py-0.5 rounded text-[11px] font-bold">
                 {currentPeserta.nomorRekamMedis}
               </span>
             </div>
@@ -269,20 +269,20 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
         {/* KARTU TENAGA AHLI PEMBINA TETAP (ATURAN 2) */}
         {currentPeserta.assignedTerapisId && assignedTerapis ? (
-          <div className="p-3.5 rounded-2xl bg-teal-900/90 border border-teal-600/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-inner">
+          <div className="p-3.5 rounded-2xl bg-sky-800/90 border border-sky-500/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-inner">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-800 flex items-center justify-center text-xl shrink-0 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-sky-700 flex items-center justify-center text-xl shrink-0 shadow-xs">
                 📌
               </div>
               <div>
-                <div className="text-[10px] text-teal-300 uppercase tracking-wider font-extrabold">Tenaga Ahli Pembina Tetap Ananda:</div>
+                <div className="text-[10px] text-sky-200 uppercase tracking-wider font-extrabold">Tenaga Ahli Pembina Tetap Ananda:</div>
                 <div className="font-extrabold text-white text-sm sm:text-base">{assignedTerapis.nama}</div>
-                <div className="text-[11px] text-teal-200">
+                <div className="text-[11px] text-sky-100">
                   {assignedTerapis.spesialisasiLabel} · Ruang: {assignedTerapis.ruangPraktek}
                 </div>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full bg-teal-800 text-teal-200 text-[11px] font-bold border border-teal-600/60 self-start sm:self-auto whitespace-nowrap">
+            <span className="px-3 py-1 rounded-full bg-sky-700 text-sky-100 text-[11px] font-bold border border-sky-500/60 self-start sm:self-auto whitespace-nowrap">
               ✓ Penugasan Permanen Aktif
             </span>
           </div>
@@ -299,14 +299,14 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
         )}
 
         {/* PIN Info Strip */}
-        <div className="pt-2 border-t border-teal-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-          <div className="text-teal-200 flex items-center gap-2">
+        <div className="pt-2 border-t border-sky-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="text-sky-100 flex items-center gap-2">
             <span>🔑 PIN Login Siswa Saat Ini:</span>
-            <span className="font-mono font-extrabold text-amber-300 text-sm bg-teal-950 px-2.5 py-0.5 rounded-lg border border-teal-700">
+            <span className="font-mono font-extrabold text-amber-300 text-sm bg-sky-900 px-2.5 py-0.5 rounded-lg border border-sky-600">
               {currentPinDisplay}
             </span>
           </div>
-          <span className="text-[11px] text-teal-300/80">
+          <span className="text-[11px] text-sky-200/80">
             Dapat diperbarui sewaktu-waktu di tab Ganti PIN
           </span>
         </div>
@@ -316,7 +316,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 bg-slate-200/90 p-1.5 rounded-2xl">
         <button
           onClick={() => setActiveTab('jadwal_daftar')}
-          className={`py-2 sm:py-3 px-1 sm:px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 ${activeTab === 'jadwal_daftar' ? 'bg-white text-teal-950 shadow-sm ring-1 ring-teal-700/20' : 'text-slate-600 hover:text-slate-900'}`}
+          className={`py-2 sm:py-3 px-1 sm:px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 ${activeTab === 'jadwal_daftar' ? 'bg-white text-sky-900 shadow-sm ring-1 ring-sky-600/20' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <span className="text-base sm:text-sm">🗓️</span>
           <span className="leading-tight">
@@ -327,11 +327,11 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
         <button
           onClick={() => setActiveTab('jadwal_aktif')}
-          className={`py-2 sm:py-3 px-1 sm:px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 ${activeTab === 'jadwal_aktif' ? 'bg-white text-teal-950 shadow-sm ring-1 ring-teal-700/20' : 'text-slate-600 hover:text-slate-900'}`}
+          className={`py-2 sm:py-3 px-1 sm:px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 ${activeTab === 'jadwal_aktif' ? 'bg-white text-sky-900 shadow-sm ring-1 ring-sky-600/20' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <div className="flex items-center gap-1">
             <span className="text-base sm:text-sm">📋</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold sm:hidden ${activeTab === 'jadwal_aktif' ? 'bg-teal-800 text-white' : 'bg-slate-300 text-slate-800'}`}>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold sm:hidden ${activeTab === 'jadwal_aktif' ? 'bg-sky-700 text-white' : 'bg-slate-300 text-slate-800'}`}>
               {activeBookings.length}
             </span>
           </div>
@@ -339,14 +339,14 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
             <span className="hidden sm:inline">Jadwal Aktif Saya</span>
             <span className="sm:hidden text-[11px]">Tiket Saya</span>
           </span>
-          <span className={`hidden sm:inline px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'jadwal_aktif' ? 'bg-teal-800 text-white' : 'bg-slate-300 text-slate-800'}`}>
+          <span className={`hidden sm:inline px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'jadwal_aktif' ? 'bg-sky-700 text-white' : 'bg-slate-300 text-slate-800'}`}>
             {activeBookings.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('ganti_pin')}
-          className={`py-2 sm:py-3 px-1 sm:px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 ${activeTab === 'ganti_pin' ? 'bg-white text-teal-950 shadow-sm ring-1 ring-teal-700/20' : 'text-slate-600 hover:text-slate-900'}`}
+          className={`py-2 sm:py-3 px-1 sm:px-3 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 ${activeTab === 'ganti_pin' ? 'bg-white text-sky-900 shadow-sm ring-1 ring-sky-600/20' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <span className="text-base sm:text-sm">🔑</span>
           <span className="leading-tight">
@@ -378,7 +378,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               <button
                 type="button"
                 onClick={() => setActiveTab('jadwal_aktif')}
-                className="px-4 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shrink-0 shadow-xs"
+                className="px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shrink-0 shadow-xs"
               >
                 Lihat Tiket Jadwal Aktif →
               </button>
@@ -427,10 +427,10 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                     Jadwal Terapi Minggu Berjalan: {assignedTerapis?.nama}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Pekan kalender: <strong className="font-mono text-teal-800">{currentWeek.label}</strong>
+                    Pekan kalender: <strong className="font-mono text-sky-700">{currentWeek.label}</strong>
                   </p>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-teal-50 text-teal-800 font-bold text-xs border border-teal-200 self-start sm:self-auto">
+                <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-700 font-bold text-xs border border-sky-100 self-start sm:self-auto">
                   09.00 - 13.00 WIB
                 </span>
               </div>
@@ -453,11 +453,11 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                         onClick={() => setSelectedDayDate(day.dateStr)}
                         className={`p-2.5 sm:p-3 rounded-2xl text-center transition-all flex flex-col items-center justify-center gap-1 border shrink-0 sm:shrink min-w-[76px] sm:min-w-0 flex-1 snap-center ${
                           isSelected 
-                            ? 'bg-teal-900 text-white border-teal-950 shadow-md ring-2 ring-teal-500/30' 
+                            ? 'bg-sky-800 text-white border-sky-900 shadow-md ring-2 ring-sky-400/30' 
                             : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                         }`}
                       >
-                        <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap ${isSelected ? 'text-teal-200' : 'text-slate-500'}`}>
+                        <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
                           {day.dayName}
                         </span>
                         <span className={`text-xs sm:text-sm font-black whitespace-nowrap ${isSelected ? 'text-white' : 'text-slate-900'}`}>
@@ -468,7 +468,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                             Hari H
                           </span>
                         ) : !deadline.bisaDaftar ? (
-                          <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-semibold mt-0.5 whitespace-nowrap ${isSelected ? 'bg-teal-800 text-teal-300' : 'bg-slate-200 text-slate-600'}`}>
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-semibold mt-0.5 whitespace-nowrap ${isSelected ? 'bg-sky-700 text-sky-200' : 'bg-slate-200 text-slate-600'}`}>
                             Tutup
                           </span>
                         ) : (
@@ -518,14 +518,14 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                         key={session.start}
                         className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
                           isBookedByMe 
-                            ? 'bg-teal-50 border-teal-400 shadow-xs ring-1 ring-teal-400/50' 
+                            ? 'bg-sky-50 border-sky-300 shadow-xs ring-1 ring-sky-300/50' 
                             : isClosedByTerapis
                               ? 'bg-slate-100/70 border-slate-200 text-slate-500 opacity-75'
                               : !deadline.bisaDaftar 
                                 ? 'bg-slate-50/80 border-slate-200 opacity-75' 
                                 : isFull 
                                   ? 'bg-rose-50/60 border-rose-200' 
-                                  : 'bg-white border-slate-200 hover:border-teal-500 shadow-xs'
+                                  : 'bg-white border-slate-200 hover:border-sky-400 shadow-xs'
                         }`}
                       >
                         <div className="space-y-1.5">
@@ -534,7 +534,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                               ⏰ {session.start} - {session.end} WIB
                             </span>
                             {isBookedByMe ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-800 text-white">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-700 text-white">
                                 ✓ Jadwal Anda
                               </span>
                             ) : isClosedByTerapis ? (
@@ -568,7 +568,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                             <button
                               type="button"
                               onClick={() => setActiveTab('jadwal_aktif')}
-                              className="w-full py-2 rounded-xl bg-teal-800 text-white font-bold text-xs"
+                              className="w-full py-2 rounded-xl bg-sky-700 text-white font-bold text-xs"
                             >
                               Lihat Tiket Saya →
                             </button>
@@ -618,7 +618,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                                   ruang: assignedTerapis!.ruangPraktek
                                 });
                               }}
-                              className="w-full py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                              className="w-full py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
                             >
                               <span>📝 Daftar Sesi Ini</span>
                             </button>
@@ -648,7 +648,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                 Sesi terapi yang saat ini berstatus terjadwal dan siap dihadiri
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-teal-50 text-teal-800 font-bold text-xs border border-teal-200">
+            <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-700 font-bold text-xs border border-sky-100">
               {activeBookings.length} Sesi Terjadwal
             </span>
           </div>
@@ -665,7 +665,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               <button
                 type="button"
                 onClick={() => setActiveTab('jadwal_daftar')}
-                className="px-5 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all"
+                className="px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-xs transition-all"
               >
                 Pilih Jadwal Sekarang →
               </button>
@@ -675,11 +675,11 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               {activeBookings.map(b => (
                 <div
                   key={b.id}
-                  className="bg-white rounded-3xl p-4 sm:p-6 border border-teal-200 shadow-sm space-y-4 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-3xl p-4 sm:p-6 border border-sky-100 shadow-sm space-y-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-teal-900 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200">
+                      <span className="font-mono text-xs font-bold text-sky-800 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-100">
                         {b.kodeBooking}
                       </span>
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
@@ -698,7 +698,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                       <div className="text-base font-black text-slate-900">
                         📅 {b.tanggal}
                       </div>
-                      <div className="font-mono font-bold text-teal-800 text-sm">
+                      <div className="font-mono font-bold text-sky-700 text-sm">
                         ⏰ {b.jamMulai} - {b.jamSelesai} WIB
                       </div>
                     </div>
@@ -754,7 +754,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                       <button
                         type="button"
                         onClick={() => setSelectedTicket(b)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
                       >
                         <span>🎫 Tampilkan & Cetak Tiket</span>
                       </button>
@@ -822,7 +822,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
           <form onSubmit={handleSavePin} className="space-y-4 max-w-md text-xs">
             <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-slate-600">
-              PIN saat ini: <strong className="font-mono text-teal-800 font-extrabold text-sm">{currentPinDisplay}</strong>
+              PIN saat ini: <strong className="font-mono text-sky-700 font-extrabold text-sm">{currentPinDisplay}</strong>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -838,7 +838,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                   value={newPin}
                   onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
                   placeholder="6 digit angka"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-center font-bold text-base focus:outline-none focus:ring-2 focus:ring-teal-700 bg-slate-50"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-center font-bold text-base focus:outline-none focus:ring-2 focus:ring-sky-600 bg-slate-50"
                 />
               </div>
 
@@ -854,7 +854,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                   value={confirmPin}
                   onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))}
                   placeholder="Ulangi 6 digit"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-center font-bold text-base focus:outline-none focus:ring-2 focus:ring-teal-700 bg-slate-50"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-center font-bold text-base focus:outline-none focus:ring-2 focus:ring-sky-600 bg-slate-50"
                 />
               </div>
             </div>
@@ -862,7 +862,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
             <button
               type="submit"
               disabled={isSubmittingPin || !newPin || !confirmPin}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow transition-all active:scale-95 disabled:opacity-50 text-center"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow transition-all active:scale-95 disabled:opacity-50 text-center"
             >
               {isSubmittingPin ? 'Menyimpan...' : '✓ Simpan PIN Baru'}
             </button>
@@ -877,7 +877,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <form
             onSubmit={handleConfirmBooking}
-            className="bg-white rounded-3xl max-w-md w-full p-4 sm:p-7 space-y-3.5 sm:space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-teal-600 max-h-[92vh] overflow-y-auto"
+            className="bg-white rounded-3xl max-w-md w-full p-4 sm:p-7 space-y-3.5 sm:space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-sky-500 max-h-[92vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
@@ -906,15 +906,15 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               </div>
             )}
 
-            <div className="p-4 rounded-2xl bg-teal-950 text-white space-y-2 text-xs">
-              <div className="text-teal-300 font-bold uppercase text-[10px]">Data Sesi Terpilih:</div>
+            <div className="p-4 rounded-2xl bg-sky-900 text-white space-y-2 text-xs">
+              <div className="text-sky-200 font-bold uppercase text-[10px]">Data Sesi Terpilih:</div>
               <div className="text-base font-extrabold text-white">
                 📅 {slotToBook.tanggal}
               </div>
-              <div className="font-mono font-bold text-teal-200">
+              <div className="font-mono font-bold text-sky-100">
                 ⏰ {slotToBook.jamMulai} - {slotToBook.jamSelesai} WIB
               </div>
-              <div className="pt-2 border-t border-teal-800 text-[11px] text-teal-100 flex justify-between">
+              <div className="pt-2 border-t border-sky-700 text-[11px] text-sky-50 flex justify-between">
                 <span>Tenaga Ahli: <strong>{assignedTerapis?.nama}</strong></span>
                 <span>Ruang: <strong>{slotToBook.ruang}</strong></span>
               </div>
@@ -929,7 +929,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                 value={keluhanInput}
                 onChange={e => setKeluhanInput(e.target.value)}
                 placeholder="Contoh: Anak agak batuk ringan / sedang fokus latihan komunikasi verbal..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-700"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-sky-600"
               />
             </div>
 
@@ -948,7 +948,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               <button
                 type="submit"
                 disabled={isSubmittingBooking}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow transition-all active:scale-95 disabled:opacity-50 text-center"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow transition-all active:scale-95 disabled:opacity-50 text-center"
               >
                 {isSubmittingBooking ? 'Memproses...' : '✓ Konfirmasi Pendaftaran'}
               </button>
@@ -962,7 +962,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
       {/* ============================================================ */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-teal-600 max-h-[92vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-sky-500 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
@@ -980,29 +980,29 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               </button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-teal-950 text-white space-y-3">
-              <div className="flex justify-between items-center text-xs text-teal-300 font-mono">
+            <div className="p-4 rounded-2xl bg-sky-900 text-white space-y-3">
+              <div className="flex justify-between items-center text-xs text-sky-200 font-mono">
                 <span>TIKET SESI TERAPI</span>
-                <span className="bg-teal-900 px-2 py-0.5 rounded font-bold border border-teal-700">{selectedTicket.kodeBooking}</span>
+                <span className="bg-sky-800 px-2 py-0.5 rounded font-bold border border-sky-600">{selectedTicket.kodeBooking}</span>
               </div>
               <div>
-                <div className="text-xs text-teal-200">Nama Siswa:</div>
+                <div className="text-xs text-sky-100">Nama Siswa:</div>
                 <div className="text-lg font-bold text-white">
                   {currentPeserta.namaLengkap}
                 </div>
-                <div className="text-xs text-teal-300 mt-0.5">
+                <div className="text-xs text-sky-200 mt-0.5">
                   Layanan: <strong className="text-white">{getSpesialisasiLabel(selectedTicket.spesialisasi)}</strong>
                 </div>
               </div>
-              <div className="pt-2 border-t border-teal-800 text-xs flex justify-between items-end">
+              <div className="pt-2 border-t border-sky-700 text-xs flex justify-between items-end">
                 <div>
-                  <div className="text-teal-300 text-[10px]">JADWAL & RUANG</div>
+                  <div className="text-sky-200 text-[10px]">JADWAL & RUANG</div>
                   <div className="font-bold text-white">{selectedTicket.tanggal}</div>
-                  <div className="text-teal-200">{selectedTicket.jamMulai} - {selectedTicket.jamSelesai} WIB · {selectedTicket.ruang}</div>
+                  <div className="text-sky-100">{selectedTicket.jamMulai} - {selectedTicket.jamSelesai} WIB · {selectedTicket.ruang}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-teal-300 text-[10px]">TENAGA AHLI</div>
-                  <div className="font-bold text-teal-200">{assignedTerapis?.nama || 'Tenaga Ahli ULD'}</div>
+                  <div className="text-sky-200 text-[10px]">TENAGA AHLI</div>
+                  <div className="font-bold text-sky-100">{assignedTerapis?.nama || 'Tenaga Ahli ULD'}</div>
                 </div>
               </div>
             </div>
@@ -1018,7 +1018,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               <button
                 type="button"
                 onClick={() => setSelectedTicket(null)}
-                className="w-full py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold shadow-sm"
+                className="w-full py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold shadow-sm"
               >
                 Tutup
               </button>
@@ -1094,10 +1094,10 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                       }}
                       className={`p-2 rounded-xl text-center border transition-all ${
                         isSelected
-                          ? 'bg-teal-900 text-white border-teal-950 shadow-sm font-bold'
+                          ? 'bg-sky-800 text-white border-sky-900 shadow-sm font-bold'
                           : !deadline.bisaDaftar
                             ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-sky-400'
                       }`}
                     >
                       <div className="text-[11px] font-bold">{wd.dayName}</div>
@@ -1154,10 +1154,10 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                       }}
                       className={`p-3 rounded-2xl border text-left transition-all ${
                         isSelected
-                          ? 'border-teal-700 bg-teal-50 ring-2 ring-teal-600'
+                          ? 'border-sky-600 bg-sky-50 ring-2 ring-sky-500'
                           : !canSelect
                             ? 'border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed'
-                            : 'border-slate-200 bg-white hover:border-teal-400'
+                            : 'border-slate-200 bg-white hover:border-sky-300'
                       }`}
                     >
                       <div className="flex items-center justify-between text-xs">
@@ -1191,11 +1191,11 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                 value={rescheduleAlasan}
                 onChange={e => setRescheduleAlasan(e.target.value)}
                 placeholder="Contoh: Salah pilih hari / bentrok dengan jadwal terapi lain"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-700 font-medium"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-sky-600 font-medium"
               />
             </div>
 
-            <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 text-teal-950 text-[11px] leading-relaxed">
+            <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 text-sky-900 text-[11px] leading-relaxed">
               ℹ️ <strong>Perhatian:</strong> Penggantian jadwal mandiri dibatasi <strong>maksimal 1 kali</strong> per tiket pendaftaran sesi. Pastikan hari dan waktu pengganti sudah benar.
             </div>
 

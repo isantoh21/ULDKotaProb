@@ -46,7 +46,7 @@ export const LoginTerapis: React.FC<Props> = ({ onLoginSuccess }) => {
   return (
     <div className="max-w-md mx-auto my-4 space-y-5 pb-20">
       <div className="text-center space-y-1">
-        <div className="w-12 h-12 rounded-2xl bg-teal-800 text-white font-bold flex items-center justify-center text-lg mx-auto shadow">
+        <div className="w-12 h-12 rounded-2xl bg-sky-700 text-white font-bold flex items-center justify-center text-lg mx-auto shadow">
           ULD
         </div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -83,19 +83,19 @@ export const LoginTerapis: React.FC<Props> = ({ onLoginSuccess }) => {
                   type="button"
                   key={t.id}
                   onClick={() => handleSelect(t)}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${isSelected ? 'border-teal-700 bg-teal-50/80 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${isSelected ? 'border-sky-600 bg-sky-50/80 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
                 >
                   <span className="text-2xl">{icon}</span>
                   <div className="flex-1 truncate">
                     <div className="font-extrabold text-sm text-slate-900 truncate">
                       {t.nama}
                     </div>
-                    <div className="text-xs text-teal-800 font-semibold">
+                    <div className="text-xs text-sky-700 font-semibold">
                       {t.spesialisasiLabel}
                     </div>
                   </div>
                   {isSelected && (
-                    <span className="w-6 h-6 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    <span className="w-6 h-6 rounded-full bg-sky-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                       ✓
                     </span>
                   )}
@@ -124,7 +124,7 @@ export const LoginTerapis: React.FC<Props> = ({ onLoginSuccess }) => {
               value={pin}
               onChange={e => setPin(e.target.value)}
               placeholder="••••••"
-              className="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-lg font-mono font-bold tracking-widest text-center"
+              className="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-lg font-mono font-bold tracking-widest text-center"
             />
             <span className="text-[11px] text-slate-500 mt-1 block text-center">
               (PIN dapat diubah sendiri kapanpun setelah berhasil masuk)
@@ -134,7 +134,7 @@ export const LoginTerapis: React.FC<Props> = ({ onLoginSuccess }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-sm shadow-md active:scale-98 transition-all"
+            className="w-full py-3.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-sm shadow-md active:scale-98 transition-all"
           >
             {isLoading ? 'Memverifikasi...' : 'Masuk ke Halaman Jadwal'}
           </button>

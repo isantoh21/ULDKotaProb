@@ -28,9 +28,9 @@ export const Home: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16">
       {/* Super Simple Banner Header */}
-      <section className="bg-gradient-to-br from-teal-900 via-teal-800 to-slate-900 text-white rounded-3xl p-6 sm:p-10 shadow-lg text-center sm:text-left relative overflow-hidden">
+      <section className="bg-gradient-to-br from-sky-800 via-sky-700 to-slate-900 text-white rounded-3xl p-6 sm:p-10 shadow-lg text-center sm:text-left relative overflow-hidden">
         <div className="relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-800/80 border border-teal-600/50 text-xs font-semibold text-teal-200">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-700/80 border border-sky-500/50 text-xs font-semibold text-sky-100">
             <span>🏛️ Pemerintah Kota Probolinggo</span>
             <span>·</span>
             <span>Layanan Inklusi Gratis</span>
@@ -40,18 +40,18 @@ export const Home: React.FC = () => {
             Unit Layanan Disabilitas (ULD) Kota Probolinggo
           </h1>
 
-          <p className="text-sm sm:text-base text-teal-100 max-w-2xl leading-relaxed">
+          <p className="text-sm sm:text-base text-sky-50 max-w-2xl leading-relaxed">
             Sistem pendaftaran jadwal terapi rutin dan pemantauan tumbuh kembang terpadu untuk anak berkebutuhan khusus.
           </p>
 
           {/* Jam Layanan Highlight */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-teal-950/70 border border-teal-500/40 text-xs sm:text-sm font-bold text-amber-300">
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-sky-900/70 border border-sky-400/40 text-xs sm:text-sm font-bold text-amber-300">
             <span className="text-base">🕒</span>
             <span>Jadwal Terapi: Setiap Hari Senin – Jumat, Pukul 09.00 – 13.00 WIB</span>
           </div>
         </div>
 
-        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-teal-400/10 blur-2xl pointer-events-none" />
+        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-sky-300/10 blur-2xl pointer-events-none" />
       </section>
 
       {/* 4 MENU UTAMA SUPER SIMPLE */}
@@ -67,15 +67,15 @@ export const Home: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* MENU 1: SISWA TERAPI RUTIN */}
-          <div className="bg-white rounded-3xl p-6 border-2 border-teal-700/30 hover:border-teal-700 transition-all shadow-sm flex flex-col justify-between space-y-4 group">
+          <div className="bg-white rounded-3xl p-6 border-2 border-sky-600/30 hover:border-sky-600 transition-all shadow-sm flex flex-col justify-between space-y-4 group">
             <div className="space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-800 text-2xl flex items-center justify-center font-bold">
+              <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-700 text-2xl flex items-center justify-center font-bold">
                 🧒
               </div>
-              <span className="px-2.5 py-0.5 rounded-md bg-teal-100 text-teal-900 font-bold text-[11px] inline-block">
+              <span className="px-2.5 py-0.5 rounded-md bg-sky-50 text-sky-800 font-bold text-[11px] inline-block">
                 Sudah Terdaftar di ULD
               </span>
-              <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-teal-800 transition-colors">
+              <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-sky-700 transition-colors">
                 Siswa Terapi Rutin
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -85,7 +85,7 @@ export const Home: React.FC = () => {
 
             <button
               onClick={() => navigateTo('/login-peserta')}
-              className="w-full py-3.5 px-4 rounded-2xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 rounded-2xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2"
             >
               <span>Pilih Nama & Masuk (PIN)</span>
               <span>→</span>
@@ -119,7 +119,7 @@ export const Home: React.FC = () => {
           </div>
 
           {/* MENU 3: TENAGA AHLI & TERAPIS */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:border-teal-600 transition-all shadow-sm flex flex-col justify-between space-y-4">
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:border-sky-500 transition-all shadow-sm flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-800 text-2xl flex items-center justify-center font-bold">
                 🩺
@@ -217,10 +217,10 @@ export const Home: React.FC = () => {
       </section>
 
       {/* LOKASI ULD KOTA PROBOLINGGO & LINK GOOGLE MAPS PROMINEN */}
-      <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-teal-800/20 shadow-sm space-y-4">
+      <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-sky-700/20 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-800 uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 uppercase tracking-wider">
               <span>📍 Lokasi Kantor & Tempat Terapi Langsung</span>
             </div>
             <h3 className="text-xl font-black text-slate-900">
@@ -235,7 +235,7 @@ export const Home: React.FC = () => {
             href="https://maps.app.goo.gl/LJ7Ymhp9QqdEnoy57"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-5 py-3 rounded-2xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+            className="px-5 py-3 rounded-2xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
           >
             <span>🗺️ Buka di Google Maps</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,7 +272,7 @@ export const Home: React.FC = () => {
           </div>
           <button
             onClick={() => navigateTo('/panduan-layanan')}
-            className="text-xs font-semibold text-teal-800 hover:underline hidden sm:block"
+            className="text-xs font-semibold text-sky-700 hover:underline hidden sm:block"
           >
             Lihat Panduan & SOP →
           </button>
@@ -280,8 +280,8 @@ export const Home: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           {terapisList.map((t) => (
-            <div key={t.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 hover:border-teal-300 transition-colors">
-              <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wide">
+            <div key={t.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 hover:border-sky-200 transition-colors">
+              <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wide">
                 {t.spesialisasiLabel}
               </span>
               <div className="font-bold text-slate-900 text-sm">{t.nama}</div>

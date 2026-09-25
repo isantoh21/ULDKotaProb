@@ -77,7 +77,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
     <div className="max-w-xl mx-auto my-4 space-y-6 pb-20">
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-teal-800 text-white font-bold flex items-center justify-center text-lg mx-auto shadow-md">
+        <div className="w-12 h-12 rounded-2xl bg-sky-700 text-white font-bold flex items-center justify-center text-lg mx-auto shadow-md">
           ULD
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -88,8 +88,8 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
         </p>
 
         {/* Verified Data Banner */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-50 border border-teal-200/80 rounded-full text-[11px] text-teal-800 font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-50 border border-sky-100/80 rounded-full text-[11px] text-sky-700 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
           <span>{sortedPeserta.length} Siswa Terapi Rutin Kota Probolinggo Terdaftar (Tanpa Duplikasi)</span>
         </div>
       </div>
@@ -118,7 +118,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
                 value={searchFilter}
                 onChange={e => setSearchFilter(e.target.value)}
                 placeholder="Contoh: Abimanyu, Azlan, Gufron, Mangunharjo..."
-                className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-xs"
+                className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-xs"
               />
               <svg className="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -144,7 +144,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
               required
               value={selectedPesertaId}
               onChange={e => handleSelectPeserta(e.target.value)}
-              className="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-sm font-semibold text-slate-900 bg-white shadow-sm"
+              className="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-sm font-semibold text-slate-900 bg-white shadow-sm"
             >
               <option value="" disabled>
                 -- Pilih Nama Siswa Terapi ({filteredPeserta.length} siswa) --
@@ -159,15 +159,15 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
 
           {/* Selected Student Confirmation Card */}
           {currentSelected && (
-            <div className="p-4 rounded-2xl bg-teal-50/80 border border-teal-200/80 text-xs space-y-2 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between border-b border-teal-200/60 pb-2">
+            <div className="p-4 rounded-2xl bg-sky-50/80 border border-sky-100/80 text-xs space-y-2 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-sky-100/60 pb-2">
                 <div>
-                  <span className="text-[10px] text-teal-700 font-bold uppercase tracking-wider block">Siswa Terpilih</span>
-                  <div className="text-base font-bold text-teal-950">
+                  <span className="text-[10px] text-sky-600 font-bold uppercase tracking-wider block">Siswa Terpilih</span>
+                  <div className="text-base font-bold text-sky-900">
                     {currentSelected.namaLengkap}
                   </div>
                 </div>
-                <span className="font-mono text-[10px] font-bold text-teal-800 bg-white px-2 py-0.5 rounded border border-teal-200">
+                <span className="font-mono text-[10px] font-bold text-sky-700 bg-white px-2 py-0.5 rounded border border-sky-100">
                   {currentSelected.nomorRekamMedis}
                 </span>
               </div>
@@ -187,7 +187,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
                 </div>
                 <div>
                   <span className="text-slate-500 font-medium">Layanan Rutin:</span>{' '}
-                  <strong className="text-teal-900">{currentSelected.ragamDisabilitas}</strong>
+                  <strong className="text-sky-800">{currentSelected.ragamDisabilitas}</strong>
                 </div>
               </div>
             </div>
@@ -203,7 +203,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowPinHint(!showPinHint)}
-                  className="text-[11px] text-teal-700 hover:text-teal-900 font-medium underline"
+                  className="text-[11px] text-sky-600 hover:text-sky-800 font-medium underline"
                 >
                   {showPinHint ? 'Sembunyikan Bantuan PIN' : 'Bantuan PIN Pribadi'}
                 </button>
@@ -218,7 +218,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
               value={pin}
               onChange={e => setPin(e.target.value)}
               placeholder="••••••"
-              className="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 text-base font-mono tracking-widest text-center"
+              className="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 text-base font-mono tracking-widest text-center"
             />
 
             {showPinHint && currentSelected && (
@@ -235,7 +235,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
             )}
 
             <span className="text-[11px] text-slate-500 mt-1 block text-right">
-              PIN default awal: <code className="font-mono font-bold text-teal-800">123456</code> (dapat diubah di Admin)
+              PIN default awal: <code className="font-mono font-bold text-sky-700">123456</code> (dapat diubah di Admin)
             </span>
           </div>
 
@@ -243,7 +243,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
           <button
             type="submit"
             disabled={isLoading || !selectedPesertaId}
-            className="w-full py-3.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-sm transition-all shadow-md active:scale-98 disabled:opacity-50 min-h-[48px]"
+            className="w-full py-3.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-sm transition-all shadow-md active:scale-98 disabled:opacity-50 min-h-[48px]"
           >
             {isLoading ? 'Memeriksa Kredensial...' : 'Masuk & Pilih Jadwal Terapi'}
           </button>
@@ -256,7 +256,7 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
           </div>
           <button
             onClick={() => navigateTo('/asesmen-guest')}
-            className="w-full py-2.5 px-4 rounded-xl border border-teal-700 text-teal-800 hover:bg-teal-50 text-xs font-bold transition-colors"
+            className="w-full py-2.5 px-4 rounded-xl border border-sky-600 text-sky-700 hover:bg-sky-50 text-xs font-bold transition-colors"
           >
             Daftar Layanan Asesmen Awal (Guest / Pasien Baru)
           </button>

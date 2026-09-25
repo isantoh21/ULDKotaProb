@@ -6,7 +6,7 @@ export const PanduanLayanan: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
       {/* Title */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-teal-800 uppercase tracking-wider">
+        <div className="flex items-center gap-2 text-xs font-semibold text-sky-700 uppercase tracking-wider">
           <span>Standar Operasional Prosedur (SOP)</span>
           <span aria-hidden="true">·</span>
           <span>Inklusi & Aksesibilitas</span>
@@ -26,9 +26,9 @@ export const PanduanLayanan: React.FC = () => {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-200/80 space-y-2">
-            <div className="font-bold text-teal-950 text-sm flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-teal-800 text-white flex items-center justify-center text-xs">1</span>
+          <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-100/80 space-y-2">
+            <div className="font-bold text-sky-900 text-sm flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-sky-700 text-white flex items-center justify-center text-xs">1</span>
               <span>Terapis Perilaku (Behavior Therapy / ABA)</span>
             </div>
             <p className="text-slate-600 leading-relaxed">
@@ -36,9 +36,9 @@ export const PanduanLayanan: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-200/80 space-y-2">
-            <div className="font-bold text-teal-950 text-sm flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-teal-800 text-white flex items-center justify-center text-xs">2</span>
+          <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-100/80 space-y-2">
+            <div className="font-bold text-sky-900 text-sm flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-sky-700 text-white flex items-center justify-center text-xs">2</span>
               <span>Fisioterapis Pediatrik</span>
             </div>
             <p className="text-slate-600 leading-relaxed">
@@ -46,9 +46,9 @@ export const PanduanLayanan: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-200/80 space-y-2">
-            <div className="font-bold text-teal-950 text-sm flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-teal-800 text-white flex items-center justify-center text-xs">3</span>
+          <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-100/80 space-y-2">
+            <div className="font-bold text-sky-900 text-sm flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-sky-700 text-white flex items-center justify-center text-xs">3</span>
               <span>Tenaga Pendidikan Luar Biasa (PLB)</span>
             </div>
             <p className="text-slate-600 leading-relaxed">
@@ -56,9 +56,9 @@ export const PanduanLayanan: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-200/80 space-y-2">
-            <div className="font-bold text-teal-950 text-sm flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-teal-800 text-white flex items-center justify-center text-xs">4</span>
+          <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-100/80 space-y-2">
+            <div className="font-bold text-sky-900 text-sm flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-sky-700 text-white flex items-center justify-center text-xs">4</span>
               <span>Psikolog</span>
             </div>
             <p className="text-slate-600 leading-relaxed">
@@ -137,19 +137,19 @@ export const PanduanLayanan: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-300">
           <div>
-            <div className="font-bold text-teal-400">Alamat Kantor:</div>
+            <div className="font-bold text-sky-300">Alamat Kantor:</div>
             <div>Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo, Jawa Timur 67217</div>
-            <div className="mt-2 font-bold text-teal-400">Jadwal Sesi Terapi:</div>
+            <div className="mt-2 font-bold text-sky-300">Jadwal Sesi Terapi:</div>
             <div>Senin – Jumat: Pukul 09.00 – 13.00 WIB (Sesi 1: 09-10, Sesi 2: 10-11, Sesi 3: 11-12, Sesi 4: 12-13)</div>
           </div>
 
           <div>
-            <div className="font-bold text-teal-400">Layanan Informasi & WhatsApp Resmi:</div>
+            <div className="font-bold text-sky-300">Layanan Informasi & WhatsApp Resmi:</div>
             <div className="font-mono space-y-0.5 mt-0.5">
               <div>Admin 1 (Sugeng): <strong>6285236028521</strong> (0852-3602-8521)</div>
               <div>Admin 2 (Helmi): <strong>6282247952696</strong> (0822-4795-2696)</div>
             </div>
-            <div className="mt-2 font-bold text-teal-400">Status Pembiayaan:</div>
+            <div className="mt-2 font-bold text-sky-300">Status Pembiayaan:</div>
             <div className="text-emerald-400 font-semibold">Gratis / Subsidi Penuh APBD Pemerintah Kota Probolinggo</div>
           </div>
         </div>

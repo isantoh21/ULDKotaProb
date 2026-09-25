@@ -31,7 +31,7 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
         </p>
         <button
           onClick={() => navigateTo('/asesmen-guest')}
-          className="px-4 py-2 bg-teal-800 text-white rounded-xl text-xs font-semibold"
+          className="px-4 py-2 bg-sky-700 text-white rounded-xl text-xs font-semibold"
         >
           Daftar Asesmen Baru
         </button>
@@ -96,12 +96,12 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
       </div>
 
       {/* Printable Ticket Card */}
-      <div className="bg-white rounded-3xl border-2 border-dashed border-teal-700/30 overflow-hidden shadow-lg">
+      <div className="bg-white rounded-3xl border-2 border-dashed border-sky-600/30 overflow-hidden shadow-lg">
         {/* Ticket Header */}
-        <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 text-white p-6 sm:p-8">
+        <div className="bg-gradient-to-r from-sky-800 via-sky-700 to-slate-900 text-white p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="text-[11px] font-semibold text-teal-200 uppercase tracking-widest">
+              <div className="text-[11px] font-semibold text-sky-100 uppercase tracking-widest">
                 Unit Layanan Disabilitas (ULD) Kota Probolinggo
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-white mt-1">
@@ -113,13 +113,13 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
             </div>
 
             <div className="sm:text-right shrink-0">
-              <div className="text-[10px] text-teal-300 font-mono">NOMOR REGISTRASI</div>
-              <div className="text-lg sm:text-xl font-extrabold font-mono tracking-wider text-teal-300">
+              <div className="text-[10px] text-sky-200 font-mono">NOMOR REGISTRASI</div>
+              <div className="text-lg sm:text-xl font-extrabold font-mono tracking-wider text-sky-200">
                 {guest.nomorRegistrasi}
               </div>
               <button
                 onClick={handleCopyReg}
-                className="no-print mt-1 text-[10px] text-teal-200 hover:text-white underline"
+                className="no-print mt-1 text-[10px] text-sky-100 hover:text-white underline"
               >
                 {copied ? 'Tersalin!' : 'Salin Nomor'}
               </button>
@@ -174,17 +174,17 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
           </div>
 
           {/* Schedule of Physical Visit */}
-          <div className="p-5 rounded-2xl bg-teal-50 border border-teal-200/80 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-teal-900 uppercase">
-              <svg className="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-5 rounded-2xl bg-sky-50 border border-sky-100/80 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-sky-800 uppercase">
+              <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span>Jadwal Kedatangan ke Kantor ULD</span>
             </div>
-            <div className="text-lg font-extrabold text-teal-950">
+            <div className="text-lg font-extrabold text-sky-900">
               {guest.tanggalRencanaDatang} · {guest.jamRencanaDatang}
             </div>
-            <div className="text-xs text-teal-800 leading-relaxed">
+            <div className="text-xs text-sky-700 leading-relaxed">
               Lokasi: Gedung ULD Kota Probolinggo, Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo.
             </div>
           </div>
@@ -197,7 +197,7 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
               {guest.dokumenAkanDibawa.map((doc, idx) => (
                 <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-teal-700 font-bold">✓</span>
+                  <span className="text-sky-600 font-bold">✓</span>
                   <span>{doc}</span>
                 </div>
               ))}
@@ -266,7 +266,7 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
           </div>
           <button
             onClick={() => navigateTo('/admin')}
-            className="px-3.5 py-1.5 rounded-lg bg-teal-800 text-white font-semibold hover:bg-teal-700 transition-colors shrink-0"
+            className="px-3.5 py-1.5 rounded-lg bg-sky-700 text-white font-semibold hover:bg-sky-600 transition-colors shrink-0"
           >
             Buka Loket Verifikasi Admin →
           </button>

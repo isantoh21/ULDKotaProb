@@ -262,7 +262,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
       case 'admin':
         return { label: 'Admin Loket', bg: 'bg-slate-800 text-white' };
       case 'terapis':
-        return { label: 'Tenaga Ahli', bg: 'bg-teal-800 text-white' };
+        return { label: 'Tenaga Ahli', bg: 'bg-sky-700 text-white' };
       case 'peserta':
         return { label: 'Siswa / Wali', bg: 'bg-indigo-700 text-white' };
       case 'sistem':
@@ -344,16 +344,16 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-20">
       {/* Super Simple Profile Header */}
-      <div className="bg-teal-900 text-white rounded-3xl p-4 sm:p-6 shadow-md space-y-3.5 sm:space-y-4">
+      <div className="bg-sky-800 text-white rounded-3xl p-4 sm:p-6 shadow-md space-y-3.5 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <span className="text-[11px] font-bold text-teal-300 uppercase tracking-wider block">
+            <span className="text-[11px] font-bold text-sky-200 uppercase tracking-wider block">
               {terapis.spesialisasiLabel} ULD Kota Probolinggo
             </span>
             <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
               {terapis.nama}
             </h1>
-            <div className="text-xs text-teal-200 mt-1">
+            <div className="text-xs text-sky-100 mt-1">
               Ruang: {terapis.ruangPraktek}
             </div>
           </div>
@@ -362,17 +362,17 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
             <a
               href="/pdf/PIN_PEKERJA_ULD.pdf"
               download="PIN_PEKERJA_ULD.pdf"
-              className="px-3 py-2 rounded-xl bg-teal-800/90 hover:bg-teal-700 text-teal-100 font-bold text-xs border border-teal-600 transition-colors flex items-center gap-1.5 shadow-xs"
+              className="px-3 py-2 rounded-xl bg-sky-700/90 hover:bg-sky-600 text-sky-50 font-bold text-xs border border-sky-500 transition-colors flex items-center gap-1.5 shadow-xs"
               title="Unduh PDF Dokumen PIN Pekerja ULD"
             >
               <span>📄 Unduh PDF PIN</span>
             </a>
             <button
               onClick={() => setShowPinModal(true)}
-              className="px-3.5 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-teal-100 font-bold text-xs border border-teal-600 transition-colors flex items-center gap-1.5 shadow-xs"
+              className="px-3.5 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-sky-50 font-bold text-xs border border-sky-500 transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <span>🔑 Ubah PIN Saya</span>
-              <span className="font-mono text-teal-300">({currentPinDisplay})</span>
+              <span className="font-mono text-sky-200">({currentPinDisplay})</span>
             </button>
           </div>
         </div>
@@ -396,10 +396,10 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
 
         <button
           onClick={() => setActiveTab('assign_siswa')}
-          className={`py-2.5 sm:py-3 px-3 sm:px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex items-center justify-center gap-1.5 shrink-0 sm:shrink whitespace-nowrap ${activeTab === 'assign_siswa' ? 'bg-white text-teal-950 shadow-sm ring-1 ring-teal-700/20' : 'text-slate-600 hover:text-slate-900'}`}
+          className={`py-2.5 sm:py-3 px-3 sm:px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center flex items-center justify-center gap-1.5 shrink-0 sm:shrink whitespace-nowrap ${activeTab === 'assign_siswa' ? 'bg-white text-sky-900 shadow-sm ring-1 ring-sky-600/20' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <span>👥 Tetapkan Binaan</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'assign_siswa' ? 'bg-teal-800 text-white' : 'bg-slate-300 text-slate-800'}`}>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'assign_siswa' ? 'bg-sky-700 text-white' : 'bg-slate-300 text-slate-800'}`}>
             {assignedStudents.length}
           </span>
         </button>
@@ -440,13 +440,13 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
           </div>
 
           {/* Banner Kebijakan Otomatis */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-teal-50 border border-teal-200/80 flex items-start gap-2.5 sm:gap-3 text-xs text-teal-950 shadow-xs">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-sky-50 border border-sky-100/80 flex items-start gap-2.5 sm:gap-3 text-xs text-sky-900 shadow-xs">
             <span className="text-xl sm:text-2xl mt-0.5 select-none shrink-0">✨</span>
             <div className="space-y-1">
-              <div className="font-extrabold text-teal-950 text-sm">
+              <div className="font-extrabold text-sky-900 text-sm">
                 Jadwal Praktik Otomatis Aktif (Senin – Jumat)
               </div>
-              <p className="text-teal-800 leading-relaxed text-[11px]">
+              <p className="text-sky-700 leading-relaxed text-[11px]">
                 Seluruh 4 sesi terapi (09.00 – 13.00 WIB) setiap pekan secara otomatis telah <strong>dibuka aktif</strong> oleh sistem untuk pendaftaran siswa binaan Anda. Anda hanya perlu menekan tombol <strong>"🔴 Matikan Sesi"</strong> jika Anda berhalangan hadir atau ada rapat/kegiatan dinas pada jam tertentu.
               </p>
             </div>
@@ -465,7 +465,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                   setSelectedDate(e.target.value);
                   setSlotsList(db.getSlotsList(e.target.value));
                 }}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600"
               />
             </div>
 
@@ -599,7 +599,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 Daftar anak yang akan terapi dengan Anda hari ini.
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-teal-100 text-teal-900 font-bold text-xs shrink-0">
+            <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-800 font-bold text-xs shrink-0">
               {bookingsForSelectedDate.length} Siswa
             </span>
           </div>
@@ -629,7 +629,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                         </div>
                       </div>
                       <div className="text-left sm:text-right">
-                        <span className="font-mono font-bold text-xs text-teal-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        <span className="font-mono font-bold text-xs text-sky-700 bg-white px-2 py-0.5 rounded border border-slate-200">
                           {b.jamMulai} - {b.jamSelesai} WIB
                         </span>
                       </div>
@@ -682,7 +682,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                     </div>
 
                     {b.catatanSesiTerapis ? (
-                      <div className="p-2.5 rounded-xl bg-teal-50 text-xs text-teal-950 border border-teal-200">
+                      <div className="p-2.5 rounded-xl bg-sky-50 text-xs text-sky-900 border border-sky-100">
                         <strong>Catatan Anda:</strong> {b.catatanSesiTerapis}
                       </div>
                     ) : (
@@ -691,7 +691,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                           setSelectedBookingForNote(b);
                           setNoteContent('');
                         }}
-                        className="text-xs text-teal-800 font-bold hover:underline"
+                        className="text-xs text-sky-700 font-bold hover:underline"
                       >
                         + Tulis Catatan Perkembangan Sesi
                       </button>
@@ -709,17 +709,17 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
       {activeTab === 'assign_siswa' && (
         <div className="bg-white rounded-3xl p-4 sm:p-7 border border-slate-200 shadow-sm space-y-5 sm:space-y-6 animate-in fade-in">
           {/* Header & Policy */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-teal-950 via-teal-900 to-slate-900 text-white space-y-2.5">
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-900 via-sky-800 to-slate-900 text-white space-y-2.5">
             <div className="flex items-center gap-2">
               <span className="text-xl">👥</span>
               <h2 className="font-extrabold text-base sm:text-lg text-white">
                 Penetapan Siswa Binaan Tetap ({terapis.nama})
               </h2>
             </div>
-            <p className="text-xs text-teal-100 leading-relaxed">
+            <p className="text-xs text-sky-50 leading-relaxed">
               <strong>Aturan Penugasan Tetap:</strong> Setiap terapis dapat menentukan anak/siswa mana saja yang dapat mendaftar sesi terapi ke Anda secara tetap. Siswa di luar daftar binaan Anda <strong>tidak dapat mendaftar</strong> ke jadwal Anda. Setelah ditetapkan, siswa tersebut juga <strong>hanya dapat mendaftar ke Anda</strong>.
             </p>
-            <div className="text-[11px] text-amber-300 font-semibold pt-2 border-t border-teal-800 flex items-center gap-1.5">
+            <div className="text-[11px] text-amber-300 font-semibold pt-2 border-t border-sky-700 flex items-center gap-1.5">
               <span>⚠️</span>
               <span>Pada panel Loket Admin, siswa yang telah di-assign juga otomatis hanya memunculkan nama Anda saja sebagai terapis pilihan.</span>
             </div>
@@ -738,10 +738,10 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
               <div className="text-xl sm:text-2xl font-black text-amber-950 mt-0.5">{unassignedStudents.length} <span className="text-[10px] sm:text-xs font-normal text-amber-700">Anak</span></div>
               <span className="hidden sm:block text-[10px] text-amber-700">Siap Anda tetapkan</span>
             </div>
-            <div className="p-2.5 sm:p-4 rounded-2xl bg-teal-50 border border-teal-200 text-center sm:text-left">
-              <span className="text-[10px] sm:text-[11px] font-bold text-teal-800 uppercase tracking-wider block">Binaan Anda</span>
-              <div className="text-xl sm:text-2xl font-black text-teal-950 mt-0.5">{assignedStudents.length} <span className="text-[10px] sm:text-xs font-normal text-teal-700">Anak</span></div>
-              <span className="hidden sm:block text-[10px] text-teal-700">Terkunci ke jadwal Anda</span>
+            <div className="p-2.5 sm:p-4 rounded-2xl bg-sky-50 border border-sky-100 text-center sm:text-left">
+              <span className="text-[10px] sm:text-[11px] font-bold text-sky-700 uppercase tracking-wider block">Binaan Anda</span>
+              <div className="text-xl sm:text-2xl font-black text-sky-900 mt-0.5">{assignedStudents.length} <span className="text-[10px] sm:text-xs font-normal text-sky-600">Anak</span></div>
+              <span className="hidden sm:block text-[10px] text-sky-600">Terkunci ke jadwal Anda</span>
             </div>
             <div className="p-2.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center sm:text-left">
               <span className="text-[10px] sm:text-[11px] font-bold text-slate-700 uppercase tracking-wider block">Total Siswa</span>
@@ -756,21 +756,21 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
               <button
                 type="button"
                 onClick={() => setFilterStudentScope('belum_diassign')}
-                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'belum_diassign' ? 'bg-teal-900 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
+                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'belum_diassign' ? 'bg-sky-800 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
               >
                 Belum Di-assign ({unassignedStudents.length})
               </button>
               <button
                 type="button"
                 onClick={() => setFilterStudentScope('binaan_saya')}
-                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'binaan_saya' ? 'bg-teal-900 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
+                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'binaan_saya' ? 'bg-sky-800 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
               >
                 Binaan Saya ({assignedStudents.length})
               </button>
               <button
                 type="button"
                 onClick={() => setFilterStudentScope('semua')}
-                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'semua' ? 'bg-teal-900 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
+                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'semua' ? 'bg-sky-800 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
               >
                 Semua ({pesertaList.length})
               </button>
@@ -782,7 +782,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 value={searchStudent}
                 onChange={e => setSearchStudent(e.target.value)}
                 placeholder="🔍 Cari nama siswa / nomor RM / sekolah..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-700 bg-slate-50 font-medium"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-sky-600 bg-slate-50 font-medium"
               />
               {searchStudent && (
                 <button
@@ -822,10 +822,10 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                     key={p.id}
                     className={`p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 ${
                       isAssignedToMe
-                        ? 'border-teal-300 bg-teal-50/40 shadow-xs'
+                        ? 'border-sky-200 bg-sky-50/40 shadow-xs'
                         : isAssignedToOther
                           ? 'border-slate-200 bg-slate-50/60 opacity-80'
-                          : 'border-slate-200 bg-white hover:border-teal-400'
+                          : 'border-slate-200 bg-white hover:border-sky-300'
                     }`}
                   >
                     <div className="space-y-1">
@@ -859,7 +859,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                         <span>·</span>
                         <span>Sekolah: <strong>{p.asalSekolah || 'Kota Probolinggo'}</strong></span>
                         <span>·</span>
-                        <span>Kebutuhan: <strong className="text-teal-800">{p.ragamDisabilitas}</strong></span>
+                        <span>Kebutuhan: <strong className="text-sky-700">{p.ragamDisabilitas}</strong></span>
                       </div>
 
                       {p.catatanKhusus && (
@@ -885,7 +885,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-2xs ${
                             isAssignedToOther
                               ? 'bg-slate-800 hover:bg-slate-700 text-white'
-                              : 'bg-teal-800 hover:bg-teal-700 text-white'
+                              : 'bg-sky-700 hover:bg-sky-600 text-white'
                           }`}
                         >
                           <span>{isAssignedToOther ? '⇄ Alihkan ke Saya' : '+ Tetapkan Binaan'}</span>
@@ -904,7 +904,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
       {activeTab === 'sql_config' && isPsikolog && (
         <div className="space-y-6 animate-in fade-in">
           {/* Security & Role Notice */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-teal-950 text-white border border-indigo-700/60 shadow-md space-y-3">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-sky-900 text-white border border-indigo-700/60 shadow-md space-y-3">
             <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs uppercase tracking-wider">
               <span>🔒 Hak Akses Eksklusif Tenaga Ahli Psikolog</span>
             </div>
@@ -923,7 +923,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                   type="button"
                   disabled={isTestingSupabase}
                   onClick={handleTestSupabaseConnection}
-                  className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition-all shadow flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-xs transition-all shadow flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
                 >
                   <span>{isTestingSupabase ? '⏳ Menguji...' : '🔌 Uji & Verifikasi Koneksi'}</span>
                 </button>
@@ -1030,7 +1030,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-teal-300 font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all active:scale-95"
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-sky-200 font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all active:scale-95"
                 >
                   <span>{copiedSql ? '✓ Tersalin!' : '📋 Salin SQL'}</span>
                 </button>
@@ -1041,7 +1041,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed">
                   <li>Buka proyek di <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-indigo-700 font-bold hover:underline">Supabase Dashboard</a>.</li>
                   <li>Buka menu <strong>SQL Editor</strong> di bilah navigasi kiri.</li>
-                  <li>Klik tombol <strong>Salin SQL</strong> di atas, atau buka berkas <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-teal-800 font-bold">supabase-schema.sql</code>.</li>
+                  <li>Klik tombol <strong>Salin SQL</strong> di atas, atau buka berkas <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-sky-700 font-bold">supabase-schema.sql</code>.</li>
                   <li>Tempelkan ke dalam SQL Editor Supabase lalu tekan <strong>RUN</strong>.</li>
                   <li>Setelah tabel terbentuk, klik <strong>Uji & Verifikasi Koneksi</strong> di atas!</li>
                 </ol>
@@ -1074,7 +1074,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div className="p-4 rounded-2xl bg-teal-50/50 border border-teal-200 space-y-3">
+              <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-100 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">⬆️</span>
                   <div>
@@ -1086,7 +1086,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                   type="button"
                   disabled={!supabaseStatus.isConnected || isTestingSupabase}
                   onClick={handlePushDataToSupabase}
-                  className="w-full py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {isTestingSupabase ? 'Memproses...' : '⬆️ Push Seluruh Data ke Supabase'}
                 </button>
@@ -1127,13 +1127,13 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
               <button
                 type="button"
                 onClick={handleCopySql}
-                className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition-colors shrink-0 shadow"
+                className="px-4 py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-xs transition-colors shrink-0 shadow"
               >
                 {copiedSql ? '✓ Tersalin ke Clipboard!' : 'Salin Skrip SQL'}
               </button>
             </div>
 
-            <pre className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-teal-300 overflow-x-auto max-h-72 leading-relaxed">
+            <pre className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-sky-200 overflow-x-auto max-h-72 leading-relaxed">
               {db.generateSupabaseSqlSchema()}
             </pre>
           </div>
@@ -1392,7 +1392,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs"
+                className="px-5 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs"
               >
                 Simpan PIN Baru
               </button>
@@ -1428,7 +1428,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                   setSelectedBookingForNote(null);
                   setActiveTab('pasien');
                 }}
-                className="px-4 py-2 rounded-xl bg-teal-800 text-white font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-sky-700 text-white font-bold text-xs"
               >
                 Simpan Catatan
               </button>
