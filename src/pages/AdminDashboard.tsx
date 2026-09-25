@@ -5,6 +5,7 @@ import { Peserta, PendaftaranAsesmenGuest, Terapis, SlotHarian, BookingTerapi, L
 import { ULD_LOGO_BASE64 } from '../constants/logoData';
 import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
 import { compressImageFile } from '../utils/imageCompressor';
+import { PhotoCropModal } from '../components/PhotoCropModal';
 
 interface Props {
   onLogout?: () => void;
@@ -49,24 +50,39 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   const activeAdmin = adminList.find(a => a.id === initialAdminId) || adminList[0];
   const activeAdminId = activeAdmin.id;
 
-  // Foto Profil Admin
+  // Foto Profil Admin & Modal Penyesuaian Posisi
   const [currentAdminFoto, setCurrentAdminFoto] = useState<string | undefined>(() => {
     return adminList.find(a => a.id === activeAdmin.id)?.fotoUrl || activeAdmin.fotoUrl;
   });
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState<boolean>(false);
 
-  const handleUploadAdminFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadAdminFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    try {
-      const compressed = await compressImageFile(file, 400, 0.85);
-      db.updateFotoAdmin(activeAdmin.id, compressed);
-      setCurrentAdminFoto(compressed);
-      confetti({ particleCount: 50 });
-      alert(`Foto profil Petugas Admin ${activeAdmin.nama} berhasil diperbarui! Foto Anda sekarang tampil di Beranda.`);
-    } catch (err: any) {
-      alert(err.message || 'Gagal memproses unggahan foto.');
+    if (!file.type.startsWith('image/')) {
+      alert('File yang dipilih harus berupa file gambar (JPG, PNG, atau WebP).');
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setCropImageSrc(result);
+        setShowCropModal(true);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSaveCroppedAdminFoto = (croppedBase64: string) => {
+    db.updateFotoAdmin(activeAdmin.id, croppedBase64);
+    setCurrentAdminFoto(croppedBase64);
+    confetti({ particleCount: 60, spread: 60 });
+    alert(`Alhamdulillah! Foto profil Petugas Admin ${activeAdmin.nama} berhasil disesuaikan posisinya dan diperbarui. Foto Anda tampil di Beranda.`);
   };
 
   // Admin PIN change
@@ -1385,6 +1401,17 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
 
 
 
+      {/* MODAL SESUAIKAN POSISI FOTO PROFIL ADMIN */}
+      <PhotoCropModal
+        isOpen={showCropModal}
+        imageSrc={cropImageSrc}
+        workerName={`Petugas Admin ${activeAdmin.nama}`}
+        onClose={() => {
+          setShowCropModal(false);
+          setCropImageSrc(null);
+        }}
+        onSaveCrop={handleSaveCroppedAdminFoto}
+      />
     </div>
   );
 };

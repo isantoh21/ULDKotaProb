@@ -5,6 +5,7 @@ import { db, DEFAULT_TERAPI_SESSIONS } from '../services/supabase';
 import { getNextWeekdayDate } from '../services/initialData';
 import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
 import { compressImageFile } from '../utils/imageCompressor';
+import { PhotoCropModal } from '../components/PhotoCropModal';
 
 interface Props {
   terapis: Terapis;
@@ -53,24 +54,39 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   // Date selector (Default today or next weekday)
   const [selectedDate, setSelectedDate] = useState<string>(() => getNextWeekdayDate(0));
   
-  // Foto Profil Pekerja
+  // Foto Profil Pekerja & Modal Penyesuaian Posisi
   const [currentFoto, setCurrentFoto] = useState<string | undefined>(() => {
     return db.getTerapisById(terapis.id)?.fotoUrl || terapis.fotoUrl;
   });
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState<boolean>(false);
 
-  const handleUploadFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    try {
-      const compressed = await compressImageFile(file, 400, 0.85);
-      db.updateFotoTerapis(terapis.id, compressed);
-      setCurrentFoto(compressed);
-      confetti({ particleCount: 50 });
-      alert(`Foto profil ${terapis.nama} berhasil diperbarui! Foto Anda sekarang tampil di Beranda.`);
-    } catch (err: any) {
-      alert(err.message || 'Gagal memproses unggahan foto.');
+    if (!file.type.startsWith('image/')) {
+      alert('File yang dipilih harus berupa file gambar (JPG, PNG, atau WebP).');
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setCropImageSrc(result);
+        setShowCropModal(true);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSaveCroppedFoto = (croppedBase64: string) => {
+    db.updateFotoTerapis(terapis.id, croppedBase64);
+    setCurrentFoto(croppedBase64);
+    confetti({ particleCount: 60, spread: 60 });
+    alert(`Alhamdulillah! Foto profil ${terapis.nama} berhasil disesuaikan posisinya dan diperbarui. Foto Anda sekarang tampil di Beranda.`);
   };
   
   // Change PIN Modal
@@ -1967,6 +1983,18 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
           </form>
         </div>
       )}
+
+      {/* MODAL SESUAIKAN POSISI FOTO PROFIL */}
+      <PhotoCropModal
+        isOpen={showCropModal}
+        imageSrc={cropImageSrc}
+        workerName={terapis.nama}
+        onClose={() => {
+          setShowCropModal(false);
+          setCropImageSrc(null);
+        }}
+        onSaveCrop={handleSaveCroppedFoto}
+      />
     </div>
   );
 };
