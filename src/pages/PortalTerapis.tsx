@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { Terapis, SlotHarian, PengosonganJadwalRutin, BookingTerapi, Peserta, LogAktivitas, KategoriAktivitas } from '../types';
 import { db, DEFAULT_TERAPI_SESSIONS } from '../services/supabase';
 import { getNextWeekdayDate } from '../services/initialData';
+import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
 
 interface Props {
   terapis: Terapis;
@@ -467,14 +468,24 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
           </div>
 
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
-            <a
-              href="/pdf/PIN_PEKERJA_ULD.pdf"
-              download="PIN_PEKERJA_ULD.pdf"
+            {isPsikolog && (
+              <button
+                type="button"
+                onClick={() => downloadPdfPinSiswaTerbaru(pesertaList)}
+                className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs border border-emerald-400 transition-colors flex items-center gap-1.5 shadow-xs"
+                title="Unduh Dokumen PDF Daftar PIN Siswa Terbaru Real-Time"
+              >
+                <span>📄 Unduh PDF PIN Siswa</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => downloadPdfPinPekerjaTerbaru(db.getTerapisList(), db.getAdminList())}
               className="px-3 py-2 rounded-xl bg-sky-700/90 hover:bg-sky-600 text-sky-50 font-bold text-xs border border-sky-500 transition-colors flex items-center gap-1.5 shadow-xs"
-              title="Unduh PDF Dokumen PIN Pekerja ULD"
+              title="Unduh PDF Dokumen PIN Pekerja ULD Terbaru Real-Time"
             >
-              <span>📄 Unduh PDF PIN</span>
-            </a>
+              <span>📄 Unduh PDF PIN Pekerja</span>
+            </button>
             <button
               onClick={() => setShowPinModal(true)}
               className="px-3.5 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-sky-50 font-bold text-xs border border-sky-500 transition-colors flex items-center gap-1.5 shadow-xs"
@@ -988,6 +999,17 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
 
           {/* Filter & Search Bar */}
           <div className="space-y-2.5 border-b border-slate-100 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+              <span className="text-xs text-slate-500 font-semibold">Kelola & tetapkan siswa binaan tetap atau unduh data PIN resmi.</span>
+              <button
+                type="button"
+                onClick={() => downloadPdfPinSiswaTerbaru(pesertaList)}
+                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-2xs self-start sm:self-auto"
+                title="Unduh Dokumen PDF Daftar PIN Siswa Terbaru Real-Time"
+              >
+                <span>📄 Unduh PDF PIN Siswa Terbaru</span>
+              </button>
+            </div>
             <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl text-xs font-bold text-center">
               <button
                 type="button"

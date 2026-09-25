@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { db, getWIBDate } from '../services/supabase';
 import { Peserta, PendaftaranAsesmenGuest, Terapis, SlotHarian, BookingTerapi, LogAktivitas } from '../types';
 import { ULD_LOGO_BASE64 } from '../constants/logoData';
+import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
 
 interface Props {
   onLogout?: () => void;
@@ -702,22 +703,22 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                 placeholder="Cari nama siswa / wali..."
                 className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-sky-600"
               />
-              <a
-                href="/pdf/PIN_PESERTA_TERAPI_ULD.pdf"
-                download="PIN_PESERTA_TERAPI_ULD.pdf"
-                className="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-50 text-sky-800 border border-sky-200 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-2xs"
-                title="Download Dokumen PDF Daftar PIN Semua Siswa Terapi"
+              <button
+                type="button"
+                onClick={() => downloadPdfPinSiswaTerbaru(pesertaList)}
+                className="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-2xs"
+                title="Download Dokumen PDF Daftar PIN Semua Siswa Terapi Real-Time Terbaru"
               >
                 <span>📄 Unduh PDF PIN Siswa</span>
-              </a>
-              <a
-                href="/pdf/PIN_PEKERJA_ULD.pdf"
-                download="PIN_PEKERJA_ULD.pdf"
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadPdfPinPekerjaTerbaru(terapisList, adminList)}
                 className="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-2xs"
-                title="Download Dokumen PDF Daftar PIN Pekerja ULD (Terapis & Admin)"
+                title="Download Dokumen PDF Daftar PIN Pekerja ULD (Terapis & Admin) Terbaru"
               >
                 <span>📄 Unduh PDF PIN Pekerja</span>
-              </a>
+              </button>
               <button
                 onClick={handleOpenSimpleAddStudent}
                 className="px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs transition-colors shadow-sm whitespace-nowrap flex items-center gap-1.5"
