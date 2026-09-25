@@ -779,14 +779,15 @@ class SupabaseDataService {
 
       // Update langsung dan aman ke database cloud Supabase
       if (this.client) {
-        this.client
-          .from('terapis')
-          .update({ foto_url: fotoUrl })
-          .eq('id', terapisId)
-          .then(({ error }: any) => {
-            if (error) console.warn('Supabase update foto_url error:', error.message);
-          })
-          .catch(console.warn);
+        Promise.resolve(
+          this.client
+            .from('terapis')
+            .update({ foto_url: fotoUrl })
+            .eq('id', terapisId)
+            .then(({ error }: any) => {
+              if (error) console.warn('Supabase update foto_url error:', error.message);
+            })
+        ).catch(console.warn);
       }
 
       this.triggerAutoSync();
@@ -817,14 +818,15 @@ class SupabaseDataService {
 
       // Update langsung dan aman ke database cloud Supabase
       if (this.client) {
-        this.client
-          .from('admin_users')
-          .update({ foto_url: fotoUrl })
-          .eq('id', adminId)
-          .then(({ error }: any) => {
-            if (error) console.warn('Supabase update admin foto_url error:', error.message);
-          })
-          .catch(console.warn);
+        Promise.resolve(
+          this.client
+            .from('admin_users')
+            .update({ foto_url: fotoUrl })
+            .eq('id', adminId)
+            .then(({ error }: any) => {
+              if (error) console.warn('Supabase update admin foto_url error:', error.message);
+            })
+        ).catch(console.warn);
       }
 
       this.triggerAutoSync();
@@ -1711,7 +1713,8 @@ class SupabaseDataService {
 
     // Batas maksimal pendaftaran adalah 2 pekan ke depan
     const twoWeeksAheadDate = (() => {
-      const d = new Date(todayWIB.dateStr + 'T00:00:00');
+      const { dateStr: todayStr } = getWIBDate();
+      const d = new Date(todayStr + 'T00:00:00');
       d.setDate(d.getDate() + 14);
       return d.toISOString().split('T')[0];
     })();
