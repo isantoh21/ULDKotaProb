@@ -7,9 +7,10 @@ import { ULD_LOGO_BASE64 } from '../constants/logoData';
 interface Props {
   onLogout?: () => void;
   initialTab?: 'pendaftaran_loket' | 'peserta_pin';
+  activeAdminId?: string;
 }
 
-export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
+export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAdminId: initialAdminId }) => {
   const [activeTab, setActiveTab] = useState<'pendaftaran_loket' | 'peserta_pin'>(initialTab || 'pendaftaran_loket');
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
   }, []);
 
   // Active Admin (Sugeng / Helmi)
-  const [activeAdminId, setActiveAdminId] = useState<string>(adminList[0]?.id || 'admin-1');
+  const [activeAdminId, setActiveAdminId] = useState<string>(initialAdminId || adminList[0]?.id || 'admin-1');
   const activeAdmin = adminList.find(a => a.id === activeAdminId) || adminList[0];
 
   // Admin PIN change

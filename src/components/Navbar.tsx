@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppRoute, navigateTo } from '../services/router';
-import { Peserta, Terapis } from '../types';
+import { Peserta, Terapis, AdminUser } from '../types';
 import { ULD_LOGO_BASE64 } from '../constants/logoData';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
     role: 'guest' | 'peserta' | 'terapis' | 'admin';
     peserta?: Peserta;
     terapis?: Terapis;
+    admin?: AdminUser;
   };
   onLogout: () => void;
 }
@@ -104,12 +105,12 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
                 <div className="text-xs font-bold text-slate-900 truncate max-w-[150px]">
                   {currentUser.role === 'peserta' && currentUser.peserta?.namaLengkap}
                   {currentUser.role === 'terapis' && currentUser.terapis?.nama}
-                  {currentUser.role === 'admin' && 'Petugas Loket ULD'}
+                  {currentUser.role === 'admin' && (currentUser.admin ? `Admin ${currentUser.admin.nama}` : 'Petugas Loket ULD')}
                 </div>
                 <div className="text-[11px] text-sky-600 font-medium">
                   {currentUser.role === 'peserta' && 'Siswa Terdaftar'}
                   {currentUser.role === 'terapis' && currentUser.terapis?.spesialisasiLabel}
-                  {currentUser.role === 'admin' && 'Sugeng / Helmi'}
+                  {currentUser.role === 'admin' && (currentUser.admin?.roleTitle || 'Petugas Loket ULD')}
                 </div>
               </div>
 

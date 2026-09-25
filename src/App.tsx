@@ -17,12 +17,13 @@ import { LoginTerapis } from './pages/LoginTerapis';
 import { PortalTerapis } from './pages/PortalTerapis';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { PanduanLayanan } from './pages/PanduanLayanan';
-import { Peserta, Terapis, UserRole } from './types';
+import { Peserta, Terapis, AdminUser, UserRole } from './types';
 
 interface CurrentUserState {
   role: UserRole;
   peserta?: Peserta;
   terapis?: Terapis;
+  admin?: AdminUser;
 }
 
 const SESSION_KEY = 'uld_prob_active_session_v1';
@@ -59,6 +60,7 @@ export default function App() {
       return (
         <AdminDashboard 
           onLogout={handleLogout} 
+          activeAdminId={currentUser.admin?.id}
         />
       );
     }
@@ -122,6 +124,9 @@ export default function App() {
             onLoginSuccess={(terapis) => {
               setCurrentUser({ role: 'terapis', terapis });
             }} 
+            onAdminLoginSuccess={(admin) => {
+              setCurrentUser({ role: 'admin', admin });
+            }}
           />
         );
 
@@ -132,13 +137,29 @@ export default function App() {
               onLoginSuccess={(terapis) => {
                 setCurrentUser({ role: 'terapis', terapis });
               }} 
+              onAdminLoginSuccess={(admin) => {
+                setCurrentUser({ role: 'admin', admin });
+              }}
             />
           );
         }
         return <PortalTerapis terapis={currentUser.terapis} onLogout={handleLogout} />;
 
       case '/admin':
-        return <AdminDashboard onLogout={handleLogout} />;
+        if (currentUser.role !== 'admin') {
+          return (
+            <LoginTerapis 
+              onLoginSuccess={(terapis) => {
+                setCurrentUser({ role: 'terapis', terapis });
+              }} 
+              onAdminLoginSuccess={(admin) => {
+                setCurrentUser({ role: 'admin', admin });
+              }}
+              defaultTab="admin"
+            />
+          );
+        }
+        return <AdminDashboard onLogout={handleLogout} activeAdminId={currentUser.admin?.id} />;
 
       case '/log-aktivitas':
         // Log Aktivitas hanya boleh diakses oleh Psikolog
