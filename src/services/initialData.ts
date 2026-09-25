@@ -61,7 +61,7 @@ export const INITIAL_TERAPIS: Terapis[] = [
     id: 'terapis-4',
     nipOrId: 'PSI-IKHSAN-04',
     nama: 'Muhammad Ikhsan, M.Psi., Psikolog',
-    gelar: 'Psikolog Klinis & Disabilitas',
+    gelar: 'Psikolog',
     spesialisasi: 'psikolog',
     spesialisasiLabel: 'Psikolog',
     pin: '112233',

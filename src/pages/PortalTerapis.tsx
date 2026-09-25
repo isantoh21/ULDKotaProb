@@ -914,7 +914,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                   Pengaturan Basis Data Cloud Supabase & Skrip SQL
                 </h2>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  Sesuai kebijakan keamanan dan integritas operasional ULD Kota Probolinggo, konfigurasi database Supabase cloud, API key, dan eksekusi skrip DDL SQL <strong>dikelola secara eksklusif oleh Psikolog Klinis ({terapis.nama})</strong>. Menu ini tidak dapat diakses oleh Petugas Admin Loket maupun Terapis lainnya.
+                  Sesuai kebijakan keamanan dan integritas operasional ULD Kota Probolinggo, konfigurasi database Supabase cloud, API key, dan eksekusi skrip DDL SQL <strong>dikelola secara eksklusif oleh Psikolog ({terapis.nama})</strong>. Menu ini tidak dapat diakses oleh Petugas Admin Loket maupun Terapis lainnya.
                 </p>
               </div>
 

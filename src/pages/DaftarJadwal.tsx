@@ -184,7 +184,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
       case 'terapis_perilaku': return 'Terapis Perilaku (ABA)';
       case 'fisioterapis': return 'Fisioterapi';
       case 'tenaga_plb': return 'Tenaga PLB';
-      case 'psikolog': return 'Psikolog Klinis';
+      case 'psikolog': return 'Psikolog';
       default: return spec;
     }
   };

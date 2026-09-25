@@ -267,7 +267,7 @@ export const Home: React.FC = () => {
               4 Pilar Layanan Tenaga Ahli ULD
             </h2>
             <p className="text-xs text-slate-500">
-              Didukung oleh psikolog klinis, terapis perilaku, fisioterapis, dan pendidik luar biasa.
+              Didukung oleh psikolog, terapis perilaku, fisioterapis, dan pendidik luar biasa.
             </p>
           </div>
           <button

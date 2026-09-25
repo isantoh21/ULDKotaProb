@@ -59,7 +59,7 @@ export const PanduanLayanan: React.FC = () => {
           <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-200/80 space-y-2">
             <div className="font-bold text-teal-950 text-sm flex items-center gap-2">
               <span className="w-6 h-6 rounded-lg bg-teal-800 text-white flex items-center justify-center text-xs">4</span>
-              <span>Psikolog Klinis Anak & Disabilitas</span>
+              <span>Psikolog</span>
             </div>
             <p className="text-slate-600 leading-relaxed">
               Melakukan observasi diagnostik, asesmen psikologis mendalam, evaluasi kematangan mental dan sosial-emosional, serta pendampingan konseling keluarga. <strong>Catatan: Pendaftaran jadwal ke Psikolog khusus dijadwalkan melalui Petugas Admin di loket ULD (Pak Sugeng / Pak Helmi).</strong>
