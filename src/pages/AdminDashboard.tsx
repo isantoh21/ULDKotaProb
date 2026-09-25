@@ -27,9 +27,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   const [bookingsList, setBookingsList] = useState<BookingTerapi[]>(() => db.getBookingsList());
   const [asesmenList, setAsesmenList] = useState<PendaftaranAsesmenGuest[]>(() => db.getAsesmenGuestList());
 
-  // Assign Terapis Modal State
-  const [studentToAssign, setStudentToAssign] = useState<Peserta | null>(null);
-  const [selectedAssignTerapisId, setSelectedAssignTerapisId] = useState<string>(terapisList[0]?.id || '');
+
 
   // Synchronize on events
   useEffect(() => {
@@ -143,33 +141,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     }
   };
 
-  const handleConfirmAssignTerapis = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!studentToAssign || !selectedAssignTerapisId) return;
-    const res = db.assignPesertaKeTerapis(studentToAssign.id, selectedAssignTerapisId, {
-      nama: activeAdmin.nama,
-      role: 'admin'
-    });
-    if (res.success) {
-      confetti({ particleCount: 50 });
-      setPesertaList(db.getPesertaList());
-      if (selectedPesertaForBooking === studentToAssign.id) {
-        setSelectedTerapisIdForBooking(selectedAssignTerapisId);
-      }
-      setStudentToAssign(null);
-    }
-  };
 
-  const handleConfirmUnassignTerapis = (pesertaId: string) => {
-    const res = db.lepasPenugasanPeserta(pesertaId, {
-      nama: activeAdmin.nama,
-      role: 'admin'
-    });
-    if (res.success) {
-      setPesertaList(db.getPesertaList());
-      setStudentToAssign(null);
-    }
-  };
 
   const filteredPesertaList = pesertaList.filter(p => {
     if (!searchPeserta.trim()) return true;
@@ -528,18 +500,9 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                       🔒 Terkunci: Siswa binaan tetap {currentSelectedPesertaForBooking.assignedTerapisNama}. Hanya terapis ini yang muncul.
                     </span>
                   ) : currentSelectedPesertaForBooking ? (
-                    <div className="mt-1 flex items-center justify-between gap-1 text-[11px] text-amber-800 bg-amber-50 p-1.5 rounded-lg border border-amber-200">
-                      <span>⚠️ Siswa ini belum memiliki terapis tetap.</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStudentToAssign(currentSelectedPesertaForBooking);
-                          setSelectedAssignTerapisId(terapisList[0]?.id || '');
-                        }}
-                        className="px-2 py-0.5 rounded bg-sky-700 text-white font-bold text-[10px]"
-                      >
-                        + Assign Sekarang
-                      </button>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                      <span>⚠️</span>
+                      <span>Siswa belum di-assign secara tetap. Penetapan siswa binaan hanya dapat dilakukan oleh Terapis atau Psikolog yang bersangkutan.</span>
                     </div>
                   ) : (
                     <span className="text-[11px] text-sky-600 font-semibold mt-1 block">
@@ -794,37 +757,15 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                       </td>
                       <td className="px-4 py-3">
                         {p.assignedTerapisId ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-900 font-bold text-[11px] border border-sky-100">
-                              📌 {p.assignedTerapisNama}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setStudentToAssign(p);
-                                setSelectedAssignTerapisId(p.assignedTerapisId || terapisList[0].id);
-                              }}
-                              className="text-[10px] text-sky-600 hover:text-sky-800 font-bold hover:underline"
-                            >
-                              Ubah
-                            </button>
-                          </div>
+                          <span className="font-bold text-sky-800 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200 text-[11px] inline-flex items-center gap-1">
+                            <span>📌</span>
+                            <span>{p.assignedTerapisNama}</span>
+                          </span>
                         ) : (
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[11px] border border-amber-200">
-                              ⏳ Belum Di-assign
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setStudentToAssign(p);
-                                setSelectedAssignTerapisId(terapisList[0].id);
-                              }}
-                              className="px-2 py-0.5 rounded bg-sky-700 text-white text-[10px] font-bold hover:bg-sky-600 shadow-2xs"
-                            >
-                              + Assign
-                            </button>
-                          </div>
+                          <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-medium text-[11px] border border-slate-200 inline-flex items-center gap-1">
+                            <span>⏳</span>
+                            <span>Belum di-assign (Oleh Terapis/Psikolog)</span>
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
@@ -1375,115 +1316,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
         </div>
       )}
 
-      {/* MODAL 8: ASSIGN / TETAPKAN TERAPIS PEMBINA TETAP SISWA */}
-      {studentToAssign && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form
-            onSubmit={handleConfirmAssignTerapis}
-            className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-4 shadow-2xl animate-in zoom-in-95 border-2 border-sky-500"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center text-lg shrink-0">
-                  📌
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-base">
-                    Tetapkan Terapis Pembina Tetap
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Aturan penugasan permanen siswa ke tenaga ahli ULD
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setStudentToAssign(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-sm"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Nama Siswa:</span>
-                <span className="font-bold text-slate-900 text-sm">{studentToAssign.namaLengkap}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">No. Rekam Medis:</span>
-                <span className="font-mono font-bold text-slate-800">{studentToAssign.nomorRekamMedis}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Nama Wali:</span>
-                <span className="font-medium text-slate-700">{studentToAssign.namaWali}</span>
-              </div>
-              <div className="flex justify-between pt-1 border-t border-slate-200">
-                <span className="text-slate-500">Status Saat Ini:</span>
-                {studentToAssign.assignedTerapisId ? (
-                  <span className="font-bold text-sky-700">
-                    📌 {studentToAssign.assignedTerapisNama}
-                  </span>
-                ) : (
-                  <span className="font-bold text-amber-700">
-                    ⏳ Belum Di-assign ke Terapis Manapun
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-1.5 text-xs">
-              <label className="block font-bold text-slate-800">
-                Pilih Tenaga Ahli Pembina Tetap:
-              </label>
-              <select
-                value={selectedAssignTerapisId}
-                onChange={e => setSelectedAssignTerapisId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600"
-              >
-                {terapisList.map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.nama} — {t.spesialisasiLabel}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="p-3 bg-sky-50 border border-sky-100 rounded-xl text-xs text-sky-900 leading-relaxed">
-              <strong>Aturan Sistem:</strong> Setelah ditetapkan, siswa ini <strong>hanya dapat mendaftar sesi terapi ke terapis ini saja</strong>. Di portal pendaftaran mandiri dan form loket admin, hanya nama terapis terpilih yang akan muncul untuk siswa ini.
-            </div>
-
-            <div className="pt-2 flex items-center justify-between gap-2">
-              {studentToAssign.assignedTerapisId ? (
-                <button
-                  type="button"
-                  onClick={() => handleConfirmUnassignTerapis(studentToAssign.id)}
-                  className="px-3 py-2 text-xs rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-bold border border-red-200 transition-colors"
-                >
-                  Lepas Penugasan
-                </button>
-              ) : (
-                <div />
-              )}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStudentToAssign(null)}
-                  className="px-4 py-2 text-xs rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold shadow-sm transition-all active:scale-95"
-                >
-                  ✓ Simpan Penugasan
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
 
     </div>
   );
