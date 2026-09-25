@@ -171,7 +171,7 @@ export const GuestAsesmen: React.FC = () => {
             </div>
           </div>
           <a
-            href="https://maps.app.goo.gl/GQMgh5fjzEFKwEYt8"
+            href="https://maps.app.goo.gl/LJ7Ymhp9QqdEnoy57"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 bg-teal-800 hover:bg-teal-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors shrink-0"

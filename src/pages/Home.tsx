@@ -232,7 +232,7 @@ export const Home: React.FC = () => {
           </div>
 
           <a
-            href="https://maps.app.goo.gl/GQMgh5fjzEFKwEYt8"
+            href="https://maps.app.goo.gl/LJ7Ymhp9QqdEnoy57"
             target="_blank"
             rel="noopener noreferrer"
             className="px-5 py-3 rounded-2xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
@@ -248,7 +248,7 @@ export const Home: React.FC = () => {
         <div className="w-full h-64 sm:h-72 rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
           <iframe
             title="Lokasi Google Maps ULD Kota Probolinggo"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3953.167812988451!2d113.212356!3d-7.755018!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd7adc56c071d71%3A0x633918a59be83e39!2sJl.%20Panglima%20Sudirman%20No.19%2C%20Kanigaran%2C%20Kec.%20Kanigaran%2C%20Kota%20Probolinggo%2C%20Jawa%20Timur%2067211!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3953.362290619172!2d113.2240633!3d-7.7541116!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd7ad0066a99927%3A0x5c969f11d0009338!2sUnit%20Layanan%20Disabilitas%20(ULD)%20Bidang%20Pendidikan%20Kota%20Probolinggo!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid"
             width="100%"
             height="100%"
             style={{ border: 0 }}
