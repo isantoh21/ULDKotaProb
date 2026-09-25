@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { db, checkBatasPendaftaranHMinus1 } from '../services/supabase';
 import { Peserta, PendaftaranAsesmenGuest, Terapis, SlotHarian, BookingTerapi, LogAktivitas } from '../types';
+import { ULD_LOGO_BASE64 } from '../constants/logoData';
 
 interface Props {
   onLogout?: () => void;
@@ -351,9 +352,12 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src="/logo-uld.jpg"
+              src={ULD_LOGO_BASE64}
               alt="Logo ULD Kota Probolinggo"
-              className="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 shadow-md shrink-0"
+              className="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 shadow-md shrink-0 border border-white/40"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/logo-uld.jpg';
+              }}
             />
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs text-sky-100 font-semibold tracking-wide">

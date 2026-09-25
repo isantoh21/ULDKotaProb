@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppRoute, navigateTo } from '../services/router';
 import { Peserta, Terapis } from '../types';
+import { ULD_LOGO_BASE64 } from '../constants/logoData';
 
 interface Props {
   currentPath: AppRoute;
@@ -32,9 +33,14 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
           }}
           className="text-left group flex items-center gap-2.5 focus:outline-none"
         >
-          <div className="w-8 h-8 rounded-lg bg-sky-700 text-white flex items-center justify-center font-bold text-sm tracking-wider">
-            ULD
-          </div>
+          <img
+            src={ULD_LOGO_BASE64}
+            alt="Logo ULD"
+            className="w-9 h-9 rounded-xl object-contain bg-white shadow-xs p-0.5 border border-sky-200 shrink-0"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/logo-uld.jpg';
+            }}
+          />
           <div>
             <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-sky-700 transition-colors block">
               ULD Kota Probolinggo
