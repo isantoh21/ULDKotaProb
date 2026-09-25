@@ -712,7 +712,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
 
             <div className="p-3 bg-teal-50/80 rounded-2xl border border-teal-200 text-[11px] text-teal-900 space-y-1">
               <div>📍 <strong>Loket Fisik Kantor ULD:</strong></div>
-              <div>Jl. Panglima Sudirman No. 19, Kec. Kanigaran, Kota Probolinggo (Senin – Jumat 09.00 – 13.00 WIB).</div>
+              <div>Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo (Senin – Jumat 09.00 – 13.00 WIB).</div>
             </div>
 
             <div className="pt-2 border-t border-slate-100 flex justify-end">

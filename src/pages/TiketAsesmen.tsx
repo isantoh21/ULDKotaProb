@@ -55,7 +55,7 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
     `Nama Anak: ${guest.namaAnak}\n` +
     `Nama Wali: ${guest.namaOrangTua}\n` +
     `Rencana Datang: ${guest.tanggalRencanaDatang} (${guest.jamRencanaDatang})\n` +
-    `Lokasi: Gedung ULD Kota Probolinggo (Jl. Panglima Sudirman No. 19)\n\n` +
+    `Lokasi: Gedung ULD Kota Probolinggo (Jl. Hayam Wuruk No. 63)\n\n` +
     `*Catatan:* Harap membawa berkas fisik (KK, KTP Wali, Buku KIA Pink) untuk verifikasi dokumen awal.`
   );
 
@@ -185,7 +185,7 @@ export const TiketAsesmen: React.FC<Props> = ({ guestId }) => {
               {guest.tanggalRencanaDatang} · {guest.jamRencanaDatang}
             </div>
             <div className="text-xs text-teal-800 leading-relaxed">
-              Lokasi: Gedung ULD Kota Probolinggo, Jl. Panglima Sudirman No. 19, Kanigaran, Kota Probolinggo.
+              Lokasi: Gedung ULD Kota Probolinggo, Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo.
             </div>
           </div>
 

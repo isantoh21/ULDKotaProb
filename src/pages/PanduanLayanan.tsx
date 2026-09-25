@@ -139,7 +139,7 @@ export const PanduanLayanan: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-300">
           <div>
             <div className="font-bold text-teal-400">Alamat Kantor:</div>
-            <div>Jl. Panglima Sudirman No. 19, Kec. Kanigaran, Kota Probolinggo, Jawa Timur 67211</div>
+            <div>Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo, Jawa Timur 67217</div>
             <div className="mt-2 font-bold text-teal-400">Jadwal Sesi Terapi:</div>
             <div>Senin – Jumat: Pukul 09.00 – 13.00 WIB (Sesi 1: 09-10, Sesi 2: 10-11, Sesi 3: 11-12, Sesi 4: 12-13)</div>
           </div>

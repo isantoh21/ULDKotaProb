@@ -227,7 +227,7 @@ export const Home: React.FC = () => {
               Gedung Unit Layanan Disabilitas Kota Probolinggo
             </h3>
             <p className="text-xs sm:text-sm text-slate-600">
-              Jl. Panglima Sudirman No. 19, Kec. Kanigaran, Kota Probolinggo, Jawa Timur 67211
+              Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo, Jawa Timur 67217
             </p>
           </div>
 
