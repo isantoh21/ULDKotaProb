@@ -80,15 +80,14 @@ export const PanduanLayanan: React.FC = () => {
           </p>
 
           <ul className="list-disc list-inside space-y-1.5 pl-2 font-medium text-slate-800">
-            <li>Fotokopi Kartu Keluarga (KK) Kota Probolinggo (atau surat domisili)</li>
-            <li>Fotokopi KTP Orang Tua / Wali Pendamping</li>
-            <li>Buku Kesehatan Ibu dan Anak (Buku KIA Pink) atau riwayat tumbuh kembang balita</li>
-            <li>Surat Rujukan Puskesmas / Dokter Spesialis Anak (jika sudah ada)</li>
-            <li>Bukti terdaftar DAPODIK bagi jenjang PAUD – SMP</li>
+            <li>Surat Rekomendasi untuk mendapatkan asesmen dari sekolah</li>
+            <li>Fotocopy KTP Orang Tua</li>
+            <li>Fotocopy Kartu Keluarga</li>
+            <li>Fotocopy Akte Lahir Anak</li>
           </ul>
 
           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-            <strong>Penetapan Akun Siswa:</strong> Setelah proses asesmen dan verifikasi berkas oleh admin, petugas akan membuatkan akun siswa terapi rutin (cukup nama, nama orang tua, dan PIN pribadi) untuk login pendaftaran terapi mingguan.
+            <strong>Catatan:</strong> Setelah asesmen dan dinyatakan butuh terapi, anak akan dibuatkan akun siswa reguler yang mendapatkan akses untuk mendaftar layanan 1x seminggu.
           </div>
         </div>
       </div>
