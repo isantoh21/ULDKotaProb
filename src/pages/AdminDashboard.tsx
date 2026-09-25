@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { db, checkBatasPendaftaranHMinus1 } from '../services/supabase';
+import { db, getWIBDate } from '../services/supabase';
 import { Peserta, PendaftaranAsesmenGuest, Terapis, SlotHarian, BookingTerapi, LogAktivitas } from '../types';
 import { ULD_LOGO_BASE64 } from '../constants/logoData';
 
@@ -58,7 +58,6 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   const [selectedTerapisIdForBooking, setSelectedTerapisIdForBooking] = useState<string>(terapisList[0]?.id || '');
   const [selectedPesertaForBooking, setSelectedPesertaForBooking] = useState<string>('');
   const [selectedSlotForBooking, setSelectedSlotForBooking] = useState<string>('');
-  const [catatanLoketAdmin, setCatatanLoketAdmin] = useState<string>('');
   const [bookingMsg, setBookingMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [showBukaSlotLoketModal, setShowBukaSlotLoketModal] = useState(false);
   const [selectedLoketTicket, setSelectedLoketTicket] = useState<BookingTerapi | null>(null);
@@ -110,10 +109,39 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   // Selected therapist object
   const currentSelectedTerapis = terapisList.find(t => t.id === selectedTerapisIdForBooking) || availableTerapisForLoket[0] || terapisList[0];
   
-  // Available slots for the selected therapist
-  const availableSlotsForSelectedTerapis = slotsList.filter(s => 
-    s.terapisId === (currentSelectedTerapis?.id || selectedTerapisIdForBooking) && s.statusSlot !== 'dibatalkan'
-  );
+  // Waktu WIB & Batas 2 Pekan ke Depan
+  const todayWIB = getWIBDate();
+  const twoWeeksAheadDate = (() => {
+    const d = new Date(todayWIB.dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  })();
+  const currentTimeStr = `${String(todayWIB.hour).padStart(2, '0')}:${String(todayWIB.minute).padStart(2, '0')}`;
+
+  // Slot tersedia untuk loket admin:
+  // - Waktu yang sudah lewat TIDAK MUNCUL (tanggal < hari ini, atau hari ini tapi jam selesai sudah terlewati)
+  // - Tampilkan 2 minggu ke depan saja (rentang Hari H s/d 14 hari ke depan)
+  // - Tanggal hari ini (Hari H) tetap muncul agar siswa dapat didaftarkan langsung saat hadir di loket
+  const availableSlotsForSelectedTerapis = slotsList.filter(s => {
+    if (s.terapisId !== (currentSelectedTerapis?.id || selectedTerapisIdForBooking)) return false;
+    if (s.statusSlot === 'dibatalkan') return false;
+
+    // Filter tanggal masa lalu
+    if (s.tanggal < todayWIB.dateStr) return false;
+
+    // Filter jam yang sudah lewat pada Hari H
+    if (s.tanggal === todayWIB.dateStr && s.jamSelesai && s.jamSelesai <= currentTimeStr) {
+      return false;
+    }
+
+    // Batas maksimal 2 pekan ke depan
+    if (s.tanggal > twoWeeksAheadDate) return false;
+
+    return true;
+  }).sort((a, b) => {
+    if (a.tanggal !== b.tanggal) return a.tanggal.localeCompare(b.tanggal);
+    return a.jamMulai.localeCompare(b.jamMulai);
+  });
 
   const handleSelectPesertaForBooking = (pId: string) => {
     setSelectedPesertaForBooking(pId);
@@ -203,7 +231,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     const res = db.buatBookingTerapi(
       selectedPesertaForBooking,
       selectedSlotForBooking,
-      catatanLoketAdmin.trim() || defaultCatatan,
+      defaultCatatan,
       { isAdminBooking: true, adminName: activeAdmin.nama }
     );
 
@@ -216,7 +244,6 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
       setSelectedLoketTicket(res.booking);
       setSelectedPesertaForBooking('');
       setSelectedSlotForBooking('');
-      setCatatanLoketAdmin('');
     } else {
       setBookingMsg({
         type: 'error',
@@ -570,10 +597,10 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                   )}
                 </div>
 
-                {/* 3. Pilih Slot Sesi Terapi (Validasi Aturan 3: Minimal H-1 di maksimal jam 24.00 WIB) */}
+                {/* 3. Pilih Slot Sesi Terapi (Rentang Hari H s/d 2 Pekan ke Depan) */}
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    3. Pilih Slot Sesi Tersedia *
+                    3. Pilih Slot Sesi Tersedia (2 Pekan ke Depan) *
                   </label>
                   <select
                     required
@@ -582,35 +609,24 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600"
                   >
                     <option value="">-- Pilih Slot Jam Tersedia --</option>
-                    {availableSlotsForSelectedTerapis.map(s => {
-                      const isFull = s.kuotaTerisi >= s.kuotaMaksimal;
-                      const deadline = checkBatasPendaftaranHMinus1(s.tanggal);
-                      const isBlocked = isFull || !deadline.bisaDaftar;
-                      return (
-                        <option key={s.id} value={s.id} disabled={isBlocked}>
-                          {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {!deadline.bisaDaftar ? `[DITUTUP: ${deadline.labelBatas}]` : isFull ? '[PENUH]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
-                        </option>
-                      );
-                    })}
+                    {availableSlotsForSelectedTerapis.length === 0 ? (
+                      <option disabled value="">Tidak ada slot tersedia dalam 2 pekan ke depan</option>
+                    ) : (
+                      availableSlotsForSelectedTerapis.map(s => {
+                        const isFull = s.kuotaTerisi >= s.kuotaMaksimal;
+                        const isToday = s.tanggal === todayWIB.dateStr;
+                        return (
+                          <option key={s.id} value={s.id} disabled={isFull}>
+                            {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {isToday ? '[Hari H - Pendaftaran Langsung]' : ''} {isFull ? '[PENUH]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
+                          </option>
+                        );
+                      })
+                    )}
                   </select>
                   <span className="text-[11px] text-slate-500 mt-1 block">
-                    Aturan Batas: Minimal H-1 hari di maksimal jam 24.00 WIB (Hari H ditutup).
+                    Menampilkan jadwal mulai Hari H (hari pendaftaran) hingga 2 pekan ke depan ({twoWeeksAheadDate}). Waktu yang telah lewat disaring otomatis.
                   </span>
                 </div>
-              </div>
-
-              {/* 4. Catatan Loket / Keluhan Siswa */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  4. Catatan Pendaftaran Loket / Keluhan Siswa Hari Ini
-                </label>
-                <textarea
-                  rows={2}
-                  value={catatanLoketAdmin}
-                  onChange={e => setCatatanLoketAdmin(e.target.value)}
-                  placeholder="Contoh: Orang tua datang langsung ke loket ULD mengonfirmasi jadwal terapi wicara..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600"
-                />
               </div>
 
               <div className="pt-2 flex justify-end">

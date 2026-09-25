@@ -1406,9 +1406,16 @@ class SupabaseDataService {
     const slot = slots[slotIdx];
 
     // ATURAN 3: Pendaftaran terapi paling minimal dilakukan H-1 hari di maksimal jam 24.00 WIB
-    const deadlineCheck = checkBatasPendaftaranHMinus1(slot.tanggal);
-    if (!deadlineCheck.bisaDaftar) {
-      return { success: false, error: deadlineCheck.pesan };
+    // Pengecualian: Pendaftaran langsung oleh Admin di loket diperbolehkan di Hari H saat siswa ingin mendaftar
+    const { dateStr } = getWIBDate();
+    if (slot.tanggal < dateStr) {
+      return { success: false, error: `Pendaftaran ditutup! Jadwal terapi pada tanggal ${slot.tanggal} sudah terlewati.` };
+    }
+    if (!options?.isAdminBooking) {
+      const deadlineCheck = checkBatasPendaftaranHMinus1(slot.tanggal);
+      if (!deadlineCheck.bisaDaftar) {
+        return { success: false, error: deadlineCheck.pesan };
+      }
     }
 
     // Ambil data siswa
