@@ -245,3 +245,9 @@ UPDATE public.terapis SET gelar = 'Psikolog' WHERE id = 'terapis-4';
 UPDATE public.terapis SET nama = 'Indaryati Machmudi, A.Md.Kes' WHERE id = 'terapis-2';
 UPDATE public.peserta SET assigned_terapis_nama = 'Indaryati Machmudi, A.Md.Kes' WHERE assigned_terapis_id = 'terapis-2';
 
+-- 6. Dukungan kelulusan siswa terapi (metadata kelulusan)
+ALTER TABLE public.peserta ADD COLUMN IF NOT EXISTS lulus_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.peserta ADD COLUMN IF NOT EXISTS alasan_lulus TEXT;
+ALTER TABLE public.peserta ADD COLUMN IF NOT EXISTS diluluskan_oleh TEXT;
+
+

@@ -19,12 +19,15 @@ export interface Peserta {
   kecamatan: string; // Wonoasih, Mayangan, Kanigaran, Kedopok, Kademangan
   ragamDisabilitas: string; // Spektrum Autisme, Cerebral Palsy, Down Syndrome, dll.
   asalSekolah?: string;
-  status: 'aktif' | 'nonaktif' | 'selesai_program';
+  status: 'aktif' | 'nonaktif' | 'selesai_program' | 'lulus';
   terdaftarSejak: string;
   catatanKhusus?: string;
   assignedTerapisId?: string; // ID terapis yang di-assign secara tetap
   assignedTerapisNama?: string; // Nama terapis tetap
   assignedAt?: string; // Tanggal penetapan
+  lulusAt?: string; // Tanggal kelulusan
+  alasanLulus?: string; // Catatan evaluasi / alasan kelulusan
+  diluluskanOleh?: string; // Nama terapis / admin yang meluluskan
 }
 
 export interface Terapis {

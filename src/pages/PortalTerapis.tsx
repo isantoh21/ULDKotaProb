@@ -112,11 +112,14 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   const [isSubmittingBatalMendadak, setIsSubmittingBatalMendadak] = useState(false);
 
   // 2. ATURAN SISWA BINAAN TETAP (ASSIGN SISWA OLEH TERAPIS)
+  // 2. ATURAN SISWA BINAAN TETAP (ASSIGN & KELULUSAN SISWA OLEH TERAPIS)
   const [pesertaList, setPesertaList] = useState<Peserta[]>(() => db.getPesertaList());
   const [searchStudent, setSearchStudent] = useState<string>('');
   const [studentAssignMsg, setStudentAssignMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  // Default ke 'belum_diassign' agar terapis langsung melihat siswa yang perlu di-assign di mobile tanpa harus klik filter
-  const [filterStudentScope, setFilterStudentScope] = useState<'belum_diassign' | 'binaan_saya' | 'semua'>('belum_diassign');
+  type StudentScope = 'binaan_saya' | 'belum_diassign' | 'siswa_lulus' | 'semua';
+  const [filterStudentScope, setFilterStudentScope] = useState<StudentScope>('belum_diassign');
+  const [studentToGraduate, setStudentToGraduate] = useState<Peserta | null>(null);
+  const [graduateReason, setGraduateReason] = useState<string>('Target intervensi terapi tercapai / Anak mandiri');
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -130,8 +133,10 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
     return () => window.removeEventListener('uld_data_updated', handleUpdate);
   }, [terapis.id]);
 
+  const activeStudents = pesertaList.filter(p => p.status === 'aktif');
   const assignedStudents = pesertaList.filter(p => p.assignedTerapisId === terapis.id && p.status === 'aktif');
   const unassignedStudents = pesertaList.filter(p => !p.assignedTerapisId && p.status === 'aktif');
+  const graduatedStudents = pesertaList.filter(p => p.status === 'lulus' || p.status === 'selesai_program');
 
   const handleAssignStudent = (pesertaId: string, namaAnak: string) => {
     const targetStudent = pesertaList.find(p => p.id === pesertaId);
@@ -161,13 +166,49 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   };
 
   const handleUnassignStudent = (pesertaId: string, namaAnak: string) => {
-    if (window.confirm(`Lepas penugasan tetap ananda "${namaAnak}" dari jadwal Anda? Setelah dilepas, siswa tidak dapat mendaftar sampai di-assign kembali.`)) {
+    if (window.confirm(`Batalkan penetapan binaan tetap ananda "${namaAnak}"?\n\nSiswa akan dikembalikan ke daftar "Belum Di-assign" dan dapat dipilih kembali kemudian.`)) {
       const res = db.lepasPenugasanPeserta(pesertaId, { nama: terapis.nama, role: 'terapis' });
       if (res.success) {
         setPesertaList(db.getPesertaList());
         setStudentAssignMsg({
           type: 'success',
-          text: `Penugasan tetap ananda "${namaAnak}" berhasil dilepas.`
+          text: `Penetapan siswa binaan ananda "${namaAnak}" berhasil dibatalkan. Siswa kini berstatus belum di-assign.`
+        });
+        setTimeout(() => setStudentAssignMsg(null), 4000);
+      }
+    }
+  };
+
+  const handleConfirmGraduateStudent = () => {
+    if (!studentToGraduate) return;
+    const nama = studentToGraduate.namaLengkap;
+    const reason = graduateReason.trim() || 'Telah menyelesaikan target intervensi terapi ULD';
+    const success = db.luluskanPeserta(studentToGraduate.id, reason, { nama: terapis.nama, role: 'terapis' });
+    if (success) {
+      confetti({ particleCount: 70, spread: 80 });
+      setPesertaList(db.getPesertaList());
+      setStudentToGraduate(null);
+      setGraduateReason('Target intervensi terapi tercapai / Anak mandiri');
+      setStudentAssignMsg({
+        type: 'success',
+        text: `Alhamdulillah! Ananda "${nama}" resmi dinyatakan LULUS program layanan terapi ULD dan telah dipindahkan ke "List Siswa yang Sudah Lulus". Seluruh kuota sesi aktif ke depan otomatis dibebaskan.`
+      });
+      setFilterStudentScope('siswa_lulus');
+      setTimeout(() => setStudentAssignMsg(null), 6000);
+    } else {
+      alert('Gagal memproses kelulusan siswa.');
+    }
+  };
+
+  const handleReactivateStudent = (pesertaId: string, namaAnak: string) => {
+    if (window.confirm(`Aktifkan kembali siswa ananda "${namaAnak}" sebagai siswa aktif terapi ULD?`)) {
+      const success = db.aktifkanKembaliPeserta(pesertaId, { nama: terapis.nama, role: 'terapis' });
+      if (success) {
+        confetti({ particleCount: 50 });
+        setPesertaList(db.getPesertaList());
+        setStudentAssignMsg({
+          type: 'success',
+          text: `Alhamdulillah! Ananda "${namaAnak}" berhasil diaktifkan kembali menjadi siswa terapi aktif.`
         });
         setTimeout(() => setStudentAssignMsg(null), 4000);
       }
@@ -175,15 +216,24 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   };
 
   const displayedStudents = pesertaList.filter(p => {
-    if (p.status !== 'aktif') return false;
-    if (filterStudentScope === 'binaan_saya' && p.assignedTerapisId !== terapis.id) return false;
-    if (filterStudentScope === 'belum_diassign' && Boolean(p.assignedTerapisId)) return false;
+    if (filterStudentScope === 'siswa_lulus') {
+      if (p.status !== 'lulus' && p.status !== 'selesai_program') return false;
+    } else {
+      if (p.status !== 'aktif') return false;
+      if (filterStudentScope === 'binaan_saya' && p.assignedTerapisId !== terapis.id) return false;
+      if (filterStudentScope === 'belum_diassign' && Boolean(p.assignedTerapisId)) return false;
+    }
+
     if (!searchStudent.trim()) return true;
     const q = searchStudent.toLowerCase();
-    return p.namaLengkap.toLowerCase().includes(q) ||
+    return (
+      p.namaLengkap.toLowerCase().includes(q) ||
       p.nomorRekamMedis.toLowerCase().includes(q) ||
       p.namaWali.toLowerCase().includes(q) ||
-      (p.asalSekolah && p.asalSekolah.toLowerCase().includes(q));
+      (p.asalSekolah && p.asalSekolah.toLowerCase().includes(q)) ||
+      (p.alasanLulus && p.alasanLulus.toLowerCase().includes(q)) ||
+      (p.diluluskanOleh && p.diluluskanOleh.toLowerCase().includes(q))
+    );
   });
 
   // Supabase & SQL Configuration State (Khusus Psikolog)
@@ -1066,16 +1116,21 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
           )}
 
           {/* Stats Bar Compact Mobile-Friendly */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3">
+            <div className="p-2.5 sm:p-4 rounded-2xl bg-sky-50 border border-sky-100 text-center sm:text-left">
+              <span className="text-[10px] sm:text-[11px] font-bold text-sky-700 uppercase tracking-wider block">Binaan Anda</span>
+              <div className="text-xl sm:text-2xl font-black text-sky-900 mt-0.5">{assignedStudents.length} <span className="text-[10px] sm:text-xs font-normal text-sky-600">Anak</span></div>
+              <span className="hidden sm:block text-[10px] text-sky-600">Terkunci ke jadwal Anda</span>
+            </div>
             <div className="p-2.5 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center sm:text-left">
               <span className="text-[10px] sm:text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Belum Di-assign</span>
               <div className="text-xl sm:text-2xl font-black text-amber-950 mt-0.5">{unassignedStudents.length} <span className="text-[10px] sm:text-xs font-normal text-amber-700">Anak</span></div>
               <span className="hidden sm:block text-[10px] text-amber-700">Siap Anda tetapkan</span>
             </div>
-            <div className="p-2.5 sm:p-4 rounded-2xl bg-sky-50 border border-sky-100 text-center sm:text-left">
-              <span className="text-[10px] sm:text-[11px] font-bold text-sky-700 uppercase tracking-wider block">Binaan Anda</span>
-              <div className="text-xl sm:text-2xl font-black text-sky-900 mt-0.5">{assignedStudents.length} <span className="text-[10px] sm:text-xs font-normal text-sky-600">Anak</span></div>
-              <span className="hidden sm:block text-[10px] text-sky-600">Terkunci ke jadwal Anda</span>
+            <div className="p-2.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center sm:text-left">
+              <span className="text-[10px] sm:text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">🎓 Siswa Lulus</span>
+              <div className="text-xl sm:text-2xl font-black text-emerald-950 mt-0.5">{graduatedStudents.length} <span className="text-[10px] sm:text-xs font-normal text-emerald-700">Anak</span></div>
+              <span className="hidden sm:block text-[10px] text-emerald-700">Selesai program terapi</span>
             </div>
             <div className="p-2.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center sm:text-left">
               <span className="text-[10px] sm:text-[11px] font-bold text-slate-700 uppercase tracking-wider block">Total Siswa</span>
@@ -1087,7 +1142,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
           {/* Filter & Search Bar */}
           <div className="space-y-2.5 border-b border-slate-100 pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
-              <span className="text-xs text-slate-500 font-semibold">Kelola & tetapkan siswa binaan tetap atau unduh data PIN resmi.</span>
+              <span className="text-xs text-slate-500 font-semibold">Kelola siswa binaan tetap, nyatakan kelulusan siswa, atau unduh PDF PIN.</span>
               <button
                 type="button"
                 onClick={() => downloadPdfPinSiswaTerbaru(pesertaList)}
@@ -1097,14 +1152,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 <span>📄 Unduh PDF PIN Siswa Terbaru</span>
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl text-xs font-bold text-center">
-              <button
-                type="button"
-                onClick={() => setFilterStudentScope('belum_diassign')}
-                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'belum_diassign' ? 'bg-sky-800 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
-              >
-                Belum Di-assign ({unassignedStudents.length})
-              </button>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl text-xs font-bold text-center">
               <button
                 type="button"
                 onClick={() => setFilterStudentScope('binaan_saya')}
@@ -1114,10 +1162,24 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
               </button>
               <button
                 type="button"
+                onClick={() => setFilterStudentScope('belum_diassign')}
+                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'belum_diassign' ? 'bg-sky-800 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
+              >
+                Belum Di-assign ({unassignedStudents.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStudentScope('siswa_lulus')}
+                className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'siswa_lulus' ? 'bg-emerald-800 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
+              >
+                🎓 Siswa Lulus ({graduatedStudents.length})
+              </button>
+              <button
+                type="button"
                 onClick={() => setFilterStudentScope('semua')}
                 className={`py-2 px-1 rounded-lg transition-all text-[11px] sm:text-xs ${filterStudentScope === 'semua' ? 'bg-sky-800 text-white shadow-xs font-extrabold' : 'text-slate-700 hover:bg-slate-200'}`}
               >
-                Semua ({pesertaList.length})
+                Semua Aktif ({activeStudents.length})
               </button>
             </div>
 
@@ -1126,7 +1188,7 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 type="text"
                 value={searchStudent}
                 onChange={e => setSearchStudent(e.target.value)}
-                placeholder="🔍 Cari nama siswa / nomor RM / sekolah..."
+                placeholder="🔍 Cari nama siswa / nomor RM / sekolah / capaian lulus..."
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-sky-600 bg-slate-50 font-medium"
               />
               {searchStudent && (
@@ -1146,31 +1208,48 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                 <span>Pilih siswa di bawah ini untuk ditetapkan menjadi <strong>siswa binaan tetap</strong> Anda.</span>
               </div>
             )}
+            {filterStudentScope === 'siswa_lulus' && (
+              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] font-medium flex items-center gap-1.5">
+                <span>🎓</span>
+                <span>Daftar seluruh siswa yang telah berhasil <strong>lulus / menyelesaikan program intervensi terapi</strong> di ULD Kota Probolinggo.</span>
+              </div>
+            )}
           </div>
 
           {/* Student Cards List */}
           {displayedStudents.length === 0 ? (
             <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 space-y-2">
-              <div className="text-2xl">👥</div>
-              <div className="font-bold text-slate-700">Tidak Ada Siswa yang Sesuai Kriteria</div>
-              <p>Coba gunakan kata kunci pencarian lain atau pilih tab filter yang berbeda.</p>
+              <div className="text-2xl">{filterStudentScope === 'siswa_lulus' ? '🎓' : '👥'}</div>
+              <div className="font-bold text-slate-700">
+                {filterStudentScope === 'siswa_lulus' 
+                  ? 'Belum Ada Siswa yang Dinyatakan Lulus' 
+                  : 'Tidak Ada Siswa yang Sesuai Kriteria'}
+              </div>
+              <p>
+                {filterStudentScope === 'siswa_lulus' 
+                  ? 'Siswa binaan tetap yang telah mandiri dapat diluluskan melalui tombol "Luluskan Siswa" pada daftar Binaan Anda.' 
+                  : 'Coba gunakan kata kunci pencarian lain atau pilih tab filter yang berbeda.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
               {displayedStudents.map(p => {
-                const isAssignedToMe = p.assignedTerapisId === terapis.id;
-                const isAssignedToOther = p.assignedTerapisId && p.assignedTerapisId !== terapis.id;
-                const isUnassigned = !p.assignedTerapisId;
+                const isGraduated = p.status === 'lulus' || p.status === 'selesai_program';
+                const isAssignedToMe = p.assignedTerapisId === terapis.id && !isGraduated;
+                const isAssignedToOther = p.assignedTerapisId && p.assignedTerapisId !== terapis.id && !isGraduated;
+                const isUnassigned = !p.assignedTerapisId && !isGraduated;
 
                 return (
                   <div
                     key={p.id}
                     className={`p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 ${
-                      isAssignedToMe
-                        ? 'border-sky-200 bg-sky-50/40 shadow-xs'
-                        : isAssignedToOther
-                          ? 'border-slate-200 bg-slate-50/60 opacity-80'
-                          : 'border-slate-200 bg-white hover:border-sky-300'
+                      isGraduated
+                        ? 'border-emerald-200 bg-emerald-50/40 shadow-xs'
+                        : isAssignedToMe
+                          ? 'border-sky-200 bg-sky-50/40 shadow-xs'
+                          : isAssignedToOther
+                            ? 'border-slate-200 bg-slate-50/60 opacity-80'
+                            : 'border-slate-200 bg-white hover:border-sky-300'
                     }`}
                   >
                     <div className="space-y-1">
@@ -1178,6 +1257,11 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                         <span className="font-mono font-bold text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                           {p.nomorRekamMedis}
                         </span>
+                        {isGraduated && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-extrabold flex items-center gap-1">
+                            <span>🎓 TELAH LULUS PROGRAM ULD</span>
+                          </span>
+                        )}
                         {isAssignedToMe && (
                           <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-extrabold flex items-center gap-1">
                             <span>✓ Siswa Binaan Tetap Anda</span>
@@ -1204,25 +1288,70 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                         <span>·</span>
                         <span>Sekolah: <strong>{p.asalSekolah || 'Kota Probolinggo'}</strong></span>
                         <span>·</span>
-                        <span>Kebutuhan: <strong className="text-sky-700">{p.ragamDisabilitas}</strong></span>
+                        <span>Kebutuhan: <strong className={isGraduated ? 'text-emerald-800' : 'text-sky-700'}>{p.ragamDisabilitas}</strong></span>
                       </div>
 
-                      {p.catatanKhusus && (
+                      {/* Info Kelulusan jika status lulus */}
+                      {isGraduated && (
+                        <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 text-emerald-950 text-xs mt-1.5 space-y-0.5">
+                          <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-bold text-emerald-800">
+                            <span>Capaian / Catatan Kelulusan:</span>
+                            {p.lulusAt && (
+                              <span className="text-[10px] font-semibold text-emerald-700">
+                                Lulus: {new Date(p.lulusAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-700 text-[11px] italic">
+                            "{p.alasanLulus || 'Telah menyelesaikan seluruh program intervensi terapi ULD'}"
+                          </p>
+                          {p.diluluskanOleh && (
+                            <span className="text-[10px] text-slate-500 block pt-0.5">
+                              Diluluskan oleh: <strong>{p.diluluskanOleh}</strong>
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {!isGraduated && p.catatanKhusus && (
                         <p className="text-[11px] text-slate-500 italic mt-0.5">
                           Catatan: {p.catatanKhusus}
                         </p>
                       )}
                     </div>
 
-                    <div className="shrink-0 flex justify-end pt-1 sm:pt-0 sm:self-center">
-                      {isAssignedToMe ? (
+                    <div className="shrink-0 flex items-center justify-end gap-2 pt-1 sm:pt-0 sm:self-center">
+                      {isGraduated ? (
                         <button
                           type="button"
-                          onClick={() => handleUnassignStudent(p.id, p.namaLengkap)}
-                          className="px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-700 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                          onClick={() => handleReactivateStudent(p.id, p.namaLengkap)}
+                          className="px-3 py-1.5 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95"
+                          title="Aktifkan kembali siswa jika memerlukan intervensi terapi lanjutan"
                         >
-                          <span>✕ Lepas Binaan</span>
+                          <span>🔄 Aktifkan Kembali</span>
                         </button>
+                      ) : isAssignedToMe ? (
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUnassignStudent(p.id, p.namaLengkap)}
+                            className="px-3 py-1.5 rounded-xl border border-rose-300 hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                            title="Batalkan penetapan siswa binaan tetap ini"
+                          >
+                            <span>✕ Batalkan Binaan</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStudentToGraduate(p);
+                              setGraduateReason('Target intervensi terapi tercapai / Anak mandiri');
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-extrabold transition-all flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95"
+                            title="Nyatakan siswa telah lulus dan selesaikan program terapi ULD"
+                          >
+                            <span>🎓 Luluskan Siswa</span>
+                          </button>
+                        </div>
                       ) : isAssignedToOther ? (
                         <div 
                           className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 text-xs font-semibold flex items-center gap-1.5 select-none"
@@ -1231,13 +1360,26 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                           <span>🔒 Terkunci (Binaan {p.assignedTerapisNama})</span>
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleAssignStudent(p.id, p.namaLengkap)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-2xs bg-sky-700 hover:bg-sky-600 text-white cursor-pointer"
-                        >
-                          <span>+ Tetapkan Binaan</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStudentToGraduate(p);
+                              setGraduateReason('Target intervensi terapi tercapai / Anak mandiri');
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl border border-emerald-300 hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                            title="Luluskan siswa langsung"
+                          >
+                            <span>🎓 Luluskan</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAssignStudent(p.id, p.namaLengkap)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-2xs bg-sky-700 hover:bg-sky-600 text-white cursor-pointer"
+                          >
+                            <span>+ Tetapkan Binaan</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1997,6 +2139,110 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* MODAL KELULUSAN SISWA BINAAN */}
+      {studentToGraduate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full border border-slate-200 shadow-2xl space-y-5 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-emerald-100 text-emerald-800 text-lg">🎓</span>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">Kelulusan Siswa Terapi</h3>
+                  <p className="text-xs text-slate-500">Unit Layanan Disabilitas Kota Probolinggo</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setStudentToGraduate(null); setGraduateReason('Target intervensi terapi tercapai / Anak mandiri'); }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded text-[11px]">
+                  {studentToGraduate.nomorRekamMedis}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700">
+                  {studentToGraduate.assignedTerapisId === terapis.id ? 'Siswa Binaan Anda' : 'Siswa Terapi ULD'}
+                </span>
+              </div>
+              <div className="font-extrabold text-slate-900 text-base">{studentToGraduate.namaLengkap}</div>
+              <div className="text-slate-600 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px]">
+                <span>Wali: <strong>{studentToGraduate.namaWali}</strong></span>
+                <span>·</span>
+                <span>Sekolah: <strong>{studentToGraduate.asalSekolah || 'Kota Probolinggo'}</strong></span>
+                <span>·</span>
+                <span>Ragam: <strong className="text-emerald-800">{studentToGraduate.ragamDisabilitas}</strong></span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-800">
+                Pilih atau Tulis Capaian & Alasan Kelulusan:
+              </label>
+
+              {/* Preset Reason Chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Target intervensi terapi tercapai / Anak mandiri',
+                  'Selesai program stimulasi tumbuh kembang ULD',
+                  'Transisi siap masuk sekolah reguler',
+                  'Pindah domisili / selesai masa binaan'
+                ].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setGraduateReason(preset)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer ${
+                      graduateReason === preset
+                        ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                rows={3}
+                value={graduateReason}
+                onChange={e => setGraduateReason(e.target.value)}
+                placeholder="Tulis catatan evaluasi capaian mandiri siswa, saran/rekomendasi untuk guru dan orang tua, atau catatan khusus kelulusan..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-slate-50 font-medium"
+              />
+
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
+                <span className="text-sm shrink-0">⚠️</span>
+                <span>
+                  Siswa yang dinyatakan lulus akan otomatis masuk ke <strong>"List Siswa yang Sudah Lulus"</strong> dan seluruh sisa jadwal aktif ke depan akan otomatis dibatalkan untuk membebaskan kuota bagi siswa lain. Status ini tetap dapat diaktifkan kembali jika diperlukan.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => { setStudentToGraduate(null); setGraduateReason('Target intervensi terapi tercapai / Anak mandiri'); }}
+                className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmGraduateStudent}
+                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold text-xs transition-all shadow flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <span>🎓 Konfirmasi Kelulusan Siswa</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

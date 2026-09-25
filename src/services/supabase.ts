@@ -260,26 +260,32 @@ class SupabaseDataService {
       await this.client.from('admin_users').upsert(admins);
 
       // 3. Peserta
-      const peserta = this.getPesertaList().map(p => ({
-        id: p.id,
-        nomor_rekam_medis: p.nomorRekamMedis,
-        nama_lengkap: p.namaLengkap,
-        pin: p.pin,
-        tanggal_lahir: p.tanggalLahir,
-        jenis_kelamin: p.jenisKelamin,
-        nama_wali: p.namaWali,
-        nomor_telepon: p.nomorTelepon,
-        alamat: p.alamat,
-        kecamatan: p.kecamatan,
-        asal_sekolah: p.asalSekolah || null,
-        ragam_disabilitas: p.ragamDisabilitas,
-        status: p.status,
-        terdaftar_sejak: p.terdaftarSejak,
-        catatan_khusus: p.catatanKhusus || null,
-        assigned_terapis_id: p.assignedTerapisId || null,
-        assigned_terapis_nama: p.assignedTerapisNama || null,
-        assigned_at: p.assignedAt || null
-      }));
+      const peserta = this.getPesertaList().map(p => {
+        let catatan = p.catatanKhusus || '';
+        if ((p.status === 'lulus' || p.status === 'selesai_program') && p.alasanLulus && !catatan.includes('[LULUS:')) {
+          catatan = `[LULUS: ${p.alasanLulus}${p.diluluskanOleh ? ` | Diluluskan oleh: ${p.diluluskanOleh}` : ''}] ${catatan}`.trim();
+        }
+        return {
+          id: p.id,
+          nomor_rekam_medis: p.nomorRekamMedis,
+          nama_lengkap: p.namaLengkap,
+          pin: p.pin,
+          tanggal_lahir: p.tanggalLahir,
+          jenis_kelamin: p.jenisKelamin,
+          nama_wali: p.namaWali,
+          nomor_telepon: p.nomorTelepon,
+          alamat: p.alamat,
+          kecamatan: p.kecamatan,
+          asal_sekolah: p.asalSekolah || null,
+          ragam_disabilitas: p.ragamDisabilitas,
+          status: p.status,
+          terdaftar_sejak: p.terdaftarSejak,
+          catatan_khusus: catatan || null,
+          assigned_terapis_id: p.assignedTerapisId || null,
+          assigned_terapis_nama: p.assignedTerapisNama || null,
+          assigned_at: p.assignedAt || null
+        };
+      });
       await this.client.from('peserta').upsert(peserta);
 
       // 4. Slots
@@ -452,7 +458,10 @@ class SupabaseDataService {
           catatanKhusus: p.catatan_khusus,
           assignedTerapisId: p.assigned_terapis_id,
           assignedTerapisNama: (p.assigned_terapis_id === 'terapis-2' || (p.assigned_terapis_nama && p.assigned_terapis_nama.toLowerCase().includes('indaryati'))) ? 'Indaryati Machmudi, A.Md.Kes' : p.assigned_terapis_nama,
-          assignedAt: p.assigned_at
+          assignedAt: p.assigned_at,
+          lulusAt: p.lulus_at || ((p.status === 'lulus' || p.status === 'selesai_program') ? (p.catatan_khusus?.match(/\[LULUS:.*\]/) ? p.terdaftar_sejak : undefined) : undefined),
+          alasanLulus: p.alasan_lulus || (p.catatan_khusus?.match(/\[LULUS:\s*([^|\]]+)/)?.[1]?.trim()),
+          diluluskanOleh: p.diluluskan_oleh || (p.catatan_khusus?.match(/Diluluskan oleh:\s*([^\]]+)/)?.[1]?.trim())
         }));
         localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(mapped));
       }
@@ -1206,45 +1215,118 @@ class SupabaseDataService {
     return false;
   }
 
+  // Meluluskan peserta: ubah status ke 'lulus', simpan tanggal, alasan, dan pelaku, serta batalkan jadwal aktif ke depan untuk membebaskan kuota
+  public luluskanPeserta(
+    pesertaId: string, 
+    alasanLulus?: string, 
+    actor?: { nama: string; role: 'terapis' | 'admin' }
+  ): boolean {
+    const list = this.getPesertaList();
+    const idx = list.findIndex(p => p.id === pesertaId);
+    if (idx === -1) return false;
+
+    const targetStudent = list[idx];
+    targetStudent.status = 'lulus';
+    targetStudent.lulusAt = new Date().toISOString();
+    targetStudent.alasanLulus = alasanLulus?.trim() || 'Telah menyelesaikan target intervensi terapi ULD';
+    targetStudent.diluluskanOleh = actor 
+      ? (actor.role === 'admin' ? `Admin (${actor.nama})` : `Terapis (${actor.nama})`)
+      : 'Tenaga Ahli ULD';
+
+    list[idx] = targetStudent;
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+
+    // Bebaskan kuota jadwal terapi aktif siswa tersebut jika ada
+    const bookings = this.getBookingsList();
+    const slots = this.getSlotsList();
+
+    bookings.forEach(b => {
+      if (b.pesertaId === pesertaId && (b.status === 'terjadwal' || b.status === 'menunggu_konfirmasi')) {
+        b.status = 'batal';
+        b.catatanSesiTerapis = `Siswa telah dinyatakan LULUS (${targetStudent.alasanLulus})`;
+
+        const slotIdx = slots.findIndex(s => s.id === b.slotId);
+        if (slotIdx !== -1 && slots[slotIdx].kuotaTerisi > 0) {
+          slots[slotIdx].kuotaTerisi -= 1;
+          if (slots[slotIdx].statusSlot === 'penuh') {
+            slots[slotIdx].statusSlot = 'tersedia';
+          }
+        }
+      }
+    });
+
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+
+    this.catatAktivitas({
+      kategori: 'manajemen_siswa',
+      judul: 'Kelulusan Siswa Terapi',
+      deskripsi: `Siswa an. "${targetStudent.namaLengkap}" (${targetStudent.nomorRekamMedis}) resmi dinyatakan LULUS oleh ${targetStudent.diluluskanOleh}. Catatan: ${targetStudent.alasanLulus}. Kuota sesi aktif otomatis dibebaskan.`,
+      pelaku: actor ? `${actor.role === 'admin' ? 'Petugas Admin ' : ''}${actor.nama}` : 'Tenaga Ahli ULD',
+      rolePelaku: actor?.role || 'terapis',
+      icon: '🎓'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    this.triggerAutoSync();
+    return true;
+  }
+
+  // Mengaktifkan kembali siswa yang sudah lulus (reaktivasi ke status aktif)
+  public aktifkanKembaliPeserta(
+    pesertaId: string,
+    actor?: { nama: string; role: 'terapis' | 'admin' }
+  ): boolean {
+    const list = this.getPesertaList();
+    const idx = list.findIndex(p => p.id === pesertaId);
+    if (idx === -1) return false;
+
+    const p = list[idx];
+    p.status = 'aktif';
+    if (p.alasanLulus) {
+      p.catatanKhusus = `${p.catatanKhusus || ''} [Riwayat Lulus: ${p.lulusAt ? p.lulusAt.split('T')[0] : ''} - ${p.alasanLulus}]`.trim();
+    }
+    delete p.lulusAt;
+    delete p.alasanLulus;
+    delete p.diluluskanOleh;
+    list[idx] = p;
+
+    localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+
+    this.catatAktivitas({
+      kategori: 'manajemen_siswa',
+      judul: 'Reaktivasi Siswa Terapi',
+      deskripsi: `Siswa an. "${p.namaLengkap}" (${p.nomorRekamMedis}) yang sebelumnya telah lulus kini diaktifkan kembali statusnya menjadi siswa aktif terapi ULD.`,
+      pelaku: actor ? `${actor.role === 'admin' ? 'Petugas Admin ' : ''}${actor.nama}` : 'Tenaga Ahli ULD',
+      rolePelaku: actor?.role || 'terapis',
+      icon: '🔄'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    this.triggerAutoSync();
+    return true;
+  }
+
   // Hapus akun siswa lama yang sudah lulus / selesai program
   public hapusPeserta(pesertaId: string, alasanLulus?: string): boolean {
+    return this.luluskanPeserta(pesertaId, alasanLulus, { nama: 'Petugas Admin Loket', role: 'admin' });
+  }
+
+  // Hapus permanen data siswa jika diperlukan
+  public hapusPermanenPeserta(pesertaId: string): boolean {
     const list = this.getPesertaList();
-    const targetStudent = list.find(p => p.id === pesertaId);
     const filtered = list.filter(p => p.id !== pesertaId);
     if (filtered.length !== list.length) {
       localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(filtered));
-
-      // Bebaskan kuota jadwal terapi aktif siswa tersebut jika ada
-      const bookings = this.getBookingsList();
-      const slots = this.getSlotsList();
-
-      bookings.forEach(b => {
-        if (b.pesertaId === pesertaId && (b.status === 'terjadwal' || b.status === 'menunggu_konfirmasi')) {
-          b.status = 'batal';
-          b.catatanSesiTerapis = `Siswa telah lulus / selesai program (${alasanLulus || 'Kelulusan oleh Admin ULD'})`;
-
-          const slotIdx = slots.findIndex(s => s.id === b.slotId);
-          if (slotIdx !== -1 && slots[slotIdx].kuotaTerisi > 0) {
-            slots[slotIdx].kuotaTerisi -= 1;
-            if (slots[slotIdx].statusSlot === 'penuh') {
-              slots[slotIdx].statusSlot = 'tersedia';
-            }
-          }
-        }
-      });
-
-      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
-      localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
-
-      this.catatAktivitas({
-        kategori: 'manajemen_siswa',
-        judul: 'Kelulusan & Hapus Siswa Terapi',
-        deskripsi: `Siswa an. "${targetStudent?.namaLengkap || pesertaId}" telah dinyatakan LULUS dan dihapus dari daftar aktif. Kuota sesi otomatis dibebaskan. (${alasanLulus || 'Selesai program'})`,
-        pelaku: 'Petugas Admin Loket',
-        rolePelaku: 'admin',
-        icon: '🎓'
-      });
-
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
       this.triggerAutoSync();
       return true;
     }
@@ -1393,6 +1475,10 @@ class SupabaseDataService {
 
   public getSiswaBelumDiassign(): Peserta[] {
     return this.getPesertaList().filter(p => !p.assignedTerapisId && p.status === 'aktif');
+  }
+
+  public getSiswaLulusList(): Peserta[] {
+    return this.getPesertaList().filter(p => p.status === 'lulus' || p.status === 'selesai_program');
   }
 
   // --- SLOTS HARIAN METHODS (AUTO-OPEN SETIAP MINGGU SENIN - JUMAT) ---
