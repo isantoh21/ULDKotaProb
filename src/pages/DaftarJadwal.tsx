@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
-  const [selectedSpesialisasi, setSelectedSpesialisasi] = useState<string>('all');
+  const [selectedSpesialisasi, setSelectedSpesialisasi] = useState<string>('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>('');
   const [bookingSlotModal, setBookingSlotModal] = useState<SlotHarian | null>(null);
   const [psikologNoticeModal, setPsikologNoticeModal] = useState<SlotHarian | null>(null);
@@ -89,6 +89,12 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
     return slot.tanggal >= minAllowedDate && slot.tanggal <= maxAllowedDate;
   });
 
+  // Spesialisasi yang tersedia dari slot aktif
+  const uniqueSpesialisasi = Array.from(new Set(activePublicSlots.map(s => s.spesialisasi))).sort();
+
+  // Auto-select spesialisasi pertama jika belum ada pilihan
+  const effectiveSpesialisasi = selectedSpesialisasi || uniqueSpesialisasi[0] || '';
+
   // Extract unique dates yang tersedia
   const uniqueDates = Array.from(new Set(activePublicSlots.map(s => s.tanggal))).sort();
 
@@ -96,7 +102,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   const effectiveDateFilter = selectedDateFilter || uniqueDates[0] || '';
 
   const filteredSlots = activePublicSlots.filter(slot => {
-    if (selectedSpesialisasi !== 'all' && slot.spesialisasi !== selectedSpesialisasi) return false;
+    if (effectiveSpesialisasi && slot.spesialisasi !== effectiveSpesialisasi) return false;
     if (effectiveDateFilter && slot.tanggal !== effectiveDateFilter) return false;
     return true;
   });
@@ -290,7 +296,6 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
           </label>
           <div className="flex gap-1.5 overflow-x-auto pb-1.5 no-scrollbar -mx-1 px-1">
             {[
-              { id: 'all', label: 'Semua Bidang' },
               { id: 'terapis_perilaku', label: 'Terapis Perilaku (ABA)' },
               { id: 'fisioterapis', label: 'Fisioterapi' },
               { id: 'tenaga_plb', label: 'Tenaga PLB' },
@@ -299,7 +304,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
               <button
                 key={tab.id}
                 onClick={() => setSelectedSpesialisasi(tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${selectedSpesialisasi === tab.id ? 'bg-teal-800 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${effectiveSpesialisasi === tab.id ? 'bg-teal-800 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
               >
                 {tab.label}
               </button>
@@ -354,7 +359,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
             <h3 className="font-bold text-slate-900">Belum Ada Slot yang Sesuai Filter</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">Tidak ditemukan jadwal pada kriteria yang dipilih.</p>
             <button
-              onClick={() => setSelectedSpesialisasi('all')}
+              onClick={() => setSelectedSpesialisasi('')}
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-700"
             >
               Reset Filter
