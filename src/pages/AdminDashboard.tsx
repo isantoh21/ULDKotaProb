@@ -106,23 +106,16 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     d.setDate(d.getDate() + 14);
     return d.toISOString().split('T')[0];
   })();
-  const currentTimeStr = `${String(todayWIB.hour).padStart(2, '0')}:${String(todayWIB.minute).padStart(2, '0')}`;
 
-  // Slot tersedia untuk loket admin:
-  // - Waktu yang sudah lewat TIDAK MUNCUL (tanggal < hari ini, atau hari ini tapi jam selesai sudah terlewati)
-  // - Tampilkan 2 minggu ke depan saja (rentang Hari H s/d 14 hari ke depan)
-  // - Tanggal hari ini (Hari H) tetap muncul agar siswa dapat didaftarkan langsung saat hadir di loket
+  // Slot tersedia untuk loket admin (Semua jenis pendaftaran maksimal H-1 sebelum 23.59 WIB):
+  // - Hari ini (Hari H) dan masa lalu TIDAK MUNCUL karena batas minimal pendaftaran adalah H-1 sebelum 23.59 WIB
+  // - Tampilkan 2 minggu ke depan saja (rentang besok s/d 14 hari ke depan)
   const availableSlotsForSelectedTerapis = slotsList.filter(s => {
     if (s.terapisId !== (currentSelectedTerapis?.id || selectedTerapisIdForBooking)) return false;
     if (s.statusSlot === 'dibatalkan') return false;
 
-    // Filter tanggal masa lalu
-    if (s.tanggal < todayWIB.dateStr) return false;
-
-    // Filter jam yang sudah lewat pada Hari H
-    if (s.tanggal === todayWIB.dateStr && s.jamSelesai && s.jamSelesai <= currentTimeStr) {
-      return false;
-    }
+    // Filter tanggal hari ini dan masa lalu (wajib minimal H-1 sebelum 23.59 WIB)
+    if (s.tanggal <= todayWIB.dateStr) return false;
 
     // Batas maksimal 2 pekan ke depan
     if (s.tanggal > twoWeeksAheadDate) return false;
@@ -531,17 +524,16 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                     ) : (
                       availableSlotsForSelectedTerapis.map(s => {
                         const isFull = s.kuotaTerisi >= s.kuotaMaksimal;
-                        const isToday = s.tanggal === todayWIB.dateStr;
                         return (
                           <option key={s.id} value={s.id} disabled={isFull}>
-                            {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {isToday ? '[Hari H - Pendaftaran Langsung]' : ''} {isFull ? '[PENUH]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
+                            {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {isFull ? '[PENUH]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
                           </option>
                         );
                       })
                     )}
                   </select>
                   <span className="text-[11px] text-slate-500 mt-1 block">
-                    Menampilkan jadwal mulai Hari H (hari pendaftaran) hingga 2 pekan ke depan ({twoWeeksAheadDate}). Waktu yang telah lewat disaring otomatis.
+                    Menampilkan jadwal mulai besok (maksimal pendaftaran H-1 sebelum 23.59 WIB) hingga 2 pekan ke depan ({twoWeeksAheadDate}).
                   </span>
                 </div>
               </div>
