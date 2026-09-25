@@ -185,9 +185,10 @@ VALUES
     ('terapis-1', 'TP-AHMAD-01', 'Ahmad Hafizul Adly, S.Pd.', 'Terapis Perilaku (Behavior Therapist)', 'terapis_perilaku', 'Terapis Perilaku', '223344', '081234567891', 'Fokus intervensi perilaku terapan (ABA), pembiasaan instruksi, bina diri, dan modifikasi tantrum.', 'Ruang Terapi Perilaku & Sensori 1', true),
     ('terapis-2', 'FT-INDARYATI-02', 'Indaryati Machmudi A.Md.Ft.', 'Fisioterapis Pediatrik', 'fisioterapis', 'Fisioterapis', '445566', '081234567892', 'Spesialis stimulasi motorik kasar, latihan penguatan otot, postur, keseimbangan dinamis, dan fisioterapi.', 'Ruang Fisioterapi Gimnasium Inklusif', true),
     ('terapis-3', 'PLB-SALMA-03', 'Salma Salwa Salsabila, S.Pd.', 'Tenaga Pendidikan Luar Biasa (PLB)', 'tenaga_plb', 'Tenaga PLB', '334455', '081234567893', 'Bimbingan kesiapan sekolah inklusi, PPI individual, simbol visual alternatif, dan remedial pra-akademik.', 'Ruang Edukasi & Remedial PLB', true),
-    ('terapis-4', 'PSI-IKHSAN-04', 'Muhammad Ikhsan, M.Psi., Psikolog', 'Psikolog Klinis & Perkembangan Anak', 'psikolog', 'Psikolog', '112233', '081234567894', 'Pemeriksaan psikologis komprehensif, asesmen kognitif (IQ), diagnosa autisme/ADHD, konseling keluarga.', 'Ruang Konseling & Observasi Psikologi', true)
+    ('terapis-4', 'PSI-IKHSAN-04', 'Muhammad Ikhsan, M.Psi., Psikolog', 'Psikolog', 'psikolog', 'Psikolog', '112233', '081234567894', 'Pemeriksaan psikologis komprehensif, asesmen kognitif (IQ), diagnosa autisme/ADHD, konseling keluarga.', 'Ruang Konseling & Observasi Psikologi', true)
 ON CONFLICT (id) DO UPDATE SET
     nama = EXCLUDED.nama,
+    gelar = EXCLUDED.gelar,
     pin = EXCLUDED.pin,
     ruang_praktek = EXCLUDED.ruang_praktek;
 
@@ -236,3 +237,6 @@ ALTER TABLE public.booking_terapi ADD COLUMN IF NOT EXISTS asal_sekolah TEXT;
 
 -- 3. Tambah metadata fleksibel pada log aktivitas sistem
 ALTER TABLE public.log_aktivitas ADD COLUMN IF NOT EXISTS metadata JSONB;
+
+-- 4. Pembaruan gelar Muhammad Ikhsan, M.Psi., Psikolog menjadi 'Psikolog'
+UPDATE public.terapis SET gelar = 'Psikolog' WHERE id = 'terapis-4';

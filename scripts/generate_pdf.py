@@ -103,7 +103,7 @@ def extract_data_from_initial_data():
             "id": "terapis-4",
             "nipOrId": "PSI-IKHSAN-04",
             "nama": "Muhammad Ikhsan, M.Psi., Psikolog",
-            "gelar": "Psikolog Klinis & Disabilitas",
+            "gelar": "Psikolog",
             "spesialisasiLabel": "Psikolog",
             "pin": "112233",
             "nomorTelepon": "0812-3456-7894",
