@@ -130,6 +130,19 @@ CREATE TABLE IF NOT EXISTS public.log_aktivitas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
+-- 8. TABEL PENGOSONGAN JADWAL RUTIN (SEPANJANG MINGGU SELAMANYA SAMPAI DI-REVOKE)
+CREATE TABLE IF NOT EXISTS public.pengosongan_jadwal_rutin (
+    id TEXT PRIMARY KEY,
+    terapis_id TEXT NOT NULL REFERENCES public.terapis(id) ON DELETE CASCADE,
+    hari INTEGER NOT NULL, -- 1 = Senin, 2 = Selasa, 3 = Rabu, 4 = Kamis, 5 = Jumat, -1 = Setiap Hari Kerja
+    hari_label VARCHAR(30) NOT NULL, -- 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Senin - Jumat'
+    jam_mulai VARCHAR(5) NOT NULL, -- '09:00', '10:00', '11:00', '12:00', 'SEMUA'
+    jam_selesai VARCHAR(5),
+    label_sesi TEXT NOT NULL,
+    alasan TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
 -- ====================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ====================================================================
@@ -140,6 +153,7 @@ ALTER TABLE public.slots_harian ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.booking_terapi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pendaftaran_asesmen_guest ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.log_aktivitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pengosongan_jadwal_rutin ENABLE ROW LEVEL SECURITY;
 
 -- Kebijakan akses publik (menggunakan Anon Key client-side)
 CREATE POLICY "Public Read/Write Terapis" ON public.terapis FOR ALL USING (true);
@@ -149,6 +163,7 @@ CREATE POLICY "Public Read/Write Slots" ON public.slots_harian FOR ALL USING (tr
 CREATE POLICY "Public Read/Write Bookings" ON public.booking_terapi FOR ALL USING (true);
 CREATE POLICY "Public Read/Write Asesmen" ON public.pendaftaran_asesmen_guest FOR ALL USING (true);
 CREATE POLICY "Public Read/Write Logs" ON public.log_aktivitas FOR ALL USING (true);
+CREATE POLICY "Public Read/Write PengosonganRutin" ON public.pengosongan_jadwal_rutin FOR ALL USING (true);
 
 -- ====================================================================
 -- SEED DATA AWAL: 4 TENAGA AHLI & 2 PETUGAS ADMIN

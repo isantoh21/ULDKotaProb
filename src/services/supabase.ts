@@ -360,6 +360,22 @@ class SupabaseDataService {
         await this.client.from('pendaftaran_asesmen_guest').upsert(asesmenList);
       }
 
+      // 8. Pengosongan Jadwal Rutin
+      const pengosongan = this.getPengosonganRutinList().map(r => ({
+        id: r.id,
+        terapis_id: r.terapisId,
+        hari: r.hari,
+        hari_label: r.hariLabel,
+        jam_mulai: r.jamMulai,
+        jam_selesai: r.jamSelesai || null,
+        label_sesi: r.labelSesi,
+        alasan: r.alasan || null,
+        created_at: r.createdAt
+      }));
+      if (pengosongan.length > 0) {
+        await this.client.from('pengosongan_jadwal_rutin').upsert(pengosongan);
+      }
+
       return { success: true, message: 'Seluruh data lokal berhasil diunggah (push) ke tabel Supabase!' };
     } catch (err: any) {
       return { success: false, message: `Gagal push data: ${err.message || err}` };
@@ -502,7 +518,7 @@ class SupabaseDataService {
           namaOrangTua: a.nama_orang_tua,
           nikAnakOrKK: a.nik_anak_or_kk,
           nomorWhatsApp: a.nomor_whatsapp,
-          alamatDomisili: a.alamat_domisili,
+          alamatDomisili: a.alamatDomisili,
           kecamatan: a.kecamatan,
           jenjangPendidikan: a.jenjang_pendidikan || 'PAUD/TK',
           asalSekolah: a.asal_sekolah || '',
@@ -519,6 +535,23 @@ class SupabaseDataService {
           createdAt: a.created_at || new Date().toISOString()
         }));
         localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(mapped));
+      }
+
+      // 8. Pengosongan Jadwal Rutin
+      const { data: pengosonganData } = await this.client.from('pengosongan_jadwal_rutin').select('*');
+      if (pengosonganData && pengosonganData.length > 0) {
+        const mapped: PengosonganJadwalRutin[] = pengosonganData.map((p: any) => ({
+          id: p.id,
+          terapisId: p.terapis_id,
+          hari: p.hari,
+          hariLabel: p.hari_label,
+          jamMulai: p.jam_mulai,
+          jamSelesai: p.jam_selesai || undefined,
+          labelSesi: p.label_sesi,
+          alasan: p.alasan || undefined,
+          createdAt: p.created_at || new Date().toISOString()
+        }));
+        localStorage.setItem(STORAGE_KEYS.PENGOSONGAN_RUTIN, JSON.stringify(mapped));
       }
 
       if (typeof window !== 'undefined') {
@@ -2121,6 +2154,19 @@ CREATE TABLE IF NOT EXISTS public.log_aktivitas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
+-- 8. Tabel Pengosongan Jadwal Rutin (Sepanjang Minggu Selamanya Sampai Di-revoke)
+CREATE TABLE IF NOT EXISTS public.pengosongan_jadwal_rutin (
+    id TEXT PRIMARY KEY,
+    terapis_id TEXT NOT NULL REFERENCES public.terapis(id) ON DELETE CASCADE,
+    hari INTEGER NOT NULL,
+    hari_label VARCHAR(30) NOT NULL,
+    jam_mulai VARCHAR(5) NOT NULL,
+    jam_selesai VARCHAR(5),
+    label_sesi TEXT NOT NULL,
+    alasan TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
 -- RLS Policies
 ALTER TABLE public.terapis ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
@@ -2129,6 +2175,7 @@ ALTER TABLE public.slots_harian ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.booking_terapi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pendaftaran_asesmen_guest ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.log_aktivitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pengosongan_jadwal_rutin ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public Read/Write Terapis" ON public.terapis FOR ALL USING (true);
 CREATE POLICY "Public Read/Write Admin" ON public.admin_users FOR ALL USING (true);
@@ -2137,6 +2184,7 @@ CREATE POLICY "Public Read/Write Slots" ON public.slots_harian FOR ALL USING (tr
 CREATE POLICY "Public Read/Write Bookings" ON public.booking_terapi FOR ALL USING (true);
 CREATE POLICY "Public Read/Write Asesmen" ON public.pendaftaran_asesmen_guest FOR ALL USING (true);
 CREATE POLICY "Public Read/Write Logs" ON public.log_aktivitas FOR ALL USING (true);
+CREATE POLICY "Public Read/Write PengosonganRutin" ON public.pengosongan_jadwal_rutin FOR ALL USING (true);
 `;
   }
 }
