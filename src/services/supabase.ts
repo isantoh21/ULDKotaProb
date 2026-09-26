@@ -703,19 +703,33 @@ class SupabaseDataService {
 
       // 8. Pengosongan Jadwal Rutin
       const { data: pengosonganData } = await this.client.from('pengosongan_jadwal_rutin').select('*');
-      if (pengosonganData && pengosonganData.length > 0) {
+      if (pengosonganData) {
         const mapped: PengosonganJadwalRutin[] = pengosonganData.map((p: any) => ({
           id: p.id,
           terapisId: p.terapis_id,
-          hari: p.hari,
+          hari: Number(p.hari),
           hariLabel: p.hari_label,
-          jamMulai: p.jam_mulai,
-          jamSelesai: p.jam_selesai || undefined,
+          jamMulai: p.jam_mulai === 'SEMUA' ? 'SEMUA' : (p.jam_mulai || '').slice(0, 5),
+          jamSelesai: p.jam_selesai ? p.jam_selesai.slice(0, 5) : undefined,
           labelSesi: p.label_sesi,
           alasan: p.alasan || undefined,
           createdAt: p.created_at || new Date().toISOString()
         }));
-        localStorage.setItem(STORAGE_KEYS.PENGOSONGAN_RUTIN, JSON.stringify(mapped));
+
+        // Merge dengan aturan lokal agar aturan yang baru ditandai tidak hilang saat pull
+        const localList = this.getPengosonganRutinList();
+        const mergedMap = new Map<string, PengosonganJadwalRutin>();
+        mapped.forEach(r => mergedMap.set(r.id, r));
+        localList.forEach(r => {
+          if (!mergedMap.has(r.id)) {
+            mergedMap.set(r.id, r);
+          }
+        });
+        const finalRules = Array.from(mergedMap.values());
+        localStorage.setItem(STORAGE_KEYS.PENGOSONGAN_RUTIN, JSON.stringify(finalRules));
+
+        // Terapkan langsung aturan pengosongan rutin ke seluruh slot harian
+        this.ensureAutoOpenWeekdaySlots();
       }
 
       if (typeof window !== 'undefined') {
@@ -1080,8 +1094,8 @@ class SupabaseDataService {
     list.forEach(s => {
       if (s.terapisId === terapisId && s.tanggal === tanggal && s.statusSlot === 'dibatalkan') {
         const isBlockedPermanen = pengosonganRules.some(r =>
-          (r.hari === -1 || r.hari === dayNum) &&
-          (r.jamMulai === 'SEMUA' || r.jamMulai === s.jamMulai)
+          (Number(r.hari) === -1 || Number(r.hari) === dayNum) &&
+          (r.jamMulai === 'SEMUA' || r.jamMulai === s.jamMulai || r.jamMulai.slice(0, 5) === s.jamMulai.slice(0, 5))
         );
         if (!isBlockedPermanen) {
           s.statusSlot = s.kuotaTerisi >= s.kuotaMaksimal ? 'penuh' : 'tersedia';
@@ -1124,7 +1138,12 @@ class SupabaseDataService {
   public getPengosonganRutinList(): PengosonganJadwalRutin[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.PENGOSONGAN_RUTIN);
-      return data ? JSON.parse(data) : [];
+      const list: PengosonganJadwalRutin[] = data ? JSON.parse(data) : [];
+      return list.map(r => ({
+        ...r,
+        hari: Number(r.hari),
+        jamMulai: r.jamMulai === 'SEMUA' ? 'SEMUA' : (r.jamMulai || '').slice(0, 5)
+      }));
     } catch {
       return [];
     }
@@ -1148,8 +1167,8 @@ class SupabaseDataService {
     // Cek apakah aturan identik sudah ada
     const duplicate = list.find(r =>
       r.terapisId === data.terapisId &&
-      r.hari === data.hari &&
-      r.jamMulai === data.jamMulai
+      Number(r.hari) === Number(data.hari) &&
+      (r.jamMulai === data.jamMulai || r.jamMulai.slice(0, 5) === data.jamMulai.slice(0, 5))
     );
     if (duplicate) {
       return { 
@@ -1161,10 +1180,10 @@ class SupabaseDataService {
     const newRule: PengosonganJadwalRutin = {
       id: `block-rutin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       terapisId: data.terapisId,
-      hari: data.hari,
+      hari: Number(data.hari),
       hariLabel: data.hariLabel,
-      jamMulai: data.jamMulai,
-      jamSelesai: data.jamSelesai,
+      jamMulai: data.jamMulai === 'SEMUA' ? 'SEMUA' : data.jamMulai.slice(0, 5),
+      jamSelesai: data.jamSelesai ? data.jamSelesai.slice(0, 5) : undefined,
       labelSesi: data.labelSesi,
       alasan: data.alasan?.trim() || undefined,
       createdAt: new Date().toISOString()
@@ -1179,8 +1198,8 @@ class SupabaseDataService {
     slots.forEach(slot => {
       if (slot.terapisId === data.terapisId) {
         const slotDay = new Date(slot.tanggal + 'T00:00:00').getDay();
-        const matchHari = data.hari === -1 ? (slotDay >= 1 && slotDay <= 5) : (slotDay === data.hari);
-        const matchJam = data.jamMulai === 'SEMUA' || slot.jamMulai === data.jamMulai;
+        const matchHari = Number(data.hari) === -1 ? (slotDay >= 1 && slotDay <= 5) : (slotDay === Number(data.hari));
+        const matchJam = data.jamMulai === 'SEMUA' || slot.jamMulai === data.jamMulai || slot.jamMulai.slice(0, 5) === data.jamMulai.slice(0, 5);
         if (matchHari && matchJam) {
           if (slot.kuotaTerisi === 0) {
             slot.statusSlot = 'dibatalkan';
@@ -1906,11 +1925,11 @@ class SupabaseDataService {
         DEFAULT_TERAPI_SESSIONS.forEach(sess => {
           const matchedRule = pengosonganRules.find(r => 
             r.terapisId === t.id &&
-            (r.hari === -1 || r.hari === dayNum) &&
-            (r.jamMulai === 'SEMUA' || r.jamMulai === sess.start)
+            (Number(r.hari) === -1 || Number(r.hari) === dayNum) &&
+            (r.jamMulai === 'SEMUA' || r.jamMulai === sess.start || (r.jamMulai && r.jamMulai.slice(0, 5) === sess.start))
           );
 
-          const existingIdx = list.findIndex(s => s.terapisId === t.id && s.tanggal === dStr && s.jamMulai === sess.start);
+          const existingIdx = list.findIndex(s => s.terapisId === t.id && s.tanggal === dStr && (s.jamMulai === sess.start || s.jamMulai.slice(0, 5) === sess.start));
           if (existingIdx === -1) {
             list.push({
               id: `slot-auto-${t.id}-${dStr}-${sess.start.replace(':', '')}`,
@@ -1929,12 +1948,15 @@ class SupabaseDataService {
               createdAt: new Date().toISOString()
             });
             hasAdded = true;
-          } else if (matchedRule && list[existingIdx].statusSlot === 'tersedia' && list[existingIdx].kuotaTerisi === 0) {
-            list[existingIdx].statusSlot = 'dibatalkan';
-            list[existingIdx].catatanTerapis = matchedRule.alasan 
-              ? `Dikosongkan Rutin: ${matchedRule.alasan}` 
-              : 'Dikosongkan rutin setiap minggu sepanjang masa';
-            hasAdded = true;
+          } else if (matchedRule && list[existingIdx].kuotaTerisi === 0) {
+            // Jika ada aturan pengosongan rutin aktif pada hari & sesi ini, pastikan status slot selalu dibatalkan
+            if (list[existingIdx].statusSlot !== 'dibatalkan' || !list[existingIdx].catatanTerapis?.includes('Dikosongkan Rutin')) {
+              list[existingIdx].statusSlot = 'dibatalkan';
+              list[existingIdx].catatanTerapis = matchedRule.alasan 
+                ? `Dikosongkan Rutin: ${matchedRule.alasan}` 
+                : 'Dikosongkan rutin setiap minggu sepanjang masa';
+              hasAdded = true;
+            }
           }
         });
       });

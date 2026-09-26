@@ -663,6 +663,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
                     const isFull = existingSlot && existingSlot.kuotaTerisi >= existingSlot.kuotaMaksimal;
                     const isClosedByTerapis = existingSlot && existingSlot.statusSlot === 'dibatalkan';
+                    const isBlockedRutin = isClosedByTerapis && Boolean(existingSlot?.catatanTerapis?.includes('Dikosongkan Rutin'));
 
                     return (
                       <div
@@ -670,13 +671,15 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                         className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
                           isBookedByMe 
                             ? 'bg-sky-50 border-sky-300 shadow-xs ring-1 ring-sky-300/50' 
-                            : isClosedByTerapis
-                              ? 'bg-slate-100/70 border-slate-200 text-slate-500 opacity-75'
-                              : !deadline.bisaDaftar 
-                                ? 'bg-slate-50/80 border-slate-200 opacity-75' 
-                                : isFull 
-                                  ? 'bg-rose-50/60 border-rose-200' 
-                                  : 'bg-white border-slate-200 hover:border-sky-400 shadow-xs'
+                            : isBlockedRutin
+                              ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                              : isClosedByTerapis
+                                ? 'bg-slate-100/70 border-slate-200 text-slate-500 opacity-75'
+                                : !deadline.bisaDaftar 
+                                  ? 'bg-slate-50/80 border-slate-200 opacity-75' 
+                                  : isFull 
+                                    ? 'bg-rose-50/60 border-rose-200' 
+                                    : 'bg-white border-slate-200 hover:border-sky-400 shadow-xs'
                         }`}
                       >
                         <div className="space-y-1.5">
@@ -688,9 +691,13 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-700 text-white">
                                 ✓ Jadwal Anda
                               </span>
+                            ) : isBlockedRutin ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-200 text-rose-900 border border-rose-300">
+                                🔒 Dikosongkan Rutin
+                              </span>
                             ) : isClosedByTerapis ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
-                                ⚪ Dimatikan Terapis
+                                ⚪ Dimatikan Hari Ini
                               </span>
                             ) : !deadline.bisaDaftar ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
@@ -723,6 +730,10 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                             >
                               Lihat Tiket Saya →
                             </button>
+                          ) : isBlockedRutin ? (
+                            <div className="text-center py-2 text-[11px] font-semibold text-rose-800 bg-rose-100/70 border border-rose-200 rounded-xl">
+                              {existingSlot?.catatanTerapis || 'Dikosongkan rutin setiap minggu sepanjang masa'}
+                            </div>
                           ) : isClosedByTerapis ? (
                             <div className="text-center py-2 text-[11px] font-semibold text-slate-500 bg-slate-100 rounded-xl">
                               Sesi Dimatikan Terapis
