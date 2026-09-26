@@ -135,6 +135,41 @@ export function getWeekBounds(dateStr: string): { monday: string; friday: string
   }
 }
 
+// Helper untuk mendapatkan rentang 2 pekan kalender pendaftaran aktif (Pekan 1 & Pekan 2 ke depan)
+export function getAvailableBookingWeeks(): {
+  week1: { monday: string; friday: string; sunday: string; label: string };
+  week2: { monday: string; friday: string; sunday: string; label: string };
+  maxAllowedDate: string;
+} {
+  const { dateStr } = getWIBDate();
+  const currentWeekBounds = getWeekBounds(dateStr);
+  const todayD = new Date(dateStr + 'T00:00:00');
+  const isWeekendNow = todayD.getDay() === 0 || todayD.getDay() === 6 || dateStr > currentWeekBounds.friday;
+
+  const week1Monday = isWeekendNow
+    ? (() => {
+        const d = new Date(currentWeekBounds.monday + 'T00:00:00');
+        d.setDate(d.getDate() + 7);
+        return formatLocalDate(d);
+      })()
+    : currentWeekBounds.monday;
+
+  const week2Monday = (() => {
+    const d = new Date(week1Monday + 'T00:00:00');
+    d.setDate(d.getDate() + 7);
+    return formatLocalDate(d);
+  })();
+
+  const week1 = getWeekBounds(week1Monday);
+  const week2 = getWeekBounds(week2Monday);
+
+  return {
+    week1,
+    week2,
+    maxAllowedDate: week2.friday
+  };
+}
+
 // 4 Sesi Reguler Layanan Terapi ULD Kota Probolinggo (Senin - Jumat, 09.00 - 13.00 WIB)
 export const DEFAULT_TERAPI_SESSIONS = [
   { start: '09:00', end: '10:00', label: 'Sesi 1 (09.00 - 10.00 WIB)' },
@@ -2154,20 +2189,16 @@ class SupabaseDataService {
     }
 
     // Batas maksimal pendaftaran adalah 2 pekan ke depan
-    const twoWeeksAheadDate = (() => {
-      const { dateStr: todayStr } = getWIBDate();
-      const d = new Date(todayStr + 'T00:00:00');
-      d.setDate(d.getDate() + 14);
-      return d.toISOString().split('T')[0];
-    })();
-    if (slot.tanggal > twoWeeksAheadDate) {
+    const { maxAllowedDate, week2 } = getAvailableBookingWeeks();
+    if (slot.tanggal > maxAllowedDate) {
       return {
         success: false,
-        error: `Pendaftaran jadwal terapi dibatasi maksimal 2 pekan ke depan (${twoWeeksAheadDate}).`
+        error: `Pendaftaran jadwal terapi dibatasi maksimal 2 pekan ke depan (sampai ${week2.friday}).`
       };
     }
 
-    // ATURAN 2: Siswa terdaftar hanya bisa mendaftar maksimal 1x dalam seminggu
+    // ATURAN 2: Siswa terdaftar hanya bisa mendaftar maksimal 1x dalam seminggu kalender (Senin - Jumat)
+    // Kuota ini bersifat kontinyu untuk minggu-minggu berikutnya secara otomatis
     const targetWeek = getWeekBounds(slot.tanggal);
     const existingInSameWeek = bookings.find(b => {
       if (b.pesertaId !== pesertaId) return false;
@@ -2417,6 +2448,30 @@ class SupabaseDataService {
     }
 
     const newSlot = slots[newSlotIdx];
+
+    // Validasi rentang tanggal slot baru (maksimal 2 pekan ke depan)
+    const { maxAllowedDate, week2: bookingWeek2 } = getAvailableBookingWeeks();
+    if (newSlot.tanggal > maxAllowedDate) {
+      return { 
+        success: false, 
+        error: `Jadwal baru dibatasi maksimal 2 pekan ke depan (sampai ${bookingWeek2.friday}).` 
+      };
+    }
+
+    // Cek Aturan Kuota: siswa tidak boleh memiliki jadwal ganda di pekan slot baru
+    const targetWeek = getWeekBounds(newSlot.tanggal);
+    const existingInTargetWeek = bookings.find(other => 
+      other.id !== b.id &&
+      other.pesertaId === b.pesertaId &&
+      other.status !== 'batal' &&
+      getWeekBounds(other.tanggal).monday === targetWeek.monday
+    );
+    if (existingInTargetWeek) {
+      return {
+        success: false,
+        error: `Ananda sudah memiliki jadwal terapi pada pekan tersebut (${existingInTargetWeek.tanggal} pukul ${existingInTargetWeek.jamMulai} - ${existingInTargetWeek.jamSelesai} WIB). Sesuai aturan kuota maksimal 1x pendaftaran per minggu, jadwal tidak dapat dipindahkan ke pekan yang sama.`
+      };
+    }
 
     // Cek Aturan 3: Batas H-1 jam 24.00 WIB untuk slot baru
     const deadlineCheck = checkBatasPendaftaranHMinus1(newSlot.tanggal);

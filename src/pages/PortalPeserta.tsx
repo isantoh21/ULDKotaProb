@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Peserta, BookingTerapi, SlotHarian, Terapis } from '../types';
-import { db, getWIBDate, getWeekBounds, checkBatasPendaftaranHMinus1, formatLocalDate } from '../services/supabase';
+import { db, getWIBDate, getWeekBounds, getAvailableBookingWeeks, checkBatasPendaftaranHMinus1, formatLocalDate } from '../services/supabase';
 
 interface Props {
   peserta: Peserta;
@@ -63,37 +63,11 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
   const [isSubmittingReschedule, setIsSubmittingReschedule] = useState<boolean>(false);
 
-  // Rentang 2 Pekan ke Depan (Senin - Jumat, sama seperti Loket Admin)
+  // Rentang 2 Pekan ke Depan (Senin - Jumat) tersinkronisasi sistem
   const todayWIB = getWIBDate();
-  const twoWeeksAheadDate = (() => {
-    const d = new Date(todayWIB.dateStr + 'T00:00:00');
-    d.setDate(d.getDate() + 14);
-    return formatLocalDate(d);
-  })();
-
-  const currentWeekBounds = getWeekBounds(todayWIB.dateStr);
-  const currentWeekFriday = currentWeekBounds.friday;
-
-  // Cek apakah hari ini akhir pekan (Sabtu/Minggu) atau sudah lewat Jumat
-  const todayD = new Date(todayWIB.dateStr + 'T00:00:00');
-  const isWeekendNow = todayD.getDay() === 0 || todayD.getDay() === 6 || todayWIB.dateStr > currentWeekFriday;
-
-  const week1Monday = isWeekendNow
-    ? (() => {
-        const d = new Date(currentWeekBounds.monday + 'T00:00:00');
-        d.setDate(d.getDate() + 7);
-        return formatLocalDate(d);
-      })()
-    : currentWeekBounds.monday;
-
-  const week2Monday = (() => {
-    const d = new Date(week1Monday + 'T00:00:00');
-    d.setDate(d.getDate() + 7);
-    return formatLocalDate(d);
-  })();
-
-  const week1 = getWeekBounds(week1Monday);
-  const week2 = getWeekBounds(week2Monday);
+  const { week1, week2, maxAllowedDate } = getAvailableBookingWeeks();
+  const week1Monday = week1.monday;
+  const week2Monday = week2.monday;
 
   const getWeekDaysForMonday = (mondayStr: string) => {
     const mondayD = new Date(mondayStr + 'T00:00:00');
@@ -378,7 +352,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
         >
           <span className="text-base sm:text-sm">🗓️</span>
           <span className="leading-tight">
-            <span className="hidden sm:inline">Pilih Jadwal (2 Pekan ke Depan)</span>
+            <span className="hidden sm:inline">Pilih Jadwal (Senin – Jumat 2x)</span>
             <span className="sm:hidden text-[11px]">Pilih Jadwal</span>
           </span>
         </button>
@@ -447,7 +421,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                 )}
               </div>
               <div className="font-extrabold text-sm sm:text-base text-slate-900">
-                {week1.label}
+                Senin – Jumat ({week1.label})
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
                 {bookingInWeek1 
@@ -483,7 +457,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                 )}
               </div>
               <div className="font-extrabold text-sm sm:text-base text-slate-900">
-                {week2.label}
+                Senin – Jumat ({week2.label})
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
                 {bookingInWeek2
@@ -589,11 +563,16 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                 </span>
               </div>
 
-              {/* Day Selector Pills (Senin s.d. Jumat) */}
+              {/* Day Selector Pills (Senin s.d. Jumat - 5 Hari Kerja per Pekan) */}
               <div>
-                <div className="flex sm:hidden items-center justify-between text-[11px] text-slate-400 mb-1 px-1">
-                  <span>Pilih hari terapi ({selectedWeekTab === 'week1' ? 'Pekan 1' : 'Pekan 2'}):</span>
-                  <span>Geser ke samping 👉</span>
+                <div className="flex items-center justify-between text-xs text-slate-600 mb-2 px-1">
+                  <span className="font-bold flex items-center gap-1.5">
+                    <span>📅</span>
+                    <span>Pilih Hari Terapi ({selectedWeekTab === 'week1' ? 'Pekan 1' : 'Pekan 2'} · Senin – Jumat):</span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-sky-800 bg-sky-50 border border-sky-100 px-2.5 py-0.5 rounded-full">
+                    {activeWeek.label}
+                  </span>
                 </div>
                 <div className="flex sm:grid sm:grid-cols-5 gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 snap-x">
                   {activeWeekDays.map(day => {
@@ -1268,7 +1247,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Pekan 1 ({week1.label})
+                    Pekan 1 (Senin – Jumat: {week1.label})
                   </button>
                   <button
                     type="button"
@@ -1283,7 +1262,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Pekan 2 ({week2.label})
+                    Pekan 2 (Senin – Jumat: {week2.label})
                   </button>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { db, getWeekBounds, checkBatasPendaftaranHMinus1, getWIBDate, formatLocalDate } from '../services/supabase';
+import { db, getWeekBounds, getAvailableBookingWeeks, checkBatasPendaftaranHMinus1, getWIBDate, formatLocalDate } from '../services/supabase';
 import { navigateTo } from '../services/router';
 import { SlotHarian, TerapisSpesialisasi, Peserta, BookingTerapi } from '../types';
 
@@ -72,29 +72,27 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   };
 
   const todayWIB = getWIBDate();
-  // Tanggal minimal untuk pendaftaran publik: jika hari ini Sabtu atau Minggu, minimal adalah Senin depan
-  const minAllowedDate = (() => {
-    const d = new Date(todayWIB.dateStr + 'T00:00:00');
-    while (d.getDay() === 0 || d.getDay() === 6) {
-      d.setDate(d.getDate() + 1);
+  const { week1, week2, maxAllowedDate } = getAvailableBookingWeeks();
+  const minAllowedDate = week1.monday;
+
+  // Bangun daftar 10 hari kerja tepat untuk 2 pekan aktif (Senin - Jumat 2x saja, tanpa Senin ke-3)
+  const allowedWorkDaysSet = new Set<string>();
+  const addWeekDays = (mondayStr: string) => {
+    const mondayD = new Date(mondayStr + 'T00:00:00');
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(mondayD);
+      d.setDate(mondayD.getDate() + i);
+      allowedWorkDaysSet.add(formatLocalDate(d));
     }
-    return formatLocalDate(d);
-  })();
+  };
+  addWeekDays(week1.monday);
+  addWeekDays(week2.monday);
 
-  // Rentang tanggal 2 Pekan ke Depan (sama seperti Loket Admin)
-  const twoWeeksAheadDate = (() => {
-    const d = new Date(minAllowedDate + 'T00:00:00');
-    d.setDate(d.getDate() + 14);
-    return formatLocalDate(d);
-  })();
-
-  const maxAllowedDate = twoWeeksAheadDate;
-
-  // Filter slots publik: Hari kerja aktif (Senin - Jumat) dalam rentang 2 pekan ke depan
+  // Filter slots publik: HANYA hari kerja aktif (Senin - Jumat 2x = Pekan 1 dan Pekan 2)
   const activePublicSlots = slotsList.filter(slot => {
     if (slot.statusSlot === 'dibatalkan') return false;
     if (isWeekendDay(slot.tanggal)) return false;
-    return slot.tanggal >= minAllowedDate && slot.tanggal <= maxAllowedDate;
+    return allowedWorkDaysSet.has(slot.tanggal);
   });
 
   // Spesialisasi yang tersedia dari slot aktif
@@ -103,9 +101,9 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   // Auto-select spesialisasi pertama jika belum ada pilihan
   const effectiveSpesialisasi = selectedSpesialisasi || uniqueSpesialisasi[0] || '';
 
-  // Extract unique dates yang tersedia (hanya Senin - Jumat)
+  // Extract unique dates yang tersedia (hanya Senin - Jumat 2x)
   const uniqueDates = Array.from(new Set(activePublicSlots.map(s => s.tanggal)))
-    .filter(d => !isWeekendDay(d))
+    .filter(d => allowedWorkDaysSet.has(d))
     .sort();
 
   // Auto-select tanggal pertama jika belum ada pilihan
@@ -376,20 +374,33 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
                 Pilih Tanggal:
               </label>
               <span className="text-[10px] text-sky-700 font-semibold bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-full w-fit">
-                2 Pekan ke Depan ({minAllowedDate} s/d {maxAllowedDate})
+                Senin – Jumat 2 Pekan ({week1.monday} s/d {week2.friday})
               </span>
             </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1.5 no-scrollbar -mx-1 px-1">
               {uniqueDates.map(date => {
                 const isToday = date === todayWIB.dateStr;
                 const isSelected = effectiveDateFilter === date;
+                const d = new Date(date + 'T00:00:00');
+                const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
+                const dayDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                const isWeek2 = getWeekBounds(date).monday === week2.monday;
                 return (
                   <button
                     key={date}
                     onClick={() => setSelectedDateFilter(date)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono transition-all shrink-0 whitespace-nowrap flex items-center gap-1 ${isSelected ? 'bg-sky-800 text-white shadow-sm font-bold' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                      isSelected 
+                        ? 'bg-sky-800 text-white shadow-sm font-bold' 
+                        : isWeek2
+                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80'
+                          : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/60'
+                    }`}
                   >
-                    <span>{date}</span>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-sky-200' : 'text-slate-500'}`}>
+                      {dayName}
+                    </span>
+                    <span className="font-mono">{dayDate}</span>
                     {isToday && (
                       <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black">
                         Hari H

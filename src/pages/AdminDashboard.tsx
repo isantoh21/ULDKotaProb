@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { db, getWIBDate, formatLocalDate, getWeekBounds } from '../services/supabase';
+import { db, getWIBDate, formatLocalDate, getWeekBounds, getAvailableBookingWeeks } from '../services/supabase';
 import { Peserta, PendaftaranAsesmenGuest, Terapis, SlotHarian, BookingTerapi, LogAktivitas } from '../types';
 import { ULD_LOGO_BASE64 } from '../constants/logoData';
 import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
@@ -138,17 +138,21 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   // Selected therapist object
   const currentSelectedTerapis = terapisList.find(t => t.id === selectedTerapisIdForBooking) || availableTerapisForLoket[0] || terapisList[0];
   
-  // Waktu WIB & Batas 2 Pekan ke Depan
+  // Waktu WIB & Batas 2 Pekan ke Depan tersinkronisasi sistem
   const todayWIB = getWIBDate();
-  const twoWeeksAheadDate = (() => {
-    const d = new Date(todayWIB.dateStr + 'T00:00:00');
-    d.setDate(d.getDate() + 14);
-    return formatLocalDate(d);
-  })();
+  const { week1, week2, maxAllowedDate } = getAvailableBookingWeeks();
+  const twoWeeksAheadDate = week2.friday;
+
+  // Booking aktif siswa yang sedang dipilih di loket
+  const selectedPesertaBookings = selectedPesertaForBooking 
+    ? bookingsList.filter(b => b.pesertaId === selectedPesertaForBooking && b.status !== 'batal')
+    : [];
+  const selectedPesertaWeek1Booking = selectedPesertaBookings.find(b => getWeekBounds(b.tanggal).monday === week1.monday);
+  const selectedPesertaWeek2Booking = selectedPesertaBookings.find(b => getWeekBounds(b.tanggal).monday === week2.monday);
 
   // Slot tersedia untuk loket admin (Semua jenis pendaftaran maksimal H-1 sebelum 23.59 WIB):
   // - Hari ini (Hari H) dan masa lalu TIDAK MUNCUL karena batas minimal pendaftaran adalah H-1 sebelum 23.59 WIB
-  // - Tampilkan 2 minggu ke depan saja (rentang besok s/d 14 hari ke depan)
+  // - Tampilkan 2 minggu ke depan saja (rentang besok s/d batas pekan ke-2)
   const availableSlotsForSelectedTerapis = slotsList.filter(s => {
     if (s.terapisId !== (currentSelectedTerapis?.id || selectedTerapisIdForBooking)) return false;
     if (s.statusSlot === 'dibatalkan') return false;
@@ -157,7 +161,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     if (s.tanggal <= todayWIB.dateStr) return false;
 
     // Batas maksimal 2 pekan ke depan
-    if (s.tanggal > twoWeeksAheadDate) return false;
+    if (s.tanggal > maxAllowedDate) return false;
 
     return true;
   }).sort((a, b) => {
@@ -670,7 +674,41 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                   )}
                 </div>
 
-                {/* 3. Pilih Slot Sesi Terapi (Rentang Hari H s/d 2 Pekan ke Depan) */}
+                {/* 3. Status Kuota Mingguan Siswa Terpilih */}
+                {selectedPesertaForBooking && (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-700">Status Kuota Terapi Siswa (Maks 1x / Pekan):</span>
+                      <span className="text-[11px] font-mono text-sky-700 font-semibold">Kontinyu Mingguan</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className={`p-2.5 rounded-xl border ${selectedPesertaWeek1Booking ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'}`}>
+                        <div className="font-bold flex items-center justify-between">
+                          <span>Pekan 1 ({week1.label})</span>
+                          <span>{selectedPesertaWeek1Booking ? '⚠️ Terjadwal (1/1)' : '🟢 Kuota Tersedia (1x)'}</span>
+                        </div>
+                        {selectedPesertaWeek1Booking && (
+                          <div className="text-[11px] text-amber-800 mt-0.5">
+                            {selectedPesertaWeek1Booking.tanggal} ({selectedPesertaWeek1Booking.jamMulai} - {selectedPesertaWeek1Booking.jamSelesai} WIB)
+                          </div>
+                        )}
+                      </div>
+                      <div className={`p-2.5 rounded-xl border ${selectedPesertaWeek2Booking ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'}`}>
+                        <div className="font-bold flex items-center justify-between">
+                          <span>Pekan 2 ({week2.label})</span>
+                          <span>{selectedPesertaWeek2Booking ? '⚠️ Terjadwal (1/1)' : '🟢 Kuota Tersedia (1x)'}</span>
+                        </div>
+                        {selectedPesertaWeek2Booking && (
+                          <div className="text-[11px] text-amber-800 mt-0.5">
+                            {selectedPesertaWeek2Booking.tanggal} ({selectedPesertaWeek2Booking.jamMulai} - {selectedPesertaWeek2Booking.jamSelesai} WIB)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Pilih Slot Sesi Terapi (Rentang Hari H s/d 2 Pekan ke Depan) */}
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
                     3. Pilih Slot Sesi Tersedia (2 Pekan ke Depan) *
@@ -687,9 +725,12 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                     ) : (
                       availableSlotsForSelectedTerapis.map(s => {
                         const isFull = s.kuotaTerisi >= s.kuotaMaksimal;
+                        const sWeek = getWeekBounds(s.tanggal);
+                        const hasBookingInWeek = selectedPesertaBookings.some(b => getWeekBounds(b.tanggal).monday === sWeek.monday);
+                        const isDisabled = isFull || hasBookingInWeek;
                         return (
-                          <option key={s.id} value={s.id} disabled={isFull}>
-                            {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {isFull ? '[PENUH]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
+                          <option key={s.id} value={s.id} disabled={isDisabled}>
+                            {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {isFull ? '[PENUH]' : hasBookingInWeek ? '[⚠️ KUOTA MINGGU INI SUDAH TERISI]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
                           </option>
                         );
                       })
