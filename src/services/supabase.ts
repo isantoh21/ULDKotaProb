@@ -872,6 +872,12 @@ class SupabaseDataService {
         icon: '🔐'
       });
 
+      if (this.client && this.isSupabaseConnected) {
+        this.client.from('admin_users').update({ pin: pinBaru.trim() }).eq('id', adminId).then(({ error }) => {
+          if (error) console.error('Supabase direct gantiPinAdmin error:', error);
+        });
+      }
+
       this.triggerAutoSync();
       return true;
     }
@@ -893,6 +899,12 @@ class SupabaseDataService {
         rolePelaku: 'terapis',
         icon: '🔐'
       });
+
+      if (this.client && this.isSupabaseConnected) {
+        this.client.from('terapis').update({ pin: pinBaru.trim() }).eq('id', terapisId).then(({ error }) => {
+          if (error) console.error('Supabase direct gantiPinTerapis error:', error);
+        });
+      }
 
       this.triggerAutoSync();
       return true;
@@ -1008,6 +1020,14 @@ class SupabaseDataService {
         window.dispatchEvent(new CustomEvent('uld_data_updated'));
       }
 
+      if (this.client && this.isSupabaseConnected) {
+        this.client.from('slots_harian').update({
+          status_slot: statusNow
+        }).eq('id', slotId).then(({ error }) => {
+          if (error) console.error('Supabase direct toggleSlotStatus error:', error);
+        });
+      }
+
       this.triggerAutoSync();
       return true;
     }
@@ -1036,6 +1056,17 @@ class SupabaseDataService {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('uld_data_updated'));
       }
+
+      if (this.client && this.isSupabaseConnected) {
+        this.client.from('slots_harian')
+          .update({ status_slot: 'dibatalkan' })
+          .eq('terapis_id', terapisId)
+          .eq('tanggal', tanggal)
+          .then(({ error }) => {
+            if (error) console.error('Supabase direct matikanSemuaSlotTanggal error:', error);
+          });
+      }
+
       this.triggerAutoSync();
     }
     return changed;
@@ -1071,6 +1102,19 @@ class SupabaseDataService {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('uld_data_updated'));
       }
+
+      if (this.client && this.isSupabaseConnected) {
+        const toUpdate = list.filter(s => s.terapisId === terapisId && s.tanggal === tanggal);
+        for (const s of toUpdate) {
+          this.client.from('slots_harian')
+            .update({ status_slot: s.statusSlot })
+            .eq('id', s.id)
+            .then(({ error }) => {
+              if (error) console.error('Supabase direct hidupkanSlot error:', error);
+            });
+        }
+      }
+
       this.triggerAutoSync();
     }
     return changed;
@@ -1164,6 +1208,35 @@ class SupabaseDataService {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
+
+    // Sinkronisasi langsung ke database Supabase
+    if (this.client) {
+      this.client.from('pengosongan_jadwal_rutin').upsert({
+        id: newRule.id,
+        terapis_id: newRule.terapisId,
+        hari: newRule.hari,
+        hari_label: newRule.hariLabel,
+        jam_mulai: newRule.jamMulai,
+        jam_selesai: newRule.jamSelesai || null,
+        label_sesi: newRule.labelSesi,
+        alasan: newRule.alasan || null,
+        created_at: newRule.createdAt
+      }).then(({ error }) => {
+        if (error) console.error('Supabase pengosongan_jadwal_rutin upsert error:', error);
+      }).catch(console.warn);
+
+      // Sinkronkan slot yang statusnya dibatalkan
+      const affectedSlots = slots.filter(s => s.terapisId === data.terapisId && s.statusSlot === 'dibatalkan');
+      for (const s of affectedSlots) {
+        this.client.from('slots_harian').update({
+          status_slot: 'dibatalkan',
+          catatan_terapis: s.catatanTerapis || null
+        }).eq('id', s.id).then(({ error }) => {
+          if (error) console.error('Supabase slot cancel sync error:', error);
+        }).catch(console.warn);
+      }
+    }
+
     this.triggerAutoSync();
 
     return {
@@ -1226,6 +1299,25 @@ class SupabaseDataService {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
+
+    // Sinkronisasi langsung ke database Supabase
+    if (this.client) {
+      this.client.from('pengosongan_jadwal_rutin').delete().eq('id', ruleId).then(({ error }) => {
+        if (error) console.error('Supabase direct pengosongan delete error:', error);
+      }).catch(console.warn);
+
+      // Sinkronkan slot yang dipulihkan kembali ke tersedia
+      const restoredSlots = slots.filter(s => s.terapisId === removedRule.terapisId && s.statusSlot === 'tersedia');
+      for (const s of restoredSlots) {
+        this.client.from('slots_harian').update({
+          status_slot: 'tersedia',
+          catatan_terapis: s.catatanTerapis || null
+        }).eq('id', s.id).then(({ error }) => {
+          if (error) console.error('Supabase slot restore sync error:', error);
+        }).catch(console.warn);
+      }
+    }
+
     this.triggerAutoSync();
 
     return {
@@ -1293,6 +1385,32 @@ class SupabaseDataService {
     };
     list.unshift(newPeserta);
     localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(list));
+
+    if (this.client) {
+      this.client.from('peserta').upsert({
+        id: newPeserta.id,
+        nomor_rekam_medis: newPeserta.nomorRekamMedis,
+        nama_lengkap: newPeserta.namaLengkap,
+        pin: newPeserta.pin,
+        tanggal_lahir: newPeserta.tanggalLahir,
+        jenis_kelamin: newPeserta.jenisKelamin,
+        nama_wali: newPeserta.namaWali,
+        nomor_telepon: newPeserta.nomorTelepon || '',
+        alamat: newPeserta.alamat || '',
+        kecamatan: newPeserta.kecamatan || 'Kota Probolinggo',
+        asal_sekolah: newPeserta.asalSekolah || null,
+        ragam_disabilitas: newPeserta.ragamDisabilitas,
+        status: newPeserta.status,
+        terdaftar_sejak: newPeserta.terdaftarSejak,
+        catatan_khusus: newPeserta.catatanKhusus || null,
+        assigned_terapis_id: newPeserta.assignedTerapisId || null,
+        assigned_terapis_nama: newPeserta.assignedTerapisNama || null,
+        assigned_at: newPeserta.assignedAt || null
+      }).then(({ error }) => {
+        if (error) console.error('Supabase tambahPeserta error:', error);
+      }).catch(console.warn);
+    }
+
     this.triggerAutoSync();
     return newPeserta;
   }
@@ -1334,6 +1452,31 @@ class SupabaseDataService {
       icon: '🧒'
     });
 
+    if (this.client) {
+      this.client.from('peserta').upsert({
+        id: newPeserta.id,
+        nomor_rekam_medis: newPeserta.nomorRekamMedis,
+        nama_lengkap: newPeserta.namaLengkap,
+        pin: newPeserta.pin,
+        tanggal_lahir: newPeserta.tanggalLahir,
+        jenis_kelamin: newPeserta.jenisKelamin,
+        nama_wali: newPeserta.namaWali,
+        nomor_telepon: newPeserta.nomorTelepon || '',
+        alamat: newPeserta.alamat || '',
+        kecamatan: newPeserta.kecamatan || 'Kota Probolinggo',
+        asal_sekolah: newPeserta.asalSekolah || null,
+        ragam_disabilitas: newPeserta.ragamDisabilitas,
+        status: newPeserta.status,
+        terdaftar_sejak: newPeserta.terdaftarSejak,
+        catatan_khusus: newPeserta.catatanKhusus || null,
+        assigned_terapis_id: null,
+        assigned_terapis_nama: null,
+        assigned_at: null
+      }).then(({ error }) => {
+        if (error) console.error('Supabase buatAkunSiswaBaru error:', error);
+      }).catch(console.warn);
+    }
+
     this.triggerAutoSync();
     return newPeserta;
   }
@@ -1353,6 +1496,12 @@ class SupabaseDataService {
         rolePelaku: 'admin',
         icon: '🔑'
       });
+
+      if (this.client) {
+        this.client.from('peserta').update({ pin: pinBaru }).eq('id', pesertaId).then(({ error }) => {
+          if (error) console.error('Supabase resetPinPeserta error:', error);
+        }).catch(console.warn);
+      }
 
       this.triggerAutoSync();
       return true;
@@ -1416,6 +1565,34 @@ class SupabaseDataService {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
 
+    if (this.client) {
+      this.client.from('peserta').update({
+        status: 'lulus',
+        catatan_khusus: targetStudent.catatanKhusus || null
+      }).eq('id', pesertaId).then(({ error }) => {
+        if (error) console.error('Supabase luluskanPeserta update error:', error);
+      }).catch(console.warn);
+
+      bookings.filter(b => b.pesertaId === pesertaId && b.status === 'batal').forEach(b => {
+        this.client!.from('booking_terapi').update({
+          status: 'batal',
+          catatan_sesi_terapis: b.catatanSesiTerapis || null
+        }).eq('id', b.id).then(({ error }) => {
+          if (error) console.error('Supabase cancel booking on lulus error:', error);
+        }).catch(console.warn);
+
+        const sl = slots.find(s => s.id === b.slotId);
+        if (sl) {
+          this.client!.from('slots_harian').update({
+            kuota_terisi: sl.kuotaTerisi,
+            status_slot: sl.statusSlot
+          }).eq('id', sl.id).then(({ error }) => {
+            if (error) console.error('Supabase slot update on lulus error:', error);
+          }).catch(console.warn);
+        }
+      });
+    }
+
     this.triggerAutoSync();
     return true;
   }
@@ -1454,6 +1631,15 @@ class SupabaseDataService {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
 
+    if (this.client) {
+      this.client.from('peserta').update({
+        status: 'aktif',
+        catatan_khusus: p.catatanKhusus || null
+      }).eq('id', pesertaId).then(({ error }) => {
+        if (error) console.error('Supabase aktifkanKembaliPeserta error:', error);
+      }).catch(console.warn);
+    }
+
     this.triggerAutoSync();
     return true;
   }
@@ -1471,6 +1657,11 @@ class SupabaseDataService {
       localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(filtered));
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('uld_data_updated'));
+      }
+      if (this.client) {
+        this.client.from('peserta').delete().eq('id', pesertaId).then(({ error }) => {
+          if (error) console.error('Supabase hapusPermanenPeserta error:', error);
+        }).catch(console.warn);
       }
       this.triggerAutoSync();
       return true;
@@ -1576,6 +1767,16 @@ class SupabaseDataService {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
 
+    if (this.client) {
+      this.client.from('peserta').update({
+        assigned_terapis_id: terapis.id,
+        assigned_terapis_nama: terapis.nama,
+        assigned_at: peserta.assignedAt
+      }).eq('id', pesertaId).then(({ error }) => {
+        if (error) console.error('Supabase assignPesertaKeTerapis error:', error);
+      }).catch(console.warn);
+    }
+
     this.triggerAutoSync();
     return { success: true, peserta };
   }
@@ -1608,6 +1809,16 @@ class SupabaseDataService {
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
+    }
+
+    if (this.client) {
+      this.client.from('peserta').update({
+        assigned_terapis_id: null,
+        assigned_terapis_nama: null,
+        assigned_at: null
+      }).eq('id', pesertaId).then(({ error }) => {
+        if (error) console.error('Supabase lepasPenugasanPeserta error:', error);
+      }).catch(console.warn);
     }
 
     this.triggerAutoSync();
@@ -1782,6 +1993,25 @@ class SupabaseDataService {
       icon: '🗓️'
     });
 
+    if (this.client) {
+      this.client.from('slots_harian').upsert({
+        id: newSlot.id,
+        terapis_id: newSlot.terapisId,
+        tanggal: newSlot.tanggal,
+        jam_mulai: newSlot.jamMulai,
+        jam_selesai: newSlot.jamSelesai,
+        ruang: newSlot.ruang,
+        spesialisasi: newSlot.spesialisasi,
+        kuota_maksimal: newSlot.kuotaMaksimal,
+        kuota_terisi: newSlot.kuotaTerisi,
+        status_slot: newSlot.statusSlot,
+        catatan_terapis: newSlot.catatanTerapis || null,
+        created_at: newSlot.createdAt
+      }).then(({ error }) => {
+        if (error) console.error('Supabase bukaSlotHarian error:', error);
+      }).catch(console.warn);
+    }
+
     this.triggerAutoSync();
     return newSlot;
   }
@@ -1792,6 +2022,15 @@ class SupabaseDataService {
     if (idx !== -1) {
       list[idx].statusSlot = 'dibatalkan';
       localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(list));
+
+      if (this.client) {
+        this.client.from('slots_harian').update({
+          status_slot: 'dibatalkan'
+        }).eq('id', slotId).then(({ error }) => {
+          if (error) console.error('Supabase batalkanSlot error:', error);
+        }).catch(console.warn);
+      }
+
       this.triggerAutoSync();
       return true;
     }
@@ -2219,6 +2458,39 @@ class SupabaseDataService {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
 
+    if (this.client) {
+      // 1. Update data booking
+      this.client.from('booking_terapi').update({
+        slot_id: newSlot.id,
+        tanggal: newSlot.tanggal,
+        jam_mulai: newSlot.jamMulai,
+        jam_selesai: newSlot.jamSelesai,
+        ruang: newSlot.ruang,
+        reschedule_count: b.rescheduleCount,
+        catatan_sesi_terapis: b.catatanSesiTerapis
+      }).eq('id', bookingId).then(({ error }) => {
+        if (error) console.error('Supabase gantiJadwal booking update error:', error);
+      }).catch(console.warn);
+
+      // 2. Update old slot kuota
+      if (oldSlotIdx !== -1) {
+        this.client.from('slots_harian').update({
+          kuota_terisi: slots[oldSlotIdx].kuotaTerisi,
+          status_slot: slots[oldSlotIdx].statusSlot
+        }).eq('id', slots[oldSlotIdx].id).then(({ error }) => {
+          if (error) console.error('Supabase old slot restore error:', error);
+        }).catch(console.warn);
+      }
+
+      // 3. Update new slot kuota
+      this.client.from('slots_harian').update({
+        kuota_terisi: newSlot.kuotaTerisi,
+        status_slot: newSlot.statusSlot
+      }).eq('id', newSlot.id).then(({ error }) => {
+        if (error) console.error('Supabase new slot fill error:', error);
+      }).catch(console.warn);
+    }
+
     this.triggerAutoSync();
 
     return { success: true, booking: b };
@@ -2268,6 +2540,24 @@ class SupabaseDataService {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
 
+    if (this.client) {
+      this.client.from('booking_terapi').update({
+        status: 'batal',
+        catatan_sesi_terapis: b.catatanSesiTerapis
+      }).eq('id', bookingId).then(({ error }) => {
+        if (error) console.error('Supabase batalkanBookingOlehTerapis error:', error);
+      }).catch(console.warn);
+
+      if (slotIdx !== -1) {
+        this.client.from('slots_harian').update({
+          kuota_terisi: slots[slotIdx].kuotaTerisi,
+          status_slot: slots[slotIdx].statusSlot
+        }).eq('id', b.slotId).then(({ error }) => {
+          if (error) console.error('Supabase slot restore error:', error);
+        }).catch(console.warn);
+      }
+    }
+
     this.triggerAutoSync();
 
     return { success: true };
@@ -2303,6 +2593,35 @@ class SupabaseDataService {
 
     list.unshift(newGuest);
     localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(list));
+
+    if (this.client) {
+      this.client.from('pendaftaran_asesmen_guest').upsert({
+        id: newGuest.id,
+        nomor_registrasi: newGuest.nomorRegistrasi,
+        nama_anak: newGuest.namaAnak,
+        tanggal_lahir: newGuest.tanggalLahir,
+        jenis_kelamin: newGuest.jenisKelamin,
+        nama_orang_tua: newGuest.namaOrangTua,
+        nik_anak_or_kk: newGuest.nikAnakOrKK,
+        nomor_whatsapp: newGuest.nomorWhatsApp,
+        alamat_domisili: newGuest.alamatDomisili,
+        kecamatan: newGuest.kecamatan,
+        jenjang_pendidikan: newGuest.jenjangPendidikan || null,
+        asal_sekolah: newGuest.asalSekolah || null,
+        nisn_or_npsn: newGuest.nisnOrNpsn || null,
+        sudah_terdaftar_dapodik: newGuest.sudahTerdaftarDapodik || false,
+        indikasi_awal: newGuest.indikasiAwal,
+        dokumen_akan_dibawa: newGuest.dokumenAkanDibawa || [],
+        tanggal_rencana_datang: newGuest.tanggalRencanaDatang,
+        jam_rencana_datang: newGuest.jamRencanaDatang,
+        status: newGuest.status,
+        created_at: newGuest.createdAt
+      }).then(({ error }) => {
+        if (error) console.error('Supabase direct daftarAsesmenGuest error:', error);
+      }).catch(console.warn);
+    }
+
+    this.triggerAutoSync();
     return newGuest;
   }
 
@@ -2357,6 +2676,35 @@ class SupabaseDataService {
       icon: '📅'
     });
 
+    if (this.client) {
+      this.client.from('pendaftaran_asesmen_guest').upsert({
+        id: newAsesmen.id,
+        nomor_registrasi: newAsesmen.nomorRegistrasi,
+        nama_anak: newAsesmen.namaAnak,
+        tanggal_lahir: newAsesmen.tanggalLahir,
+        jenis_kelamin: newAsesmen.jenisKelamin,
+        nama_orang_tua: newAsesmen.namaOrangTua,
+        nik_anak_or_kk: newAsesmen.nikAnakOrKK || '-',
+        nomor_whatsapp: newAsesmen.nomorWhatsApp,
+        alamat_domisili: newAsesmen.alamatDomisili,
+        kecamatan: newAsesmen.kecamatan,
+        jenjang_pendidikan: newAsesmen.jenjangPendidikan || null,
+        asal_sekolah: newAsesmen.asalSekolah || null,
+        nisn_or_npsn: newAsesmen.nisnOrNpsn || null,
+        sudah_terdaftar_dapodik: newAsesmen.sudahTerdaftarDapodik || false,
+        indikasi_awal: newAsesmen.indikasiAwal,
+        dokumen_akan_dibawa: newAsesmen.dokumenAkanDibawa || [],
+        tanggal_rencana_datang: newAsesmen.tanggalRencanaDatang,
+        jam_rencana_datang: newAsesmen.jamRencanaDatang,
+        status: newAsesmen.status,
+        catatan_petugas: newAsesmen.catatanPetugas || null,
+        created_at: newAsesmen.createdAt
+      }).then(({ error }) => {
+        if (error) console.error('Supabase direct jadwalkanAsesmenOlehAdmin error:', error);
+      }).catch(console.warn);
+    }
+
+    this.triggerAutoSync();
     return newAsesmen;
   }
 
@@ -2407,6 +2755,41 @@ class SupabaseDataService {
     if (catatanPetugas) guest.catatanPetugas = catatanPetugas;
     guestList[guestIdx] = guest;
     localStorage.setItem(STORAGE_KEYS.ASESMEN, JSON.stringify(guestList));
+
+    if (this.client) {
+      // 1. Update guest record
+      this.client.from('pendaftaran_asesmen_guest').update({
+        status: guest.status,
+        peserta_id_dihasilkan: guest.pesertaIdDihasilkan,
+        pin_dihasilkan: guest.pinDihasilkan,
+        catatan_petugas: guest.catatanPetugas || null
+      }).eq('id', guestId).then(({ error }) => {
+        if (error) console.error('Supabase direct guest update error:', error);
+      }).catch(console.warn);
+
+      // 2. Upsert new peserta
+      this.client.from('peserta').upsert({
+        id: newPeserta.id,
+        nomor_rekam_medis: newPeserta.nomorRekamMedis,
+        nama_lengkap: newPeserta.namaLengkap,
+        pin: newPeserta.pin,
+        tanggal_lahir: newPeserta.tanggalLahir,
+        jenis_kelamin: newPeserta.jenisKelamin,
+        nama_wali: newPeserta.namaWali,
+        nomor_telepon: newPeserta.nomorTelepon,
+        alamat: newPeserta.alamat,
+        kecamatan: newPeserta.kecamatan,
+        asal_sekolah: newPeserta.asalSekolah || null,
+        ragam_disabilitas: newPeserta.ragamDisabilitas,
+        status: newPeserta.status,
+        terdaftar_sejak: newPeserta.terdaftarSejak,
+        catatan_khusus: newPeserta.catatanKhusus || null
+      }).then(({ error }) => {
+        if (error) console.error('Supabase direct verifikasi terbitkan peserta error:', error);
+      }).catch(console.warn);
+    }
+
+    this.triggerAutoSync();
 
     return { success: true, peserta: newPeserta };
   }
@@ -2521,6 +2904,22 @@ class SupabaseDataService {
       window.dispatchEvent(new CustomEvent('uld_log_updated', { detail: newLog }));
     }
 
+    if (this.client) {
+      this.client.from('log_aktivitas').insert({
+        id: newLog.id,
+        waktu: newLog.waktu,
+        kategori: newLog.kategori,
+        judul: newLog.judul,
+        deskripsi: newLog.deskripsi,
+        pelaku: newLog.pelaku,
+        role_pelaku: newLog.rolePelaku || null,
+        icon: newLog.icon || null,
+        metadata: newLog.metadata || null
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase direct log_aktivitas insert error:', error.message);
+      }).catch(console.warn);
+    }
+
     this.triggerAutoSync();
     return newLog;
   }
@@ -2529,6 +2928,11 @@ class SupabaseDataService {
     localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('uld_log_updated', { detail: [] }));
+    }
+    if (this.client) {
+      this.client.from('log_aktivitas').delete().neq('id', '___all___').then(({ error }) => {
+        if (error) console.warn('Supabase clean logs error:', error.message);
+      }).catch(console.warn);
     }
   }
 
