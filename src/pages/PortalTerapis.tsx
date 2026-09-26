@@ -418,6 +418,16 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
   const slotsForSelectedDate = allSlots.filter(s => s.tanggal === selectedDate);
   const bookingsForSelectedDate = allBookings.filter(b => b.terapisId === terapis.id && b.tanggal === selectedDate && b.status !== 'batal');
 
+  // Pasien Aktif View Mode (Sesuai tanggal terpilih atau semua jadwal aktif terdaftar)
+  const [pasienViewScope, setPasienViewScope] = useState<'tanggal_terpilih' | 'semua_aktif'>('tanggal_terpilih');
+  const allUpcomingBookingsForMe = allBookings
+    .filter(b => b.terapisId === terapis.id && b.status !== 'batal')
+    .sort((a, b) => (a.tanggal + a.jamMulai).localeCompare(b.tanggal + b.jamMulai));
+
+  const displayPasienBookings = pasienViewScope === 'semua_aktif' 
+    ? allUpcomingBookingsForMe 
+    : bookingsForSelectedDate;
+
   // Cek apakah tanggal terpilih jatuh pada hari Sabtu / Minggu
   const isWeekend = (() => {
     try {
@@ -974,31 +984,63 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
       {/* TAB 2: Pasien Terdaftar */}
       {activeTab === 'pasien' && (
         <div className="bg-white rounded-3xl p-4 sm:p-7 border border-slate-200 shadow-sm space-y-4 sm:space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <h2 className="text-lg font-black text-slate-900">
-                Pasien Terdaftar Tanggal {selectedDate}
+                {pasienViewScope === 'semua_aktif' 
+                  ? 'Semua Pasien Terjadwal Aktif' 
+                  : `Pasien Terdaftar Tanggal ${selectedDate}`}
               </h2>
               <p className="text-xs text-slate-500">
-                Daftar anak yang akan terapi dengan Anda hari ini.
+                {pasienViewScope === 'semua_aktif'
+                  ? 'Daftar seluruh siswa binaan tetap yang telah memilih jadwal aktif untuk terapi dengan Anda.'
+                  : 'Daftar anak yang terdaftar pada tanggal terpilih.'}
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-800 font-bold text-xs shrink-0">
-              {bookingsForSelectedDate.length} Siswa
-            </span>
+            
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setPasienViewScope('tanggal_terpilih')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  pasienViewScope === 'tanggal_terpilih'
+                    ? 'bg-sky-800 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                📅 Sesuai Tanggal ({bookingsForSelectedDate.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPasienViewScope('semua_aktif')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  pasienViewScope === 'semua_aktif'
+                    ? 'bg-sky-800 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                📋 Semua Terjadwal ({allUpcomingBookingsForMe.length})
+              </button>
+            </div>
           </div>
 
-          {bookingsForSelectedDate.length === 0 ? (
+          {displayPasienBookings.length === 0 ? (
             <div className="py-10 text-center space-y-2">
               <div className="text-3xl">☕</div>
-              <div className="text-sm font-bold text-slate-700">Belum Ada Pasien Terdaftar</div>
+              <div className="text-sm font-bold text-slate-700">
+                {pasienViewScope === 'semua_aktif'
+                  ? 'Belum Ada Pasien Terjadwal Aktif'
+                  : 'Belum Ada Pasien Terdaftar pada Tanggal Ini'}
+              </div>
               <div className="text-xs text-slate-400">
-                Belum ada orang tua yang mendaftar pada tanggal ini atau slot masih ditutup.
+                {pasienViewScope === 'semua_aktif'
+                  ? 'Siswa binaan tetap Anda belum memilih jadwal terapi yang berstatus aktif.'
+                  : 'Belum ada orang tua yang mendaftar pada tanggal ini atau sesi masih kosong.'}
               </div>
             </div>
           ) : (
             <div className="space-y-3">
-              {bookingsForSelectedDate.map(b => {
+              {displayPasienBookings.map(b => {
                 const peserta = db.getPesertaById(b.pesertaId);
 
                 return (

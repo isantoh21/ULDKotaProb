@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { db, getWIBDate } from '../services/supabase';
+import { db, getWIBDate, formatLocalDate, getWeekBounds } from '../services/supabase';
 import { Peserta, PendaftaranAsesmenGuest, Terapis, SlotHarian, BookingTerapi, LogAktivitas } from '../types';
 import { ULD_LOGO_BASE64 } from '../constants/logoData';
 import { downloadPdfPinSiswaTerbaru, downloadPdfPinPekerjaTerbaru } from '../services/pdfGenerator';
@@ -10,12 +10,12 @@ import { DatabaseStatusBar } from '../components/DatabaseStatusBar';
 
 interface Props {
   onLogout?: () => void;
-  initialTab?: 'pendaftaran_loket' | 'peserta_pin';
+  initialTab?: 'pendaftaran_loket' | 'peserta_pin' | 'jadwal_terdaftar';
   activeAdminId?: string;
 }
 
 export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAdminId: initialAdminId }) => {
-  const [activeTab, setActiveTab] = useState<'pendaftaran_loket' | 'peserta_pin'>(initialTab || 'pendaftaran_loket');
+  const [activeTab, setActiveTab] = useState<'pendaftaran_loket' | 'peserta_pin' | 'jadwal_terdaftar'>(initialTab || 'pendaftaran_loket');
 
   useEffect(() => {
     if (initialTab) {
@@ -104,7 +104,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   const [asesmenNamaAnak, setAsesmenNamaAnak] = useState('');
   const [asesmenNamaOrtu, setAsesmenNamaOrtu] = useState('');
   const [asesmenNoWa, setAsesmenNoWa] = useState('');
-  const [asesmenTanggal, setAsesmenTanggal] = useState(new Date().toISOString().split('T')[0]);
+  const [asesmenTanggal, setAsesmenTanggal] = useState(() => formatLocalDate(new Date()));
   const [asesmenJam, setAsesmenJam] = useState('09:00 WIB');
   const [asesmenIndikasi, setAsesmenIndikasi] = useState('');
   const [asesmenSuccessMsg, setAsesmenSuccessMsg] = useState('');
@@ -143,7 +143,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
   const twoWeeksAheadDate = (() => {
     const d = new Date(todayWIB.dateStr + 'T00:00:00');
     d.setDate(d.getDate() + 14);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   })();
 
   // Slot tersedia untuk loket admin (Semua jenis pendaftaran maksimal H-1 sebelum 23.59 WIB):
@@ -190,6 +190,81 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
     if (filterLayananTable === 'all') return true;
     return b.terapisId === filterLayananTable || b.spesialisasi === filterLayananTable;
   });
+
+  // State & Filter untuk Panel Jadwal Aktif Terdaftar (Tab 3)
+  const [searchJadwalQuery, setSearchJadwalQuery] = useState('');
+  const [filterJadwalTerapis, setFilterJadwalTerapis] = useState('all');
+  const [filterJadwalStatus, setFilterJadwalStatus] = useState<string>('terjadwal');
+  const [filterJadwalSumber, setFilterJadwalSumber] = useState<'all' | 'mandiri' | 'loket'>('all');
+  const [filterJadwalWaktu, setFilterJadwalWaktu] = useState<'all' | 'hari_ini' | 'pekan_ini' | 'pekan_depan'>('all');
+
+  const activeBookingsCount = bookingsList.filter(b => b.status === 'terjadwal').length;
+  const mandiriBookingsCount = bookingsList.filter(b => b.status === 'terjadwal' && !b.didaftarkanOlehAdmin).length;
+  const loketBookingsCount = bookingsList.filter(b => b.status === 'terjadwal' && !!b.didaftarkanOlehAdmin).length;
+  const selesaiBookingsCount = bookingsList.filter(b => b.status === 'selesai').length;
+
+  const thisWeekBounds = getWeekBounds(todayWIB.dateStr);
+  const nextWeekDate = (() => {
+    const d = new Date(todayWIB.dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + 7);
+    return formatLocalDate(d);
+  })();
+  const nextWeekBounds = getWeekBounds(nextWeekDate);
+
+  const filteredJadwalTerdaftar = bookingsList.filter(b => {
+    if (filterJadwalStatus !== 'all' && b.status !== filterJadwalStatus) return false;
+
+    if (filterJadwalTerapis !== 'all' && b.terapisId !== filterJadwalTerapis && b.spesialisasi !== filterJadwalTerapis) {
+      return false;
+    }
+
+    if (filterJadwalSumber === 'mandiri' && b.didaftarkanOlehAdmin) return false;
+    if (filterJadwalSumber === 'loket' && !b.didaftarkanOlehAdmin) return false;
+
+    if (filterJadwalWaktu === 'hari_ini' && b.tanggal !== todayWIB.dateStr) return false;
+    if (filterJadwalWaktu === 'pekan_ini') {
+      const bWeek = getWeekBounds(b.tanggal);
+      if (bWeek.monday !== thisWeekBounds.monday) return false;
+    }
+    if (filterJadwalWaktu === 'pekan_depan') {
+      const bWeek = getWeekBounds(b.tanggal);
+      if (bWeek.monday !== nextWeekBounds.monday) return false;
+    }
+
+    if (searchJadwalQuery.trim()) {
+      const q = searchJadwalQuery.toLowerCase();
+      const p = pesertaList.find(x => x.id === b.pesertaId);
+      const matchKode = b.kodeBooking.toLowerCase().includes(q);
+      const matchNamaSiswa = (p?.namaLengkap || b.namaPeserta || '').toLowerCase().includes(q);
+      const matchRM = (p?.nomorRekamMedis || b.nomorRekamMedis || '').toLowerCase().includes(q);
+      const matchSekolah = (p?.asalSekolah || b.asalSekolah || '').toLowerCase().includes(q);
+      const matchWali = (p?.namaWali || '').toLowerCase().includes(q);
+      const tObj = terapisList.find(x => x.id === b.terapisId);
+      const matchTerapis = (tObj?.nama || '').toLowerCase().includes(q);
+      if (!matchKode && !matchNamaSiswa && !matchRM && !matchSekolah && !matchWali && !matchTerapis) {
+        return false;
+      }
+    }
+
+    return true;
+  }).sort((a, b) => {
+    if (a.tanggal !== b.tanggal) return a.tanggal.localeCompare(b.tanggal);
+    return a.jamMulai.localeCompare(b.jamMulai);
+  });
+
+  const formatIndoDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
 
   const handleSaveAdminPin = (e: React.FormEvent) => {
@@ -250,11 +325,13 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
 
 
 
-  // --- BATALKAN BOOKING ---
+  // --- BATALKAN BOOKING (PULIHKAN KUOTA & SYNC KE SUPABASE) ---
   const handleBatalkanBooking = (bookingId: string) => {
-    if (window.confirm('Batalkan jadwal sesi terapi ini? Slot akan dikembalikan agar dapat didaftarkan kembali.')) {
-      db.updateBookingStatus(bookingId, 'batal', `Dibatalkan oleh Petugas Admin (${activeAdmin.nama})`);
-      setBookingMsg({ type: 'success', text: 'Jadwal sesi terapi berhasil dibatalkan.' });
+    if (window.confirm('Batalkan jadwal sesi terapi ini? Kuota slot akan otomatis dipulihkan di sistem dan jadwal publik agar dapat dipilih kembali.')) {
+      const success = db.batalkanBooking(bookingId, `Dibatalkan oleh Petugas Admin (${activeAdmin.nama})`);
+      if (success) {
+        setBookingMsg({ type: 'success', text: 'Jadwal sesi terapi berhasil dibatalkan dan kuota slot telah dipulihkan.' });
+      }
     }
   };
 
@@ -445,7 +522,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
         </div>
       </div>
 
-      {/* Navigation Tabs (Aturan 4: Laman admin isinya cukup pendaftaran terapi loket uld dan manajemen siswa dan pin saja) */}
+      {/* Navigation Tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-xl text-xs font-semibold overflow-x-auto">
         {/* TAB 1: PENDAFTARAN TERAPI LANGSUNG DI LOKET ULD (SEMUA LAYANAN) */}
         <button
@@ -454,12 +531,21 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
         >
           <span>🏥</span>
           <span>Pendaftaran Terapi Loket ULD</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'pendaftaran_loket' ? 'bg-sky-500 text-white' : 'bg-slate-300 text-slate-900'}`}>
-            {bookingsList.filter(b => b.status === 'terjadwal').length}
+        </button>
+
+        {/* TAB 2: JADWAL AKTIF TERDAFTAR (SINKRONISASI SISWA & LOKET) */}
+        <button
+          onClick={() => setActiveTab('jadwal_terdaftar')}
+          className={`px-4 py-2.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${activeTab === 'jadwal_terdaftar' ? 'bg-sky-600 text-white shadow-sm font-bold' : 'text-slate-700 hover:bg-slate-300/60'}`}
+        >
+          <span>📋</span>
+          <span>Jadwal Aktif Terdaftar</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${activeTab === 'jadwal_terdaftar' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
+            {activeBookingsCount}
           </span>
         </button>
 
-        {/* TAB 2: MANAJEMEN PESERTA & PIN */}
+        {/* TAB 3: MANAJEMEN PESERTA & PIN */}
         <button
           onClick={() => setActiveTab('peserta_pin')}
           className={`px-4 py-2.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${activeTab === 'peserta_pin' ? 'bg-sky-600 text-white shadow-sm font-bold' : 'text-slate-700 hover:bg-slate-300/60'}`}
@@ -879,6 +965,320 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: JADWAL AKTIF TERDAFTAR (SINKRONISASI LENGKAP SISWA & LOKET) */}
+      {activeTab === 'jadwal_terdaftar' && (
+        <div className="space-y-6">
+          {/* Header Panel */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-sky-900 via-sky-800 to-slate-900 text-white shadow space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-700/80 border border-sky-500/50 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                  📋
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-white">
+                    Panel Jadwal Terapi Aktif Terdaftar
+                  </h2>
+                  <p className="text-xs text-sky-200">
+                    Memuat seluruh jadwal yang dipilih mandiri oleh siswa maupun yang didaftarkan melalui Loket ULD.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Sinkron Cloud Real-Time</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Statistik Ringkas */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-1">
+                <div className="text-[11px] text-sky-200 font-semibold">Total Jadwal Aktif</div>
+                <div className="text-2xl font-black text-white">{activeBookingsCount}</div>
+                <div className="text-[10px] text-emerald-300 font-medium">Sesi Siap Terlaksana</div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-1">
+                <div className="text-[11px] text-sky-200 font-semibold">Dipilih Siswa (Mandiri)</div>
+                <div className="text-2xl font-black text-sky-300">{mandiriBookingsCount}</div>
+                <div className="text-[10px] text-sky-200 font-medium">Via Portal Peserta Siswa</div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-1">
+                <div className="text-[11px] text-sky-200 font-semibold">Didaftarkan di Loket</div>
+                <div className="text-2xl font-black text-amber-300">{loketBookingsCount}</div>
+                <div className="text-[10px] text-amber-200 font-medium">Oleh Petugas Admin ULD</div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-1">
+                <div className="text-[11px] text-sky-200 font-semibold">Selesai Terlaksana</div>
+                <div className="text-2xl font-black text-slate-200">{selesaiBookingsCount}</div>
+                <div className="text-[10px] text-slate-300 font-medium">Catatan Terapis Terisi</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter & Kontrol Pencarian */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {/* Cari Peserta / Kode */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  🔍 Cari Jadwal / Siswa
+                </label>
+                <input
+                  type="text"
+                  value={searchJadwalQuery}
+                  onChange={e => setSearchJadwalQuery(e.target.value)}
+                  placeholder="Nama siswa, RM, sekolah, booking..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-600 font-medium"
+                />
+              </div>
+
+              {/* Filter Layanan / Terapis */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  🩺 Tenaga Ahli / Layanan
+                </label>
+                <select
+                  value={filterJadwalTerapis}
+                  onChange={e => setFilterJadwalTerapis(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 font-medium"
+                >
+                  <option value="all">Semua Tenaga Ahli ({terapisList.length})</option>
+                  {terapisList.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.nama} ({t.spesialisasiLabel})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter Status */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  📌 Status Jadwal
+                </label>
+                <select
+                  value={filterJadwalStatus}
+                  onChange={e => setFilterJadwalStatus(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 font-medium"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="terjadwal">🟢 Terjadwal (Aktif)</option>
+                  <option value="selesai">🔵 Selesai Terlaksana</option>
+                  <option value="batal">🔴 Dibatalkan</option>
+                </select>
+              </div>
+
+              {/* Filter Sumber Pendaftaran */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  🏷️ Jalur Pendaftaran
+                </label>
+                <select
+                  value={filterJadwalSumber}
+                  onChange={e => setFilterJadwalSumber(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 font-medium"
+                >
+                  <option value="all">Semua Jalur</option>
+                  <option value="mandiri">📱 Dipilih Mandiri oleh Siswa</option>
+                  <option value="loket">🏥 Didaftarkan Petugas Loket ULD</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Filter Waktu Cepat */}
+            <div className="flex items-center gap-1.5 text-xs overflow-x-auto pt-2 border-t border-slate-100">
+              <span className="text-slate-500 font-bold shrink-0">Rentang Waktu:</span>
+              <button
+                type="button"
+                onClick={() => setFilterJadwalWaktu('all')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${filterJadwalWaktu === 'all' ? 'bg-sky-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                Semua Jadwal
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterJadwalWaktu('hari_ini')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${filterJadwalWaktu === 'hari_ini' ? 'bg-sky-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                Hari Ini ({todayWIB.dateStr})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterJadwalWaktu('pekan_ini')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${filterJadwalWaktu === 'pekan_ini' ? 'bg-sky-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                Pekan Ini ({thisWeekBounds.monday} s.d {thisWeekBounds.friday})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterJadwalWaktu('pekan_depan')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${filterJadwalWaktu === 'pekan_depan' ? 'bg-sky-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                Pekan Depan ({nextWeekBounds.monday} s.d {nextWeekBounds.friday})
+              </button>
+            </div>
+          </div>
+
+          {/* Tabel / Card List Jadwal Terdaftar */}
+          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
+                  Daftar Sesi Jadwal Terdaftar ({filteredJadwalTerdaftar.length} Sesi)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Data ini tersinkronisasi otomatis dengan Jadwal Publik, Portal Siswa, dan Portal Terapis.
+                </p>
+              </div>
+
+              <div className="text-xs text-slate-500 font-medium">
+                Menampilkan <strong>{filteredJadwalTerdaftar.length}</strong> dari total {bookingsList.length} riwayat
+              </div>
+            </div>
+
+            {filteredJadwalTerdaftar.length === 0 ? (
+              <div className="p-12 text-center text-xs text-slate-500 space-y-2">
+                <div className="text-3xl">📭</div>
+                <div className="font-bold text-slate-700 text-sm">Tidak ada jadwal ditemukan</div>
+                <p className="text-slate-400 max-w-md mx-auto">
+                  Belum ada jadwal yang cocok dengan kata kunci pencarian atau filter yang dipilih. Silakan atur ulang filter pencarian Anda.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 uppercase font-semibold text-[10px]">
+                    <tr>
+                      <th className="px-4 py-3">Kode Booking</th>
+                      <th className="px-4 py-3">Siswa & Wali</th>
+                      <th className="px-4 py-3">Layanan & Tenaga Ahli</th>
+                      <th className="px-4 py-3">Jadwal Sesi</th>
+                      <th className="px-4 py-3">Jalur Pendaftaran</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredJadwalTerdaftar.map(b => {
+                      const p = pesertaList.find(x => x.id === b.pesertaId);
+                      const isToday = b.tanggal === todayWIB.dateStr;
+
+                      return (
+                        <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                          {/* Kode Booking */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="font-mono font-bold text-sky-800 flex items-center gap-1.5">
+                              <span>{b.kodeBooking}</span>
+                            </div>
+                            {isToday && (
+                              <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                ⚡ Hari Ini
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Siswa & Wali */}
+                          <td className="px-4 py-3">
+                            <div className="font-bold text-slate-900 text-sm">
+                              {p?.namaLengkap || b.namaPeserta || b.pesertaId}
+                            </div>
+                            <div className="text-[11px] text-slate-500 space-y-0.5">
+                              <div>RM: <span className="font-mono font-semibold text-slate-700">{p?.nomorRekamMedis || b.nomorRekamMedis || '-'}</span> · {p?.asalSekolah || b.asalSekolah || '-'}</div>
+                              <div>Wali: <strong className="text-slate-700">{p?.namaWali || '-'}</strong></div>
+                            </div>
+                          </td>
+
+                          {/* Layanan & Tenaga Ahli */}
+                          <td className="px-4 py-3">
+                            <span className="font-bold text-slate-900 block">
+                              {getSpesialisasiLabel(b.spesialisasi)}
+                            </span>
+                            <span className="text-[11px] text-slate-600 block">
+                              👨‍⚕️ {getTerapisName(b.terapisId)}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Ruang: {b.ruang || '-'}
+                            </span>
+                          </td>
+
+                          {/* Jadwal Sesi */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="font-bold text-slate-800">
+                              {formatIndoDate(b.tanggal)}
+                            </div>
+                            <div className="text-[11px] text-sky-700 font-semibold flex items-center gap-1">
+                              <span>⏰</span>
+                              <span>{b.jamMulai} - {b.jamSelesai} WIB</span>
+                            </div>
+                          </td>
+
+                          {/* Jalur Pendaftaran */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {b.didaftarkanOlehAdmin ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-800 border border-purple-200 text-[11px] font-bold">
+                                <span>🏥</span>
+                                <span>Loket Admin ({b.didaftarkanOlehAdmin})</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200 text-[11px] font-bold">
+                                <span>📱</span>
+                                <span>Dipilih Siswa (Mandiri)</span>
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
+                              b.status === 'terjadwal'
+                                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                : b.status === 'batal'
+                                  ? 'bg-red-100 text-red-900 border border-red-200'
+                                  : 'bg-sky-100 text-sky-900 border border-sky-200'
+                            }`}>
+                              {b.status === 'terjadwal' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>}
+                              {b.status === 'terjadwal' ? 'Terjadwal (Aktif)' : b.status === 'selesai' ? 'Selesai' : 'Dibatalkan'}
+                            </span>
+                          </td>
+
+                          {/* Aksi */}
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setSelectedLoketTicket(b)}
+                                className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-bold transition-colors border border-sky-200"
+                                title="Lihat & Cetak Tiket"
+                              >
+                                🎫 Tiket
+                              </button>
+                              {b.status === 'terjadwal' && (
+                                <button
+                                  onClick={() => handleBatalkanBooking(b.id)}
+                                  className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold transition-colors border border-red-200"
+                                  title="Batalkan sesi terapi & kembalikan kuota ke publik"
+                                >
+                                  ❌ Batalkan
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
