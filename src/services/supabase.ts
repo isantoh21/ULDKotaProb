@@ -98,28 +98,40 @@ export function checkBatasPendaftaranHMinus1(slotTanggal: string): {
   };
 }
 
-// Helper untuk menghitung batas pekan kalender (Senin - Minggu)
-export function getWeekBounds(dateStr: string): { monday: string; sunday: string; label: string } {
+// Helper untuk memformat objek Date menjadi format YYYY-MM-DD sesuai waktu lokal tanpa pergeseran timezone UTC
+export function formatLocalDate(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Helper untuk menghitung batas pekan kalender kerja (Senin - Jumat)
+export function getWeekBounds(dateStr: string): { monday: string; friday: string; sunday: string; label: string } {
   try {
     const d = new Date(dateStr + 'T00:00:00');
-    const day = d.getDay(); // 0 is Sunday, 1 is Monday ...
+    const day = d.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
     const diffToMonday = day === 0 ? -6 : 1 - day;
     const mondayDate = new Date(d);
     mondayDate.setDate(d.getDate() + diffToMonday);
 
+    const fridayDate = new Date(mondayDate);
+    fridayDate.setDate(mondayDate.getDate() + 4);
+
     const sundayDate = new Date(mondayDate);
     sundayDate.setDate(mondayDate.getDate() + 6);
 
-    const fmt = (dt: Date) => dt.toISOString().split('T')[0];
-    const monday = fmt(mondayDate);
-    const sunday = fmt(sundayDate);
+    const monday = formatLocalDate(mondayDate);
+    const friday = formatLocalDate(fridayDate);
+    const sunday = formatLocalDate(sundayDate);
     return {
       monday,
+      friday,
       sunday,
-      label: `${monday} s/d ${sunday}`
+      label: `${monday} s/d ${friday}` // Menampilkan batas hari kerja aktif Senin s/d Jumat
     };
   } catch {
-    return { monday: dateStr, sunday: dateStr, label: dateStr };
+    return { monday: dateStr, friday: dateStr, sunday: dateStr, label: dateStr };
   }
 }
 
@@ -289,20 +301,32 @@ class SupabaseDataService {
       await this.client.from('peserta').upsert(peserta);
 
       // 4. Slots
-      const slots = this.getSlotsList().map(s => ({
-        id: s.id,
-        terapis_id: s.terapisId,
-        tanggal: s.tanggal,
-        jam_mulai: s.jamMulai,
-        jam_selesai: s.jamSelesai,
-        spesialisasi: s.spesialisasi,
-        ruang: s.ruang,
-        kuota_maksimal: s.kuotaMaksimal,
-        kuota_terisi: s.kuotaTerisi,
-        catatan_terapis: s.catatanTerapis || null,
-        status_slot: s.statusSlot
-      }));
-      await this.client.from('slots_harian').upsert(slots);
+      // 4. Slots (Hanya hari kerja Senin - Jumat)
+      const slots = this.getSlotsList()
+        .filter(s => {
+          try {
+            const d = new Date(s.tanggal + 'T00:00:00');
+            const day = d.getDay();
+            return day !== 0 && day !== 6;
+          } catch {
+            return true;
+          }
+        })
+        .map(s => ({
+          id: s.id,
+          terapis_id: s.terapisId,
+          tanggal: s.tanggal,
+          jam_mulai: s.jamMulai,
+          jam_selesai: s.jamSelesai,
+          spesialisasi: s.spesialisasi,
+          ruang: s.ruang,
+          kuota_maksimal: s.kuotaMaksimal,
+          kuota_terisi: s.kuotaTerisi,
+          catatan_terapis: s.catatanTerapis || null,
+          status_slot: s.statusSlot
+        }));
+      const { error: sErr } = await this.client.from('slots_harian').upsert(slots);
+      if (sErr) console.error('Error upserting slots to Supabase:', sErr);
 
       // 5. Bookings
       const bookings = this.getBookingsList().map(b => ({
@@ -323,7 +347,8 @@ class SupabaseDataService {
         didaftarkan_oleh_admin: b.didaftarkanOlehAdmin || null,
         reschedule_count: b.rescheduleCount || 0
       }));
-      await this.client.from('booking_terapi').upsert(bookings);
+      const { error: bErr } = await this.client.from('booking_terapi').upsert(bookings);
+      if (bErr) console.error('Error upserting bookings to Supabase:', bErr);
 
       // 6. Logs
       const logs = this.getAktivitasLogs().map(l => ({
@@ -466,27 +491,37 @@ class SupabaseDataService {
         localStorage.setItem(STORAGE_KEYS.PESERTA, JSON.stringify(mapped));
       }
 
-      // 4. Slots
+      // 4. Slots (Hanya hari kerja Senin - Jumat)
       const { data: slotsData } = await this.client.from('slots_harian').select('*');
       if (slotsData && slotsData.length > 0) {
-        const mapped: SlotHarian[] = slotsData.map((s: any) => ({
-          id: s.id,
-          terapisId: s.terapis_id,
-          tanggal: s.tanggal,
-          jamMulai: s.jam_mulai,
-          jamSelesai: s.jam_selesai,
-          spesialisasi: s.spesialisasi,
-          ruang: s.ruang,
-          kuotaMaksimal: s.kuota_maksimal,
-          kuotaTerisi: s.kuota_terisi,
-          catatanTerapis: s.catatan_terapis,
-          statusSlot: s.status_slot,
-          createdAt: s.created_at || new Date().toISOString()
-        }));
+        const mapped: SlotHarian[] = slotsData
+          .filter((s: any) => {
+            try {
+              const d = new Date(s.tanggal + 'T00:00:00');
+              const day = d.getDay();
+              return day !== 0 && day !== 6;
+            } catch {
+              return true;
+            }
+          })
+          .map((s: any) => ({
+            id: s.id,
+            terapisId: s.terapis_id,
+            tanggal: s.tanggal,
+            jamMulai: s.jam_mulai,
+            jamSelesai: s.jam_selesai,
+            spesialisasi: s.spesialisasi,
+            ruang: s.ruang,
+            kuotaMaksimal: s.kuota_maksimal,
+            kuotaTerisi: s.kuota_terisi,
+            catatanTerapis: s.catatan_terapis,
+            statusSlot: s.status_slot,
+            createdAt: s.created_at || new Date().toISOString()
+          }));
         localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(mapped));
       }
 
-      // 5. Bookings
+      // 5. Bookings (Penggabungan cloud + local agar pendaftaran lokal tidak terhapus)
       const { data: bookingsData } = await this.client.from('booking_terapi').select('*');
       if (bookingsData) {
         const mapped: BookingTerapi[] = bookingsData.map((b: any) => ({
@@ -508,7 +543,21 @@ class SupabaseDataService {
           rescheduleCount: b.reschedule_count || 0,
           createdAt: b.created_at || new Date().toISOString()
         }));
-        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(mapped));
+
+        // Merge: pertahankan booking lokal yang belum tersinkronisasi ke cloud
+        const localBookings = this.getBookingsList();
+        const mergedBookingsMap = new Map<string, BookingTerapi>();
+        mapped.forEach(b => mergedBookingsMap.set(b.id, b));
+        localBookings.forEach(b => {
+          if (!mergedBookingsMap.has(b.id)) {
+            mergedBookingsMap.set(b.id, b);
+          }
+        });
+        const mergedBookings = Array.from(mergedBookingsMap.values());
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(mergedBookings));
+
+        // Sinkronkan kembali kuota slot agar presisi
+        this.ensureAutoOpenWeekdaySlots();
       }
 
       // 6. Logs
@@ -1493,20 +1542,37 @@ class SupabaseDataService {
       list = [];
     }
 
+    // Bersihkan dari slot hari Sabtu (6) dan Minggu (0) yang mungkin sempat tersimpan
+    list = list.filter(s => {
+      try {
+        const d = new Date(s.tanggal + 'T00:00:00');
+        const day = d.getDay();
+        return day !== 0 && day !== 6;
+      } catch {
+        return true;
+      }
+    });
+
     const { dateStr } = getWIBDate();
     const currentBounds = getWeekBounds(dateStr);
-    const startMonday = new Date(currentBounds.monday + 'T00:00:00');
+    const todayD = new Date(dateStr + 'T00:00:00');
+    const isWeekendNow = todayD.getDay() === 0 || todayD.getDay() === 6;
 
-    // Generate tanggal Senin - Jumat untuk 4 pekan (pekan berjalan + 3 pekan ke depan = 20 hari kerja)
+    // Jika hari ini Sabtu atau Minggu, layanan pekan berjalan telah usai, mulai dari Senin pekan depan
+    const startMondayD = new Date(currentBounds.monday + 'T00:00:00');
+    if (isWeekendNow) {
+      startMondayD.setDate(startMondayD.getDate() + 7);
+    }
+
+    // Generate tanggal Senin - Jumat untuk 4 pekan (pekan aktif + 3 pekan ke depan = 20 hari kerja)
     const datesToEnsure: string[] = [];
     for (let w = 0; w < 4; w++) {
       for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
-        const d = new Date(startMonday);
-        d.setDate(startMonday.getDate() + (w * 7) + dayOffset);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        datesToEnsure.push(`${yyyy}-${mm}-${dd}`);
+        const d = new Date(startMondayD);
+        d.setDate(startMondayD.getDate() + (w * 7) + dayOffset);
+        if (d.getDay() >= 1 && d.getDay() <= 5) {
+          datesToEnsure.push(formatLocalDate(d));
+        }
       }
     }
 
@@ -1567,6 +1633,27 @@ class SupabaseDataService {
           }
         });
       });
+    });
+
+    // Sinkronisasi kuota terisi untuk setiap slot berdasarkan pendaftaran aktif di database
+    const allBookings = this.getBookingsList();
+    list.forEach(slot => {
+      const activeBookings = allBookings.filter(b => 
+        (b.slotId === slot.id || (b.tanggal === slot.tanggal && b.jamMulai === slot.jamMulai && b.terapisId === slot.terapisId)) &&
+        b.status !== 'batal'
+      );
+      const newFilled = activeBookings.length;
+      if (slot.kuotaTerisi !== newFilled) {
+        slot.kuotaTerisi = newFilled;
+        hasAdded = true;
+      }
+      if (slot.statusSlot !== 'dibatalkan') {
+        const newStatus = slot.kuotaTerisi >= slot.kuotaMaksimal ? 'penuh' : 'tersedia';
+        if (slot.statusSlot !== newStatus) {
+          slot.statusSlot = newStatus;
+          hasAdded = true;
+        }
+      }
     });
 
     if (hasAdded) {
@@ -1788,6 +1875,51 @@ class SupabaseDataService {
       window.dispatchEvent(new CustomEvent('uld_data_updated'));
     }
 
+    // Direct instant sync to Supabase database
+    if (this.client && this.isSupabaseConnected) {
+      const slotPayload = {
+        id: slot.id,
+        terapis_id: slot.terapisId,
+        tanggal: slot.tanggal,
+        jam_mulai: slot.jamMulai,
+        jam_selesai: slot.jamSelesai,
+        spesialisasi: slot.spesialisasi,
+        ruang: slot.ruang,
+        kuota_maksimal: slot.kuotaMaksimal,
+        kuota_terisi: slot.kuotaTerisi,
+        catatan_terapis: slot.catatanTerapis || null,
+        status_slot: slot.statusSlot
+      };
+      const bookingPayload = {
+        id: newBooking.id,
+        slot_id: newBooking.slotId,
+        peserta_id: newBooking.pesertaId,
+        terapis_id: newBooking.terapisId,
+        kode_booking: newBooking.kodeBooking,
+        tanggal: newBooking.tanggal,
+        jam_mulai: newBooking.jamMulai,
+        jam_selesai: newBooking.jamSelesai,
+        spesialisasi: newBooking.spesialisasi,
+        ruang: newBooking.ruang,
+        status: newBooking.status,
+        keluhan_hari_ini: newBooking.keluhanHariIni || null,
+        catatan_sesi_terapis: newBooking.catatanSesiTerapis || null,
+        asal_sekolah: newBooking.asalSekolah || null,
+        didaftarkan_oleh_admin: newBooking.didaftarkanOlehAdmin || null,
+        reschedule_count: newBooking.rescheduleCount || 0
+      };
+
+      this.client.from('slots_harian').upsert(slotPayload).then(({ error: sErr }) => {
+        if (sErr) console.error('Supabase direct slot sync error:', sErr);
+        return this.client!.from('booking_terapi').upsert(bookingPayload);
+      }).then((res: any) => {
+        if (res?.error) console.error('Supabase direct booking sync error:', res.error);
+        else console.log('✓ Booking & Slot sukses tersimpan langsung di database Supabase!');
+      }).catch(err => {
+        console.error('Supabase direct sync error:', err);
+      });
+    }
+
     this.triggerAutoSync();
     return { success: true, booking: newBooking };
   }
@@ -1821,6 +1953,15 @@ class SupabaseDataService {
         rolePelaku: 'admin',
         icon: status === 'batal' ? '❌' : '📋'
       });
+
+      if (this.client && this.isSupabaseConnected) {
+        this.client.from('booking_terapi').update({
+          status: status,
+          catatan_sesi_terapis: catatanSesi || null
+        }).eq('id', bookingId).then(({ error }) => {
+          if (error) console.error('Supabase status update error:', error);
+        });
+      }
 
       this.triggerAutoSync();
       return true;
@@ -1861,6 +2002,27 @@ class SupabaseDataService {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('uld_data_updated'));
       }
+
+      // Direct instant sync of cancellation to Supabase database
+      if (this.client && this.isSupabaseConnected) {
+        this.client.from('booking_terapi').update({
+          status: 'batal',
+          catatan_sesi_terapis: alasan || 'Dibatalkan oleh siswa/wali'
+        }).eq('id', bookingId).then(({ error }) => {
+          if (error) console.error('Supabase cancel booking sync error:', error);
+          else console.log('✓ Pembatalan sukses tersimpan di database Supabase!');
+        });
+
+        if (slotIdx !== -1) {
+          this.client.from('slots_harian').update({
+            kuota_terisi: slots[slotIdx].kuotaTerisi,
+            status_slot: slots[slotIdx].statusSlot
+          }).eq('id', b.slotId).then(({ error }) => {
+            if (error) console.error('Supabase slot restore sync error:', error);
+          });
+        }
+      }
+
       this.triggerAutoSync();
       return true;
     }

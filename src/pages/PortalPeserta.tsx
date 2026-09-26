@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Peserta, BookingTerapi, SlotHarian, Terapis } from '../types';
-import { db, getWIBDate, getWeekBounds, checkBatasPendaftaranHMinus1 } from '../services/supabase';
+import { db, getWIBDate, getWeekBounds, checkBatasPendaftaranHMinus1, formatLocalDate } from '../services/supabase';
 
 interface Props {
   peserta: Peserta;
@@ -68,30 +68,28 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
   const twoWeeksAheadDate = (() => {
     const d = new Date(todayWIB.dateStr + 'T00:00:00');
     d.setDate(d.getDate() + 14);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   })();
 
   const currentWeekBounds = getWeekBounds(todayWIB.dateStr);
-  const currentWeekFriday = (() => {
-    const d = new Date(currentWeekBounds.monday + 'T00:00:00');
-    d.setDate(d.getDate() + 4);
-    return d.toISOString().split('T')[0];
-  })();
+  const currentWeekFriday = currentWeekBounds.friday;
 
-  // Jika hari ini akhir pekan (Sabtu/Minggu), pekan 1 otomatis adalah pekan depan
-  const isWeekendNow = todayWIB.dateStr > currentWeekFriday;
+  // Cek apakah hari ini akhir pekan (Sabtu/Minggu) atau sudah lewat Jumat
+  const todayD = new Date(todayWIB.dateStr + 'T00:00:00');
+  const isWeekendNow = todayD.getDay() === 0 || todayD.getDay() === 6 || todayWIB.dateStr > currentWeekFriday;
+
   const week1Monday = isWeekendNow
     ? (() => {
         const d = new Date(currentWeekBounds.monday + 'T00:00:00');
         d.setDate(d.getDate() + 7);
-        return d.toISOString().split('T')[0];
+        return formatLocalDate(d);
       })()
     : currentWeekBounds.monday;
 
   const week2Monday = (() => {
     const d = new Date(week1Monday + 'T00:00:00');
     d.setDate(d.getDate() + 7);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   })();
 
   const week1 = getWeekBounds(week1Monday);
@@ -104,7 +102,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
     for (let i = 0; i < 5; i++) {
       const d = new Date(mondayD);
       d.setDate(mondayD.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(d);
       const dayFormatted = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
       days.push({
         dayName: dayNames[i],
@@ -126,18 +124,15 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
   const activeWeek = selectedWeekTab === 'week1' ? week1 : week2;
 
   const [selectedDayDate, setSelectedDayDate] = useState<string>(() => {
-    const found = week1Days.find(w => w.dateStr === todayWIB.dateStr);
-    return found ? found.dateStr : week1Days[0].dateStr;
+    const available = week1Days.find(w => checkBatasPendaftaranHMinus1(w.dateStr).bisaDaftar);
+    return available ? available.dateStr : week1Days[0].dateStr;
   });
 
   const handleSelectWeek = (w: 'week1' | 'week2') => {
     setSelectedWeekTab(w);
-    if (w === 'week1') {
-      const found = week1Days.find(d => d.dateStr === todayWIB.dateStr);
-      setSelectedDayDate(found ? found.dateStr : week1Days[0].dateStr);
-    } else {
-      setSelectedDayDate(week2Days[0].dateStr);
-    }
+    const targetDays = w === 'week1' ? week1Days : week2Days;
+    const available = targetDays.find(d => checkBatasPendaftaranHMinus1(d.dateStr).bisaDaftar);
+    setSelectedDayDate(available ? available.dateStr : targetDays[0].dateStr);
   };
 
   useEffect(() => {

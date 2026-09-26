@@ -72,9 +72,21 @@ export const INITIAL_TERAPIS: Terapis[] = [
   }
 ];
 
+// Helper to format Date to YYYY-MM-DD in local time
+export const formatLocalDate = (d: Date): string => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 // Helper to get only weekdays (Senin - Jumat)
 export const getNextWeekdayDate = (dayOffset: number): string => {
   const d = new Date();
+  // If current day is Saturday (6) or Sunday (0), advance to next Monday first
+  while (d.getDay() === 0 || d.getDay() === 6) {
+    d.setDate(d.getDate() + 1);
+  }
   let added = 0;
   while (added < dayOffset) {
     d.setDate(d.getDate() + 1);
@@ -83,11 +95,11 @@ export const getNextWeekdayDate = (dayOffset: number): string => {
       added++;
     }
   }
-  // If current day is Saturday or Sunday, advance to next Monday
+  // Double-check: ensure it never falls on weekend
   while (d.getDay() === 0 || d.getDay() === 6) {
     d.setDate(d.getDate() + 1);
   }
-  return d.toISOString().split('T')[0];
+  return formatLocalDate(d);
 };
 
 // 48 Siswa Terapi Rutin Kota Probolinggo (Dibersihkan dari data ganda & difilter khusus yang datang untuk terapi)

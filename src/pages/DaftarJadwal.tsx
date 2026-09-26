@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { db, getWeekBounds, checkBatasPendaftaranHMinus1, getWIBDate } from '../services/supabase';
+import { db, getWeekBounds, checkBatasPendaftaranHMinus1, getWIBDate, formatLocalDate } from '../services/supabase';
 import { navigateTo } from '../services/router';
 import { SlotHarian, TerapisSpesialisasi, Peserta, BookingTerapi } from '../types';
 
@@ -61,20 +61,39 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
     return terapisList.find(t => t.id === terapisId);
   };
 
+  const isWeekendDay = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      const day = d.getDay();
+      return day === 0 || day === 6;
+    } catch {
+      return false;
+    }
+  };
+
   const todayWIB = getWIBDate();
-  // Rentang tanggal 2 Pekan ke Depan (sama seperti Loket Admin)
-  const twoWeeksAheadDate = (() => {
+  // Tanggal minimal untuk pendaftaran publik: jika hari ini Sabtu atau Minggu, minimal adalah Senin depan
+  const minAllowedDate = (() => {
     const d = new Date(todayWIB.dateStr + 'T00:00:00');
-    d.setDate(d.getDate() + 14);
-    return d.toISOString().split('T')[0];
+    while (d.getDay() === 0 || d.getDay() === 6) {
+      d.setDate(d.getDate() + 1);
+    }
+    return formatLocalDate(d);
   })();
 
-  const minAllowedDate = todayWIB.dateStr;
+  // Rentang tanggal 2 Pekan ke Depan (sama seperti Loket Admin)
+  const twoWeeksAheadDate = (() => {
+    const d = new Date(minAllowedDate + 'T00:00:00');
+    d.setDate(d.getDate() + 14);
+    return formatLocalDate(d);
+  })();
+
   const maxAllowedDate = twoWeeksAheadDate;
 
-  // Filter slots publik: Hari H s/d 2 pekan ke depan
+  // Filter slots publik: Hari kerja aktif (Senin - Jumat) dalam rentang 2 pekan ke depan
   const activePublicSlots = slotsList.filter(slot => {
     if (slot.statusSlot === 'dibatalkan') return false;
+    if (isWeekendDay(slot.tanggal)) return false;
     return slot.tanggal >= minAllowedDate && slot.tanggal <= maxAllowedDate;
   });
 
@@ -84,8 +103,10 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
   // Auto-select spesialisasi pertama jika belum ada pilihan
   const effectiveSpesialisasi = selectedSpesialisasi || uniqueSpesialisasi[0] || '';
 
-  // Extract unique dates yang tersedia
-  const uniqueDates = Array.from(new Set(activePublicSlots.map(s => s.tanggal))).sort();
+  // Extract unique dates yang tersedia (hanya Senin - Jumat)
+  const uniqueDates = Array.from(new Set(activePublicSlots.map(s => s.tanggal)))
+    .filter(d => !isWeekendDay(d))
+    .sort();
 
   // Auto-select tanggal pertama jika belum ada pilihan
   const effectiveDateFilter = selectedDateFilter || uniqueDates[0] || '';
