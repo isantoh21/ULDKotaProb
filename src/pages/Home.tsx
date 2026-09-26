@@ -8,6 +8,23 @@ export const Home: React.FC = () => {
   const [adminList, setAdminList] = useState(() => db.getAdminList());
 
   useEffect(() => {
+    // 1. Tarik foto profil Tenaga Ahli & Petugas Admin segera dari cloud Supabase
+    db.fetchWorkerPhotos()
+      .then(res => {
+        setTerapisList(res.terapis);
+        setAdminList(res.admins);
+      })
+      .catch(console.warn);
+
+    // 2. Tarik sinkronisasi data statistik & jadwal secara penuh dari cloud
+    db.pullAllDataFromSupabase()
+      .then(() => {
+        setStats(db.getStatistik());
+        setTerapisList(db.getTerapisList());
+        setAdminList(db.getAdminList());
+      })
+      .catch(console.warn);
+
     const handleUpdate = () => {
       setStats(db.getStatistik());
       setTerapisList(db.getTerapisList());
@@ -188,9 +205,13 @@ export const Home: React.FC = () => {
                 <div className="flex items-center gap-3.5">
                   {adm.fotoUrl ? (
                     <img
+                      key={adm.fotoUrl || adm.id}
                       src={adm.fotoUrl}
                       alt={adm.nama}
                       className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-md shrink-0 bg-white/10"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-emerald-800 border-2 border-emerald-500 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
@@ -294,9 +315,13 @@ export const Home: React.FC = () => {
                 <div className="flex items-center gap-3">
                   {t.fotoUrl ? (
                     <img
+                      key={t.fotoUrl || t.id}
                       src={t.fotoUrl}
                       alt={t.nama}
                       className="w-14 h-14 rounded-2xl object-cover border-2 border-sky-500 shadow-sm shrink-0 bg-white"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-14 h-14 rounded-2xl bg-sky-100 border border-sky-200 text-sky-800 font-black text-xl flex items-center justify-center shrink-0">

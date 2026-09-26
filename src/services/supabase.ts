@@ -161,15 +161,81 @@ class SupabaseDataService {
       try {
         this.client = createClient(savedUrl, savedKey);
         this.isSupabaseConnected = true;
-        // Background auto-sync on startup: tarik data terbaru dari cloud jika tersedia
+        // Background auto-sync on startup: tarik foto profil dan data terbaru dari cloud segera
+        this.fetchWorkerPhotos().catch(() => {});
         setTimeout(() => {
           this.pullAllDataFromSupabase().catch(() => {});
-        }, 1200);
+        }, 500);
       } catch (err) {
         console.warn('Failed to initialize Supabase client, falling back to local store:', err);
         this.client = null;
         this.isSupabaseConnected = false;
       }
+    }
+  }
+
+  // TARIK FOTO PROFIL TENAGA AHLI & ADMIN SECARA INSTAN DARI SUPABASE
+  public async fetchWorkerPhotos(): Promise<{ terapis: Terapis[]; admins: AdminUser[]; updated: boolean }> {
+    if (!this.client || !this.isSupabaseConnected) {
+      return { terapis: this.getTerapisList(), admins: this.getAdminList(), updated: false };
+    }
+    try {
+      const [{ data: terapisData, error: tErr }, { data: adminData, error: aErr }] = await Promise.all([
+        this.client.from('terapis').select('id, foto_url'),
+        this.client.from('admin_users').select('id, foto_url')
+      ]);
+
+      if (tErr) console.warn('Supabase fetch terapis photos error:', tErr);
+      if (aErr) console.warn('Supabase fetch admin photos error:', aErr);
+
+      let terapisChanged = false;
+      const localTerapis = this.getTerapisList();
+      if (terapisData && terapisData.length > 0) {
+        terapisData.forEach((ct: any) => {
+          if (ct.foto_url) {
+            const idx = localTerapis.findIndex(t => t.id === ct.id);
+            if (idx !== -1 && localTerapis[idx].fotoUrl !== ct.foto_url) {
+              localTerapis[idx].fotoUrl = ct.foto_url;
+              terapisChanged = true;
+            }
+          }
+        });
+        if (terapisChanged) {
+          localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(localTerapis));
+        }
+      }
+
+      let adminChanged = false;
+      const localAdmins = this.getAdminList();
+      if (adminData && adminData.length > 0) {
+        adminData.forEach((ca: any) => {
+          if (ca.foto_url) {
+            const idx = localAdmins.findIndex(a => a.id === ca.id);
+            if (idx !== -1 && localAdmins[idx].fotoUrl !== ca.foto_url) {
+              localAdmins[idx].fotoUrl = ca.foto_url;
+              adminChanged = true;
+            }
+          }
+        });
+        if (adminChanged) {
+          localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(localAdmins));
+        }
+      }
+
+      if (terapisChanged || adminChanged) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('uld_data_updated'));
+        }
+      }
+
+      return {
+        terapis: this.getTerapisList(),
+        admins: this.getAdminList(),
+        updated: terapisChanged || adminChanged
+      };
+    } catch (err) {
+      console.warn('fetchWorkerPhotos error:', err);
+      return { terapis: this.getTerapisList(), admins: this.getAdminList(), updated: false };
     }
   }
 
@@ -243,32 +309,60 @@ class SupabaseDataService {
       return { success: false, message: 'Klien Supabase belum terhubung.' };
     }
     try {
-      // 1. Terapis
-      const terapis = this.getTerapisList().map(t => ({
-        id: t.id,
-        nip_or_id: t.nipOrId,
-        nama: t.nama,
-        gelar: t.gelar,
-        spesialisasi: t.spesialisasi,
-        spesialisasi_label: t.spesialisasiLabel,
-        pin: t.pin,
-        nomor_telepon: t.nomorTelepon,
-        deskripsi: t.deskripsi,
-        ruang_praktek: t.ruangPraktek,
-        foto_url: t.fotoUrl || null,
-        is_active: t.isActive
-      }));
+      // 1. Terapis (Pertahankan foto yang sudah ada di cloud Supabase agar tidak tertimpa null jika perangkat belum unduh)
+      const { data: cloudTerapis } = await this.client.from('terapis').select('id, foto_url');
+      const localTerapis = this.getTerapisList();
+      let terapisUpdatedLocally = false;
+      const terapis = localTerapis.map(t => {
+        const cloudItem = cloudTerapis?.find((x: any) => x.id === t.id);
+        const resolvedFoto = t.fotoUrl || cloudItem?.foto_url || null;
+        if (!t.fotoUrl && cloudItem?.foto_url) {
+          t.fotoUrl = cloudItem.foto_url;
+          terapisUpdatedLocally = true;
+        }
+        return {
+          id: t.id,
+          nip_or_id: t.nipOrId,
+          nama: t.nama,
+          gelar: t.gelar,
+          spesialisasi: t.spesialisasi,
+          spesialisasi_label: t.spesialisasiLabel,
+          pin: t.pin,
+          nomor_telepon: t.nomorTelepon,
+          deskripsi: t.deskripsi,
+          ruang_praktek: t.ruangPraktek,
+          foto_url: resolvedFoto,
+          is_active: t.isActive
+        };
+      });
+      if (terapisUpdatedLocally) {
+        localStorage.setItem(STORAGE_KEYS.TERAPIS, JSON.stringify(localTerapis));
+      }
       await this.client.from('terapis').upsert(terapis);
 
-      // 2. Admins
-      const admins = this.getAdminList().map(a => ({
-        id: a.id,
-        nama: a.nama,
-        role_title: a.roleTitle,
-        pin: a.pin,
-        nomor_telepon: a.nomorTelepon,
-        foto_url: a.fotoUrl || null
-      }));
+      // 2. Admins (Pertahankan foto yang sudah ada di cloud Supabase)
+      const { data: cloudAdmins } = await this.client.from('admin_users').select('id, foto_url');
+      const localAdmins = this.getAdminList();
+      let adminUpdatedLocally = false;
+      const admins = localAdmins.map(a => {
+        const cloudAdmin = cloudAdmins?.find((x: any) => x.id === a.id);
+        const resolvedFoto = a.fotoUrl || cloudAdmin?.foto_url || null;
+        if (!a.fotoUrl && cloudAdmin?.foto_url) {
+          a.fotoUrl = cloudAdmin.foto_url;
+          adminUpdatedLocally = true;
+        }
+        return {
+          id: a.id,
+          nama: a.nama,
+          role_title: a.roleTitle,
+          pin: a.pin,
+          nomor_telepon: a.nomorTelepon,
+          foto_url: resolvedFoto
+        };
+      });
+      if (adminUpdatedLocally) {
+        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(localAdmins));
+      }
       await this.client.from('admin_users').upsert(admins);
 
       // 3. Peserta

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../services/supabase';
 import { navigateTo } from '../services/router';
 import { Terapis, AdminUser } from '../types';
@@ -14,8 +14,22 @@ export const LoginTerapis: React.FC<Props> = ({
   onAdminLoginSuccess,
   defaultTab = 'all' 
 }) => {
-  const terapisList = db.getTerapisList();
-  const adminList = db.getAdminList();
+  const [terapisList, setTerapisList] = useState<Terapis[]>(() => db.getTerapisList());
+  const [adminList, setAdminList] = useState<AdminUser[]>(() => db.getAdminList());
+
+  useEffect(() => {
+    db.fetchWorkerPhotos().then(res => {
+      setTerapisList(res.terapis);
+      setAdminList(res.admins);
+    }).catch(console.warn);
+
+    const handleUpdate = () => {
+      setTerapisList(db.getTerapisList());
+      setAdminList(db.getAdminList());
+    };
+    window.addEventListener('uld_data_updated', handleUpdate);
+    return () => window.removeEventListener('uld_data_updated', handleUpdate);
+  }, []);
 
   const [activeCategory, setActiveCategory] = useState<'all' | 'admin' | 'terapis'>(defaultTab);
   const [selectedType, setSelectedType] = useState<'terapis' | 'admin'>(() => {
@@ -172,11 +186,20 @@ export const LoginTerapis: React.FC<Props> = ({
                             : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                       >
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                          isSelected ? 'bg-sky-200 text-sky-900' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          👨‍💼
-                        </div>
+                        {a.fotoUrl ? (
+                          <img
+                            key={a.fotoUrl}
+                            src={a.fotoUrl}
+                            alt={a.nama}
+                            className="w-9 h-9 rounded-xl object-cover shrink-0 border border-slate-300 shadow-2xs"
+                          />
+                        ) : (
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                            isSelected ? 'bg-sky-200 text-sky-900' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            👨‍💼
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
                             <span>{a.nama}</span>
@@ -226,11 +249,20 @@ export const LoginTerapis: React.FC<Props> = ({
                             : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                       >
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                          isSelected ? 'bg-sky-200 text-sky-900' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {icon}
-                        </div>
+                        {t.fotoUrl ? (
+                          <img
+                            key={t.fotoUrl}
+                            src={t.fotoUrl}
+                            alt={t.nama}
+                            className="w-9 h-9 rounded-xl object-cover shrink-0 border border-slate-300 shadow-2xs"
+                          />
+                        ) : (
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                            isSelected ? 'bg-sky-200 text-sky-900' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {icon}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="font-extrabold text-sm text-slate-900 truncate">
                             {t.nama}
