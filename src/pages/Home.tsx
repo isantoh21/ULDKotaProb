@@ -308,48 +308,63 @@ export const Home: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          {terapisList.map((t) => (
-            <div key={t.id} className="p-4 rounded-3xl bg-slate-50 border border-slate-200/80 shadow-xs hover:border-sky-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  {t.fotoUrl ? (
-                    <img
-                      key={t.fotoUrl || t.id}
-                      src={t.fotoUrl}
-                      alt={t.nama}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-sky-500 shadow-sm shrink-0 bg-white"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-2xl bg-sky-100 border border-sky-200 text-sky-800 font-black text-xl flex items-center justify-center shrink-0">
-                      {t.nama.charAt(0)}
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-[10px] font-extrabold text-sky-700 uppercase tracking-wide block">
-                      {t.spesialisasiLabel}
-                    </span>
-                    <div className="font-extrabold text-slate-900 text-sm leading-tight mt-0.5">
-                      {t.nama}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {terapisList.map((t) => {
+            const gelarText = (t.id === 'terapis-4' || t.spesialisasi === 'psikolog' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) 
+              ? 'Psikolog' 
+              : t.gelar;
+
+            return (
+              <div 
+                key={t.id} 
+                className="p-4 rounded-3xl bg-slate-50/70 border border-slate-200/90 shadow-xs hover:border-sky-300 hover:shadow-lg transition-all flex flex-col justify-between group"
+              >
+                <div className="space-y-3.5">
+                  {/* Foto Besar Tenaga Ahli */}
+                  <div className="relative w-full aspect-[4/4.5] sm:aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-xs">
+                    {t.fotoUrl ? (
+                      <img
+                        key={t.fotoUrl || t.id}
+                        src={t.fotoUrl}
+                        alt={t.nama}
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300 bg-white"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-sky-100 to-sky-200 text-sky-800 font-black text-4xl flex items-center justify-center">
+                        {t.nama.charAt(0)}
+                      </div>
+                    )}
+                    <div className="absolute top-2.5 left-2.5">
+                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-sky-900/85 backdrop-blur-sm text-white border border-sky-400/40 shadow-xs">
+                        {t.spesialisasiLabel}
+                      </span>
                     </div>
                   </div>
+
+                  {/* Nama dan Gelar di Bawah Foto */}
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-slate-900 text-base leading-snug group-hover:text-sky-700 transition-colors">
+                      {t.nama}
+                    </h3>
+                    <div className="text-xs text-sky-700 font-bold">
+                      {gelarText}
+                    </div>
+                    <p className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed pt-1">
+                      {t.deskripsi}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium">
-                  {(t.id === 'terapis-4' || t.spesialisasi === 'psikolog' || (t.gelar && t.gelar.toLowerCase().includes('klinis'))) ? 'Psikolog' : t.gelar}
-                </div>
-                <div className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">
-                  {t.deskripsi}
+
+                <div className="pt-3 mt-3 border-t border-slate-200/60 text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                  <span>📍</span>
+                  <span className="truncate">{t.ruangPraktek}</span>
                 </div>
               </div>
-              <div className="pt-2 border-t border-slate-200/60 text-[10px] font-semibold text-slate-500 flex items-center gap-1">
-                <span>📍</span>
-                <span className="truncate">{t.ruangPraktek}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>
