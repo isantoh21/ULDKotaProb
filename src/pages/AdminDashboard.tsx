@@ -546,11 +546,11 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
-                title="Keluar dan Kembali ke Beranda / Ganti Akun"
+                className="px-2.5 py-1.5 rounded-lg bg-red-600/90 hover:bg-red-600 text-white font-semibold text-xs shadow-xs flex items-center gap-1 transition-all active:scale-95 border border-red-500/50"
+                title="Keluar dan Kembali ke Beranda"
               >
-                <span>🚪 Log Out</span>
-                <span className="hidden sm:inline">(Ganti Akun)</span>
+                <span>🚪</span>
+                <span>Log Out</span>
               </button>
             )}
           </div>

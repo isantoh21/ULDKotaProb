@@ -116,11 +116,11 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
 
               <button
                 onClick={onLogout}
-                className="px-3.5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-sm whitespace-nowrap flex items-center gap-1.5 active:scale-95"
+                className="px-2.5 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all shadow-xs whitespace-nowrap flex items-center gap-1 active:scale-95"
                 title="Keluar dan Kembali ke Beranda"
               >
-                <span>🚪 Log Out</span>
-                <span className="hidden sm:inline">(Ke Beranda)</span>
+                <span>🚪</span>
+                <span>Log Out</span>
               </button>
             </div>
           )}
