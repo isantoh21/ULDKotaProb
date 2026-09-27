@@ -194,44 +194,39 @@ export const Home: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           {adminList.map(adm => {
             const waUrl = `https://wa.me/${adm.nomorTelepon}?text=Halo%20Pak%20${encodeURIComponent(adm.nama)}%20(${encodeURIComponent(adm.roleTitle)}),%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20ULD%20Kota%20Probolinggo...`;
             return (
               <div 
                 key={adm.id}
-                className="p-5 rounded-3xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-4 shadow-sm group hover:border-emerald-500 hover:shadow-lg transition-all"
+                className="p-5 rounded-3xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-4 shadow-sm"
               >
-                <div className="space-y-3 flex flex-col items-center text-center">
-                  {/* Foto Compact Petugas Admin (Lebih kecil dari Tenaga Ahli) */}
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-emerald-950/60 border-2 border-emerald-400/50 shadow-md shrink-0">
-                    {adm.fotoUrl ? (
-                      <img
-                        key={adm.fotoUrl || adm.id}
-                        src={adm.fotoUrl}
-                        alt={adm.nama}
-                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300 bg-emerald-950/30"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-emerald-900/80 border border-emerald-700 text-emerald-200 font-black text-3xl flex items-center justify-center">
-                        {adm.nama.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Informasi Nama & Jabatan di Bawah Foto */}
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-extrabold text-emerald-300 uppercase tracking-wide block">
-                      {adm.roleTitle}
-                    </span>
-                    <h4 className="font-extrabold text-white text-base sm:text-lg leading-snug group-hover:text-emerald-200 transition-colors">
-                      {adm.nama}
-                    </h4>
-                    <div className="text-xs text-emerald-300 font-mono pt-0.5">
-                      WhatsApp: <strong className="text-emerald-100">+{adm.nomorTelepon}</strong>
+                <div className="flex items-center gap-3.5">
+                  {adm.fotoUrl ? (
+                    <img
+                      key={adm.fotoUrl || adm.id}
+                      src={adm.fotoUrl}
+                      alt={adm.nama}
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-md shrink-0 bg-white/10"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-emerald-800 border-2 border-emerald-500 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
+                      {adm.nama.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-extrabold text-white text-base sm:text-lg">{adm.nama}</span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-200 border border-emerald-700">
+                        {adm.roleTitle}
+                      </span>
+                    </div>
+                    <div className="text-xs text-emerald-300 font-mono mt-1">
+                      WhatsApp: <strong>+{adm.nomorTelepon}</strong>
                     </div>
                   </div>
                 </div>
