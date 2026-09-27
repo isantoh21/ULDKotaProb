@@ -63,32 +63,32 @@ export const Home: React.FC = () => {
         <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-sky-300/10 blur-2xl pointer-events-none" />
       </section>
 
-      {/* 4 MENU UTAMA SUPER SIMPLE */}
+      {/* 2 MENU UTAMA: PENDAFTARAN & CEK JADWAL */}
       <section className="space-y-4">
         <div className="text-center sm:text-left">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Pilih Layanan Anda
           </h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            Silakan pilih menu layanan yang Anda butuhkan di bawah ini:
+            Akses pendaftaran terapi mandiri bagi siswa terdaftar dan pengecekan jadwal sesi mingguan:
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {/* MENU 1: SISWA TERAPI RUTIN */}
-          <div className="bg-white rounded-3xl p-6 border-2 border-sky-600/30 hover:border-sky-600 transition-all shadow-sm flex flex-col justify-between space-y-4 group">
-            <div className="space-y-2">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-sky-600/30 hover:border-sky-600 transition-all shadow-sm flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2.5">
               <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-700 text-2xl flex items-center justify-center font-bold">
                 🧒
               </div>
               <span className="px-2.5 py-0.5 rounded-md bg-sky-50 text-sky-800 font-bold text-[11px] inline-block">
                 Sudah Terdaftar di ULD
               </span>
-              <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-sky-700 transition-colors">
-                Siswa Terapi Rutin
+              <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-sky-700 transition-colors">
+                Pendaftaran Siswa Terapi Rutin
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Tinggal pilih nama anak dari <strong>drop down</strong> dan masukkan <strong>PIN pribadi</strong>. Maksimal 1x pendaftaran dalam seminggu untuk pemerataan kuota layanan.
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Pilih nama anak dari <strong>drop down</strong> dan masukkan <strong>PIN pribadi</strong>. Maksimal 1x pendaftaran dalam seminggu untuk pemerataan kuota layanan.
               </p>
             </div>
 
@@ -102,18 +102,18 @@ export const Home: React.FC = () => {
           </div>
 
           {/* MENU 2: JADWAL & PESERTA TERDAFTAR (AKSES UMUM) */}
-          <div className="bg-white rounded-3xl p-6 border-2 border-indigo-600/30 hover:border-indigo-600 transition-all shadow-sm flex flex-col justify-between space-y-4 group">
-            <div className="space-y-2">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-indigo-600/30 hover:border-indigo-600 transition-all shadow-sm flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2.5">
               <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-800 text-2xl flex items-center justify-center font-bold">
                 👥
               </div>
               <span className="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-900 font-bold text-[11px] inline-block">
                 Terbuka untuk Umum
               </span>
-              <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-indigo-800 transition-colors">
-                Jadwal & Peserta Terdaftar
+              <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-indigo-800 transition-colors">
+                Cek Jadwal & Peserta Terdaftar
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Cek jadwal sesi harian dan lihat <strong>nama-nama siswa</strong> yang sudah terjadwal di setiap hari Senin – Jumat pukul 09.00 – 13.00 WIB.
               </p>
             </div>
@@ -123,57 +123,6 @@ export const Home: React.FC = () => {
               className="w-full py-3.5 px-4 rounded-2xl bg-indigo-900 hover:bg-indigo-800 text-white font-bold text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2"
             >
               <span>Lihat Jadwal & Peserta Terjadwal</span>
-              <span>→</span>
-            </button>
-          </div>
-
-          {/* MENU 3: TENAGA AHLI & TERAPIS */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:border-sky-500 transition-all shadow-sm flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-800 text-2xl flex items-center justify-center font-bold">
-                🩺
-              </div>
-              <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-bold text-[11px] inline-block">
-                Tenaga Ahli & Psikolog
-              </span>
-              <h3 className="text-lg font-extrabold text-slate-900">
-                Login Terapis & Psikolog
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Akses untuk <strong>Psikolog, Terapis Perilaku, Tenaga PLB, dan Fisioterapis</strong> guna membuka dan menutup slot sesi 09.00 – 13.00 WIB.
-              </p>
-            </div>
-
-            <button
-              onClick={() => navigateTo('/login-terapis')}
-              className="w-full py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-sm transition-all"
-            >
-              Masuk Tenaga Ahli (PIN) →
-            </button>
-          </div>
-
-          {/* MENU 4: ADMIN SUGENG & HELMI */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:border-slate-400 transition-all shadow-sm flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-800 text-2xl flex items-center justify-center font-bold">
-                🏢
-              </div>
-              <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-bold text-[11px] inline-block">
-                Loket Administrasi ULD
-              </span>
-              <h3 className="text-lg font-extrabold text-slate-900">
-                Petugas Admin (Sugeng & Helmi)
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Penjadwalan khusus ke Psikolog, pembuatan akun siswa terapi baru (cukup nama, ortu, PIN), dan penjadwalan asesmen awal baru.
-              </p>
-            </div>
-
-            <button
-              onClick={() => navigateTo('/login-admin')}
-              className="w-full py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5"
-            >
-              <span>Pilih Petugas & Masuk (PIN)</span>
               <span>→</span>
             </button>
           </div>
