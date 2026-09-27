@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../services/supabase';
 import { navigateTo } from '../services/router';
 import { Terapis, AdminUser } from '../types';
+import { ULD_LOGO_BASE64 } from '../constants/logoData';
 
 interface Props {
   onLoginSuccess: (terapis: Terapis) => void;
@@ -96,9 +97,14 @@ export const LoginTerapis: React.FC<Props> = ({
   return (
     <div className="max-w-md mx-auto my-4 space-y-5 pb-20">
       <div className="text-center space-y-1">
-        <div className="w-12 h-12 rounded-2xl bg-sky-700 text-white font-bold flex items-center justify-center text-lg mx-auto shadow-sm">
-          ULD
-        </div>
+        <img
+          src={ULD_LOGO_BASE64}
+          alt="Logo ULD Kota Probolinggo"
+          className="w-14 h-14 rounded-2xl object-contain bg-white p-1 shadow-xs mx-auto border border-sky-200"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/logo-uld.jpg';
+          }}
+        />
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           Login Petugas & Tenaga Ahli
         </h1>

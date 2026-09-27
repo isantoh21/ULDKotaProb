@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { db } from '../services/supabase';
 import { navigateTo } from '../services/router';
 import { Peserta } from '../types';
+import { ULD_LOGO_BASE64 } from '../constants/logoData';
 
 interface Props {
   onLoginSuccess: (peserta: Peserta) => void;
@@ -112,9 +113,14 @@ export const LoginPeserta: React.FC<Props> = ({ onLoginSuccess }) => {
     <div className="max-w-xl mx-auto my-4 space-y-6 pb-20">
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-sky-700 text-white font-bold flex items-center justify-center text-lg mx-auto shadow-md">
-          ULD
-        </div>
+        <img
+          src={ULD_LOGO_BASE64}
+          alt="Logo ULD Kota Probolinggo"
+          className="w-14 h-14 rounded-2xl object-contain bg-white p-1 shadow-xs mx-auto border border-sky-200"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/logo-uld.jpg';
+          }}
+        />
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Login Siswa Terapi Rutin
         </h1>
