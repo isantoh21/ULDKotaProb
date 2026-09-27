@@ -194,17 +194,17 @@ export const Home: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 max-w-2xl mx-auto">
           {adminList.map(adm => {
             const waUrl = `https://wa.me/${adm.nomorTelepon}?text=Halo%20Pak%20${encodeURIComponent(adm.nama)}%20(${encodeURIComponent(adm.roleTitle)}),%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20ULD%20Kota%20Probolinggo...`;
             return (
               <div 
                 key={adm.id}
-                className="p-4 sm:p-5 rounded-3xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-4 shadow-sm group hover:border-emerald-500 hover:shadow-lg transition-all"
+                className="p-5 rounded-3xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-4 shadow-sm group hover:border-emerald-500 hover:shadow-lg transition-all"
               >
-                <div className="space-y-3.5">
-                  {/* Foto Besar Petugas Admin */}
-                  <div className="w-full aspect-[4/4.5] sm:aspect-[4/5] rounded-2xl overflow-hidden bg-emerald-950/60 border border-emerald-700/60 shadow-xs">
+                <div className="space-y-3 flex flex-col items-center text-center">
+                  {/* Foto Compact Petugas Admin (Lebih kecil dari Tenaga Ahli) */}
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-emerald-950/60 border-2 border-emerald-400/50 shadow-md shrink-0">
                     {adm.fotoUrl ? (
                       <img
                         key={adm.fotoUrl || adm.id}
@@ -216,7 +216,7 @@ export const Home: React.FC = () => {
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full bg-emerald-900/80 border border-emerald-700 text-emerald-200 font-black text-4xl flex items-center justify-center">
+                      <div className="w-full h-full bg-emerald-900/80 border border-emerald-700 text-emerald-200 font-black text-3xl flex items-center justify-center">
                         {adm.nama.charAt(0)}
                       </div>
                     )}
@@ -227,7 +227,7 @@ export const Home: React.FC = () => {
                     <span className="text-[10px] font-extrabold text-emerald-300 uppercase tracking-wide block">
                       {adm.roleTitle}
                     </span>
-                    <h4 className="font-extrabold text-white text-lg leading-snug group-hover:text-emerald-200 transition-colors">
+                    <h4 className="font-extrabold text-white text-base sm:text-lg leading-snug group-hover:text-emerald-200 transition-colors">
                       {adm.nama}
                     </h4>
                     <div className="text-xs text-emerald-300 font-mono pt-0.5">
@@ -240,7 +240,7 @@ export const Home: React.FC = () => {
                   href={waUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 active:scale-95"
                 >
                   <span>💬 Chat WA {adm.nama}</span>
                   <span>→</span>
