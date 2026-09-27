@@ -542,17 +542,6 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
             >
               🔑 Ubah PIN
             </button>
-
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                className="px-2.5 py-1.5 rounded-lg bg-red-600/90 hover:bg-red-600 text-white font-semibold text-xs shadow-xs flex items-center gap-1 transition-all active:scale-95 border border-red-500/50"
-                title="Keluar dan Kembali ke Beranda"
-              >
-                <span>🚪</span>
-                <span>Log Out</span>
-              </button>
-            )}
           </div>
         </div>
       </div>

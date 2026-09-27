@@ -223,22 +223,13 @@ export default function App() {
               </p>
             </div>
 
-            {currentUser.role !== 'admin' && currentUser.role !== 'terapis' && currentUser.role !== 'peserta' ? (
-              <div className="flex items-center gap-4 text-slate-600 text-[11px]">
-                <button onClick={() => navigateTo('/')} className="hover:text-slate-900">Beranda</button>
-                <span>·</span>
-                <button onClick={() => navigateTo('/daftar-jadwal')} className="hover:text-slate-900">Jadwal Terapi (Publik)</button>
-                <span>·</span>
-                <button onClick={() => navigateTo('/panduan-layanan')} className="hover:text-slate-900">Panduan Layanan</button>
-              </div>
-            ) : (
-              <button 
-                onClick={handleLogout} 
-                className="text-red-700 hover:text-red-800 font-bold text-xs flex items-center gap-1"
-              >
-                <span>🚪 Log Out / Kembali ke Beranda</span>
-              </button>
-            )}
+            <div className="flex items-center gap-4 text-slate-600 text-[11px]">
+              <button onClick={() => navigateTo('/')} className="hover:text-slate-900">Beranda</button>
+              <span>·</span>
+              <button onClick={() => navigateTo('/daftar-jadwal')} className="hover:text-slate-900">Jadwal Terapi (Publik)</button>
+              <span>·</span>
+              <button onClick={() => navigateTo('/panduan-layanan')} className="hover:text-slate-900">Panduan Layanan</button>
+            </div>
           </div>
         </footer>
       </div>

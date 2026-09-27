@@ -288,15 +288,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
             </div>
           </div>
 
-          <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
-            <button
-              onClick={onLogout}
-              className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
-            >
-              <span>🚪 Keluar</span>
-              <span className="hidden sm:inline">(Log Out)</span>
-            </button>
-          </div>
+
         </div>
 
         {/* KARTU TENAGA AHLI PEMBINA TETAP (ATURAN 2) */}
