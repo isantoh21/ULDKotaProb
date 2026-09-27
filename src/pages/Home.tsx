@@ -321,7 +321,7 @@ export const Home: React.FC = () => {
               >
                 <div className="space-y-3.5">
                   {/* Foto Besar Tenaga Ahli */}
-                  <div className="relative w-full aspect-[4/4.5] sm:aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-xs">
+                  <div className="w-full aspect-[4/4.5] sm:aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-xs">
                     {t.fotoUrl ? (
                       <img
                         key={t.fotoUrl || t.id}
@@ -337,19 +337,17 @@ export const Home: React.FC = () => {
                         {t.nama.charAt(0)}
                       </div>
                     )}
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-sky-900/85 backdrop-blur-sm text-white border border-sky-400/40 shadow-xs">
-                        {t.spesialisasiLabel}
-                      </span>
-                    </div>
                   </div>
 
-                  {/* Nama dan Gelar di Bawah Foto */}
+                  {/* Nama, Spesialisasi dan Gelar di Bawah Foto */}
                   <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold text-sky-700 uppercase tracking-wide block">
+                      {t.spesialisasiLabel}
+                    </span>
                     <h3 className="font-extrabold text-slate-900 text-base leading-snug group-hover:text-sky-700 transition-colors">
                       {t.nama}
                     </h3>
-                    <div className="text-xs text-sky-700 font-bold">
+                    <div className="text-xs text-slate-500 font-semibold">
                       {gelarText}
                     </div>
                     <p className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed pt-1">
