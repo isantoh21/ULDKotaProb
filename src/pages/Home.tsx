@@ -107,9 +107,6 @@ export const Home: React.FC = () => {
               <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-800 text-2xl flex items-center justify-center font-bold">
                 👥
               </div>
-              <span className="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-900 font-bold text-[11px] inline-block">
-                Terbuka untuk Umum
-              </span>
               <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-indigo-800 transition-colors">
                 Cek Jadwal & Peserta Terdaftar
               </h3>
