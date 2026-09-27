@@ -127,10 +127,10 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
       return;
     }
 
-    // ATURAN 3: Pendaftaran terapi paling minimal dilakukan H-1 hari di maksimal jam 24.00 WIB
+    // ATURAN 3: Pendaftaran terapi paling lambat maksimal dilakukan H-1 hari di pukul 23.59 WIB
     const deadlineCheck = checkBatasPendaftaranHMinus1(slot.tanggal);
     if (!deadlineCheck.bisaDaftar) {
-      alert(deadlineCheck.pesan || 'Pendaftaran ditutup karena batas waktu minimal H-1 hari maksimal jam 24.00 WIB telah terlewati.');
+      alert(deadlineCheck.pesan || 'Pendaftaran ditutup karena batas waktu pendaftaran paling lambat H-1 hari pukul 23.59 WIB telah terlewati.');
       return;
     }
 
@@ -337,7 +337,7 @@ export const DaftarJadwal: React.FC<Props> = ({ currentPeserta }) => {
         {/* Ketentuan Singkat */}
         <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
           <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-200">📅 Maks 1x/minggu</span>
-          <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 font-semibold border border-rose-200">⏰ Daftar paling lambat H-1 jam 24.00</span>
+          <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 font-semibold border border-rose-200">⏰ Daftar paling lambat H-1 pukul 23.59</span>
           <span className="px-2.5 py-1 rounded-full bg-sky-50 text-sky-800 font-semibold border border-sky-100">📌 Siswa binaan hanya ke terapis tetapnya</span>
           <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-900 font-semibold border border-indigo-200">🧠 Psikolog hanya via Admin</span>
         </div>

@@ -57,7 +57,7 @@ export function getWIBDate(): { dateStr: string; timeStr: string; fullStr: strin
   }
 }
 
-// Helper Aturan 3: Pendaftaran terapi paling minimal dilakukan H-1 hari di maksimal jam 24.00 WIB
+// Helper Aturan 3: Pendaftaran terapi paling lambat maksimal dilakukan H-1 hari di pukul 23.59 WIB
 export function checkBatasPendaftaranHMinus1(slotTanggal: string): { 
   bisaDaftar: boolean; 
   pesan?: string;
@@ -74,7 +74,7 @@ export function checkBatasPendaftaranHMinus1(slotTanggal: string): {
       isHariH: true,
       isLewat: true,
       labelBatas: 'Hari H (Ditutup)',
-      pesan: `Pendaftaran ditutup! Sesuai ketentuan resmi operasional ULD Kota Probolinggo, pendaftaran sesi terapi paling minimal dilakukan H-1 hari di maksimal jam 24.00 WIB. Hari ini (${slotTanggal}) merupakan hari pelaksanaan (Hari H), sehingga pendaftaran tidak dapat diproses.`
+      pesan: `Pendaftaran ditutup! Sesuai ketentuan resmi operasional ULD Kota Probolinggo, pendaftaran sesi terapi paling lambat maksimal dilakukan H-1 hari di pukul 23.59 WIB. Hari ini (${slotTanggal}) merupakan hari pelaksanaan (Hari H), sehingga pendaftaran tidak dapat diproses.`
     };
   }
 
@@ -85,11 +85,11 @@ export function checkBatasPendaftaranHMinus1(slotTanggal: string): {
       isHariH: false,
       isLewat: true,
       labelBatas: 'Tanggal Lewat (Ditutup)',
-      pesan: `Pendaftaran ditutup! Jadwal terapi pada tanggal ${slotTanggal} sudah terlewati.`
+      pesan: `Pendaftaran ditutup! Jadwal terapi pada tanggal ${slotTanggal} sudah terlewati. Pendaftaran paling lambat maksimal dilakukan H-1 pukul 23.59 WIB.`
     };
   }
 
-  // slotTanggal > dateStr: tanggal adalah masa mendatang (minimal H-1 atau lebih awal sebelum jam 24.00 WIB) -> DITERIMA
+  // slotTanggal > dateStr: tanggal adalah masa mendatang (minimal H-1 atau lebih awal sebelum jam 23.59 WIB) -> DITERIMA
   return {
     bisaDaftar: true,
     isHariH: false,
@@ -1405,6 +1405,30 @@ class SupabaseDataService {
     return this.getPesertaList().find(p => p.id === id);
   }
 
+  // Helper untuk menghitung riwayat pemakaian jatah terapi setiap siswa selama ini
+  public getUsageStatsPeserta(pesertaId: string): {
+    totalDigunakan: number;
+    selesai: number;
+    terjadwal: number;
+    batal: number;
+    totalSemua: number;
+    ringkasan: string;
+  } {
+    const bookings = this.getBookingsList().filter(b => b.pesertaId === pesertaId);
+    const selesai = bookings.filter(b => b.status === 'selesai' || b.status === 'hadir').length;
+    const terjadwal = bookings.filter(b => b.status === 'terjadwal' || b.status === 'menunggu_konfirmasi').length;
+    const batal = bookings.filter(b => b.status === 'batal').length;
+    const totalDigunakan = selesai + terjadwal;
+    return {
+      totalDigunakan,
+      selesai,
+      terjadwal,
+      batal,
+      totalSemua: bookings.length,
+      ringkasan: `${totalDigunakan} Sesi (${selesai} Selesai, ${terjadwal} Terjadwal)`
+    };
+  }
+
   public loginPeserta(identitasOrId: string, pin: string): { success: boolean; peserta?: Peserta; error?: string } {
     const list = this.getPesertaList();
     const query = identitasOrId.trim().toLowerCase();
@@ -2182,6 +2206,18 @@ class SupabaseDataService {
 
     const bookings = this.getBookingsList();
 
+    // ATURAN 2: Jadwal yang sudah terisi tidak bisa diisi anak lain lagi (sesi terapi privat 1 anak per sesi)
+    const existingBookingOnSlot = bookings.find(b => 
+      (b.slotId === slot.id || (b.terapisId === slot.terapisId && b.tanggal === slot.tanggal && b.jamMulai === slot.jamMulai)) && 
+      b.status !== 'batal'
+    );
+    if (existingBookingOnSlot) {
+      return {
+        success: false,
+        error: `Maaf, jadwal sesi ini (${slot.tanggal} pukul ${slot.jamMulai} - ${slot.jamSelesai} WIB) sudah terisi oleh anak lain (${existingBookingOnSlot.namaPeserta || 'Siswa lain'}). Sesi terapi bersifat privat (1 anak per sesi) dan tidak dapat diisi oleh anak lain lagi.`
+      };
+    }
+
     // Check if user already booked same slot or same date & time
     const existingSameTime = bookings.find(b => b.pesertaId === pesertaId && b.tanggal === slot.tanggal && b.jamMulai === slot.jamMulai && b.status !== 'batal');
     if (existingSameTime) {
@@ -2197,7 +2233,7 @@ class SupabaseDataService {
       };
     }
 
-    // ATURAN 2: Siswa terdaftar hanya bisa mendaftar maksimal 1x dalam seminggu kalender (Senin - Jumat)
+    // ATURAN 1: Pastikan admin maupun mandiri tidak bisa mendaftarkan jadwal lagi kepada siswa yang kuota mingguannya sudah habis (maksimal 1x seminggu kalender Senin - Jumat)
     // Kuota ini bersifat kontinyu untuk minggu-minggu berikutnya secara otomatis
     const targetWeek = getWeekBounds(slot.tanggal);
     const existingInSameWeek = bookings.find(b => {
@@ -2210,7 +2246,7 @@ class SupabaseDataService {
     if (existingInSameWeek) {
       return {
         success: false,
-        error: `Siswa terdaftar hanya bisa mendaftar maksimal 1x dalam seminggu. ${namaSiswa} sudah memiliki jadwal terapi pada ${existingInSameWeek.tanggal} (Pukul ${existingInSameWeek.jamMulai} - ${existingInSameWeek.jamSelesai} WIB). Silakan pilih pekan berikutnya atau batalkan jadwal sebelumnya.`
+        error: `Kuota mingguan siswa telah habis! ${namaSiswa} sudah memiliki jadwal terapi pada pekan ini (${existingInSameWeek.tanggal} pukul ${existingInSameWeek.jamMulai} - ${existingInSameWeek.jamSelesai} WIB). Siswa hanya berhak mendapatkan maksimal 1x terapi per pekan, sehingga pendaftaran jadwal baru tidak dapat diproses.`
       };
     }
 
@@ -2473,7 +2509,7 @@ class SupabaseDataService {
       };
     }
 
-    // Cek Aturan 3: Batas H-1 jam 24.00 WIB untuk slot baru
+    // Cek Aturan 3: Batas paling lambat maksimal H-1 pukul 23.59 WIB untuk slot baru
     const deadlineCheck = checkBatasPendaftaranHMinus1(newSlot.tanggal);
     if (!deadlineCheck.bisaDaftar) {
       return { success: false, error: `Slot baru tidak dapat dipilih: ${deadlineCheck.pesan}` };
@@ -2482,6 +2518,19 @@ class SupabaseDataService {
     // Cek apakah slot baru adalah terapis pembina yang sama (Aturan 2)
     if (newSlot.terapisId !== b.terapisId) {
       return { success: false, error: 'Jadwal hanya dapat dipindahkan ke sesi tenaga ahli / terapis pembina tetap Anda.' };
+    }
+
+    // Cek apakah slot baru sudah terisi oleh anak lain (Aturan 2)
+    const existingBookingOnNewSlot = bookings.find(other =>
+      other.id !== b.id &&
+      (other.slotId === newSlot.id || (other.terapisId === newSlot.terapisId && other.tanggal === newSlot.tanggal && other.jamMulai === newSlot.jamMulai)) &&
+      other.status !== 'batal'
+    );
+    if (existingBookingOnNewSlot) {
+      return { 
+        success: false, 
+        error: `Maaf, jadwal sesi baru yang dipilih (${newSlot.tanggal} pukul ${newSlot.jamMulai} - ${newSlot.jamSelesai} WIB) sudah terisi oleh anak lain (${existingBookingOnNewSlot.namaPeserta || 'Siswa lain'}). Sesi terapi bersifat privat (1 anak per sesi) dan tidak dapat diisi anak lain.` 
+      };
     }
 
     // Cek kuota slot baru

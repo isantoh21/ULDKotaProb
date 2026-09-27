@@ -300,6 +300,37 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
       return;
     }
 
+    const slotObj = slotsList.find(s => s.id === selectedSlotForBooking);
+    if (slotObj) {
+      // 1. Validasi slot sudah terisi oleh anak lain (Aturan 2)
+      const occupiedBooking = bookingsList.find(b => 
+        (b.slotId === slotObj.id || (b.tanggal === slotObj.tanggal && b.jamMulai === slotObj.jamMulai && b.terapisId === slotObj.terapisId)) &&
+        b.status !== 'batal'
+      );
+      if (occupiedBooking) {
+        setBookingMsg({
+          type: 'error',
+          text: `Gagal! Jadwal sesi ini (${slotObj.tanggal} ${slotObj.jamMulai}-${slotObj.jamSelesai} WIB) sudah terisi oleh anak lain (${occupiedBooking.namaPeserta || 'Siswa lain'}). Sesi terapi bersifat privat (1 anak per sesi) dan tidak dapat diisi anak lain lagi.`
+        });
+        return;
+      }
+
+      // 2. Validasi kuota mingguan siswa (Aturan 1: admin tidak bisa mendaftarkan siswa yang kuota mingguannya sudah habis)
+      const targetWeek = getWeekBounds(slotObj.tanggal);
+      const existingInSameWeek = selectedPesertaBookings.find(b => 
+        b.status !== 'batal' && 
+        getWeekBounds(b.tanggal).monday === targetWeek.monday
+      );
+      if (existingInSameWeek) {
+        const pObj = pesertaList.find(x => x.id === selectedPesertaForBooking);
+        setBookingMsg({
+          type: 'error',
+          text: `Gagal! Kuota mingguan siswa "${pObj?.namaLengkap || 'ini'}" sudah habis untuk pekan tersebut (${existingInSameWeek.tanggal} pukul ${existingInSameWeek.jamMulai} - ${existingInSameWeek.jamSelesai} WIB). Siswa maksimal hanya berhak 1x terapi per minggu kalender, sehingga admin tidak dapat mendaftarkan jadwal lagi pada pekan yang sama.`
+        });
+        return;
+      }
+    }
+
     const t = currentSelectedTerapis;
     const defaultCatatan = `Pendaftaran langsung di Loket ULD oleh Petugas Admin (${activeAdmin.nama}) untuk ${t?.spesialisasiLabel || 'Terapi'}`;
 
@@ -625,11 +656,23 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600"
                   >
                     <option value="">-- Pilih Nama Siswa Terdaftar --</option>
-                    {pesertaList.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.namaLengkap} ({p.nomorRekamMedis}) {p.assignedTerapisNama ? `[Binaan: ${p.assignedTerapisNama}]` : '[Belum Di-assign]'}
-                      </option>
-                    ))}
+                    {pesertaList.map(p => {
+                      const pBookings = bookingsList.filter(b => b.pesertaId === p.id && b.status !== 'batal');
+                      const hasW1 = pBookings.some(b => getWeekBounds(b.tanggal).monday === week1.monday);
+                      const hasW2 = pBookings.some(b => getWeekBounds(b.tanggal).monday === week2.monday);
+                      const quotaTag = (hasW1 && hasW2)
+                        ? ' [⛔ Kuota 2 Pekan Habis]'
+                        : hasW1
+                          ? ' [⚠️ Pekan 1 Terisi]'
+                          : hasW2
+                            ? ' [⚠️ Pekan 2 Terisi]'
+                            : '';
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.namaLengkap} ({p.nomorRekamMedis}) {p.assignedTerapisNama ? `[Binaan: ${p.assignedTerapisNama}]` : '[Belum Di-assign]'}{quotaTag}
+                        </option>
+                      );
+                    })}
                   </select>
                   <span className="text-[11px] text-slate-500 mt-1 block">
                     {pesertaList.length} siswa rutin terdaftar aktif.
@@ -674,39 +717,56 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                   )}
                 </div>
 
-                {/* 3. Status Kuota Mingguan Siswa Terpilih */}
-                {selectedPesertaForBooking && (
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-700">Status Kuota Terapi Siswa (Maks 1x / Pekan):</span>
-                      <span className="text-[11px] font-mono text-sky-700 font-semibold">Kontinyu Mingguan</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className={`p-2.5 rounded-xl border ${selectedPesertaWeek1Booking ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'}`}>
-                        <div className="font-bold flex items-center justify-between">
-                          <span>Pekan 1 ({week1.label})</span>
-                          <span>{selectedPesertaWeek1Booking ? '⚠️ Terjadwal (1/1)' : '🟢 Kuota Tersedia (1x)'}</span>
+                {/* 3. Status Kuota Mingguan & Riwayat Pemakaian Siswa Terpilih (Aturan 1 & 4) */}
+                {selectedPesertaForBooking && (() => {
+                  const usage = db.getUsageStatsPeserta(selectedPesertaForBooking);
+                  const isBothWeeksFull = Boolean(selectedPesertaWeek1Booking && selectedPesertaWeek2Booking);
+                  return (
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                        <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <span>📊</span>
+                          <span>Riwayat Pemakaian Jatah Terapi Siswa Selama Ini:</span>
                         </div>
-                        {selectedPesertaWeek1Booking && (
-                          <div className="text-[11px] text-amber-800 mt-0.5">
-                            {selectedPesertaWeek1Booking.tanggal} ({selectedPesertaWeek1Booking.jamMulai} - {selectedPesertaWeek1Booking.jamSelesai} WIB)
-                          </div>
-                        )}
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-sky-100 text-sky-900 border border-sky-300">
+                          {usage.totalDigunakan}x Digunakan ({usage.selesai} Selesai, {usage.terjadwal} Terjadwal)
+                        </span>
                       </div>
-                      <div className={`p-2.5 rounded-xl border ${selectedPesertaWeek2Booking ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'}`}>
-                        <div className="font-bold flex items-center justify-between">
-                          <span>Pekan 2 ({week2.label})</span>
-                          <span>{selectedPesertaWeek2Booking ? '⚠️ Terjadwal (1/1)' : '🟢 Kuota Tersedia (1x)'}</span>
+
+                      {isBothWeeksFull && (
+                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold flex items-center gap-2">
+                          <span>⛔</span>
+                          <span>PERINGATAN: Siswa ini sudah memiliki jadwal pada seluruh pekan aktif (Pekan 1 & 2). Sesuai aturan batas kuota 1x/minggu, admin TIDAK BISA mendaftarkan jadwal lagi kepada siswa ini.</span>
                         </div>
-                        {selectedPesertaWeek2Booking && (
-                          <div className="text-[11px] text-amber-800 mt-0.5">
-                            {selectedPesertaWeek2Booking.tanggal} ({selectedPesertaWeek2Booking.jamMulai} - {selectedPesertaWeek2Booking.jamSelesai} WIB)
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className={`p-2.5 rounded-xl border ${selectedPesertaWeek1Booking ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'}`}>
+                          <div className="font-bold flex items-center justify-between">
+                            <span>Pekan 1 ({week1.label})</span>
+                            <span>{selectedPesertaWeek1Booking ? '⛔ Kuota Terpakai (1/1)' : '🟢 Kuota Tersedia (1x)'}</span>
                           </div>
-                        )}
+                          {selectedPesertaWeek1Booking && (
+                            <div className="text-[11px] text-amber-800 mt-0.5">
+                              {selectedPesertaWeek1Booking.tanggal} ({selectedPesertaWeek1Booking.jamMulai} - {selectedPesertaWeek1Booking.jamSelesai} WIB)
+                            </div>
+                          )}
+                        </div>
+                        <div className={`p-2.5 rounded-xl border ${selectedPesertaWeek2Booking ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'}`}>
+                          <div className="font-bold flex items-center justify-between">
+                            <span>Pekan 2 ({week2.label})</span>
+                            <span>{selectedPesertaWeek2Booking ? '⛔ Kuota Terpakai (1/1)' : '🟢 Kuota Tersedia (1x)'}</span>
+                          </div>
+                          {selectedPesertaWeek2Booking && (
+                            <div className="text-[11px] text-amber-800 mt-0.5">
+                              {selectedPesertaWeek2Booking.tanggal} ({selectedPesertaWeek2Booking.jamMulai} - {selectedPesertaWeek2Booking.jamSelesai} WIB)
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* 4. Pilih Slot Sesi Terapi (Rentang Hari H s/d 2 Pekan ke Depan) */}
                 <div>
@@ -724,13 +784,17 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                       <option disabled value="">Tidak ada slot tersedia dalam 2 pekan ke depan</option>
                     ) : (
                       availableSlotsForSelectedTerapis.map(s => {
-                        const isFull = s.kuotaTerisi >= s.kuotaMaksimal;
+                        const occupiedByAny = bookingsList.find(b => 
+                          (b.slotId === s.id || (b.tanggal === s.tanggal && b.jamMulai === s.jamMulai && b.terapisId === s.terapisId)) && 
+                          b.status !== 'batal'
+                        );
+                        const isFull = s.kuotaTerisi >= s.kuotaMaksimal || Boolean(occupiedByAny);
                         const sWeek = getWeekBounds(s.tanggal);
-                        const hasBookingInWeek = selectedPesertaBookings.some(b => getWeekBounds(b.tanggal).monday === sWeek.monday);
+                        const hasBookingInWeek = selectedPesertaBookings.some(b => b.status !== 'batal' && getWeekBounds(b.tanggal).monday === sWeek.monday);
                         const isDisabled = isFull || hasBookingInWeek;
                         return (
                           <option key={s.id} value={s.id} disabled={isDisabled}>
-                            {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {isFull ? '[PENUH]' : hasBookingInWeek ? '[⚠️ KUOTA MINGGU INI SUDAH TERISI]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
+                            {s.tanggal} ({s.jamMulai} - {s.jamSelesai} WIB) {occupiedByAny ? `[🔒 SUDAH TERISI: ${occupiedByAny.namaPeserta || 'Anak Lain'}]` : isFull ? '[PENUH]' : hasBookingInWeek ? '[⛔ KUOTA SISWA MINGGU INI SUDAH TERISI]' : `[Tersedia ${s.kuotaMaksimal - s.kuotaTerisi} kuota]`}
                           </option>
                         );
                       })
@@ -745,7 +809,12 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-2xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all transform active:scale-95 flex items-center gap-2"
+                  disabled={
+                    !selectedPesertaForBooking ||
+                    !selectedSlotForBooking ||
+                    Boolean(selectedPesertaWeek1Booking && selectedPesertaWeek2Booking)
+                  }
+                  className="px-6 py-3 rounded-2xl bg-sky-700 hover:bg-sky-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-md transition-all transform active:scale-95 flex items-center gap-2"
                 >
                   <span>✓ Daftarkan Siswa di Loket ULD</span>
                   <span>(Oleh {activeAdmin.nama})</span>
@@ -816,8 +885,16 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                             {b.kodeBooking}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="font-bold text-slate-900 text-sm">
-                              {p?.namaLengkap || b.pesertaId}
+                            <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5 flex-wrap">
+                              <span>{p?.namaLengkap || b.pesertaId}</span>
+                              {p && (() => {
+                                const u = db.getUsageStatsPeserta(p.id);
+                                return (
+                                  <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                                    📊 {u.totalDigunakan}x Terapi
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <div className="text-[11px] text-slate-500">
                               Wali: {p?.namaWali || '-'} · RM: {p?.nomorRekamMedis}
@@ -938,6 +1015,7 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                   <tr>
                     <th className="px-4 py-3">No. RM</th>
                     <th className="px-4 py-3">Nama Siswa</th>
+                    <th className="px-4 py-3">Jatah Terapi Digunakan</th>
                     <th className="px-4 py-3">Terapis Pembina Tetap</th>
                     <th className="px-4 py-3">Nama Orang Tua / Wali</th>
                     <th className="px-4 py-3">PIN Pribadi Siswa</th>
@@ -946,14 +1024,25 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredPesertaList.map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-slate-800">
-                        {p.nomorRekamMedis}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-slate-900 text-sm">
-                        {p.namaLengkap}
-                      </td>
+                  {filteredPesertaList.map(p => {
+                    const usage = db.getUsageStatsPeserta(p.id);
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="px-4 py-3 font-mono font-bold text-slate-800">
+                          {p.nomorRekamMedis}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-slate-900 text-sm">
+                          {p.namaLengkap}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-sky-100 text-sky-900 border border-sky-300 inline-flex items-center gap-1 shadow-2xs">
+                            <span>📊</span>
+                            <span>{usage.totalDigunakan}x Digunakan</span>
+                          </span>
+                          <div className="text-[10px] text-slate-500 mt-0.5">
+                            {usage.selesai} Selesai · {usage.terjadwal} Terjadwal
+                          </div>
+                        </td>
                       <td className="px-4 py-3">
                         {p.assignedTerapisId ? (
                           <span className="font-bold text-sky-800 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200 text-[11px] inline-flex items-center gap-1">
@@ -1002,7 +1091,8 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );
+                })}
                 </tbody>
               </table>
             </div>
@@ -1230,8 +1320,16 @@ export const AdminDashboard: React.FC<Props> = ({ onLogout, initialTab, activeAd
 
                           {/* Siswa & Wali */}
                           <td className="px-4 py-3">
-                            <div className="font-bold text-slate-900 text-sm">
-                              {p?.namaLengkap || b.namaPeserta || b.pesertaId}
+                            <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5 flex-wrap">
+                              <span>{p?.namaLengkap || b.namaPeserta || b.pesertaId}</span>
+                              {p && (() => {
+                                const u = db.getUsageStatsPeserta(p.id);
+                                return (
+                                  <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                                    📊 {u.totalDigunakan}x Terapi
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <div className="text-[11px] text-slate-500 space-y-0.5">
                               <div>RM: <span className="font-mono font-semibold text-slate-700">{p?.nomorRekamMedis || b.nomorRekamMedis || '-'}</span> · {p?.asalSekolah || b.asalSekolah || '-'}</div>

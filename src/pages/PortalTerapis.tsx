@@ -904,10 +904,20 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                         </span>
                       ) : isBooked ? (
                         <div className="space-y-1">
-                          <span className="font-bold text-amber-900 flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-600 shrink-0"></span>
-                            <span>👤 Sudah Terisi: {bookedStudent?.namaLengkap || 'Siswa Binaan'}</span>
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-600 shrink-0"></span>
+                              <span>👤 Sudah Terisi: {bookedStudent?.namaLengkap || 'Siswa Binaan'}</span>
+                            </span>
+                            {bookedStudent && (() => {
+                              const u = db.getUsageStatsPeserta(bookedStudent.id);
+                              return (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-950 border border-amber-300">
+                                  📊 Pemakaian Terapi: {u.totalDigunakan}x ({u.selesai} Selesai, {u.terjadwal} Aktif)
+                                </span>
+                              );
+                            })()}
+                          </div>
                           {matchedBooking && (
                             <button
                               type="button"
@@ -1132,8 +1142,18 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                   <div key={b.id} className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200/60 pb-2">
                       <div>
-                        <div className="text-base font-extrabold text-slate-900">
-                          {peserta?.namaLengkap || 'Nama Siswa'}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-base font-extrabold text-slate-900">
+                            {peserta?.namaLengkap || 'Nama Siswa'}
+                          </span>
+                          {peserta && (() => {
+                            const u = db.getUsageStatsPeserta(peserta.id);
+                            return (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-200">
+                                📊 Jatah Terapi: {u.totalDigunakan}x Digunakan ({u.selesai} Selesai, {u.terjadwal} Terjadwal)
+                              </span>
+                            );
+                          })()}
                         </div>
                         <div className="text-xs text-slate-500">
                           Sekolah: {peserta?.asalSekolah || '-'} · Wali: {peserta?.namaWali}
@@ -1384,6 +1404,14 @@ export const PortalTerapis: React.FC<Props> = ({ terapis, onLogout, initialTab }
                         <span className="font-mono font-bold text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                           {p.nomorRekamMedis}
                         </span>
+                        {(() => {
+                          const u = db.getUsageStatsPeserta(p.id);
+                          return (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-900 border border-indigo-200">
+                              📊 Terapi: {u.totalDigunakan}x Digunakan ({u.selesai} Selesai · {u.terjadwal} Aktif)
+                            </span>
+                          );
+                        })()}
                         {isGraduated && (
                           <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-extrabold flex items-center gap-1">
                             <span>🎓 TELAH LULUS PROGRAM ULD</span>

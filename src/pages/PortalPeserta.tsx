@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { Peserta, BookingTerapi, SlotHarian, Terapis } from '../types';
 import { db, getWIBDate, getWeekBounds, getAvailableBookingWeeks, checkBatasPendaftaranHMinus1, formatLocalDate } from '../services/supabase';
@@ -27,11 +27,11 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
     ? db.getTerapisById(currentPeserta.assignedTerapisId)
     : undefined;
 
-  // Real-time slots & bookings
+  // Real-time slots & system bookings
   const [slotsList, setSlotsList] = useState<SlotHarian[]>(() => db.getSlotsList());
-  const [allBookings, setAllBookings] = useState<BookingTerapi[]>(() => 
-    db.getBookingsList().filter(b => b.pesertaId === currentPeserta.id)
-  );
+  const [systemBookings, setSystemBookings] = useState<BookingTerapi[]>(() => db.getBookingsList());
+  const allBookings = useMemo(() => systemBookings.filter(b => b.pesertaId === currentPeserta.id), [systemBookings, currentPeserta.id]);
+  const usageStats = useMemo(() => db.getUsageStatsPeserta(currentPeserta.id), [systemBookings, currentPeserta.id]);
 
   // Form Ubah PIN Pribadi Siswa
   const [currentPinDisplay, setCurrentPinDisplay] = useState(currentPeserta.pin);
@@ -117,7 +117,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
         setCurrentPinDisplay(updated.pin);
       }
       setSlotsList(db.getSlotsList());
-      setAllBookings(db.getBookingsList().filter(b => b.pesertaId === currentPeserta.id));
+      setSystemBookings(db.getBookingsList());
     };
     window.addEventListener('uld_data_updated', handleUpdate);
     return () => window.removeEventListener('uld_data_updated', handleUpdate);
@@ -163,7 +163,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
       confetti({ particleCount: 70, spread: 70 });
       setSlotToBook(null);
       setKeluhanInput('');
-      setAllBookings(db.getBookingsList().filter(b => b.pesertaId === currentPeserta.id));
+      setSystemBookings(db.getBookingsList());
       setSlotsList(db.getSlotsList());
       setSelectedTicket(res.booking);
       setActiveTab('jadwal_aktif');
@@ -179,14 +179,14 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
     const check = checkBatasPendaftaranHMinus1(b.tanggal);
     if (!check.bisaDaftar) {
-      alert(`Pembatalan ditolak. Sesuai ketentuan, pembatalan jadwal paling lambat dilakukan H-1 hari di maksimal jam 24.00 WIB.`);
+      alert(`Pembatalan ditolak. Sesuai ketentuan, pembatalan jadwal paling lambat dilakukan H-1 hari di pukul 23.59 WIB.`);
       return;
     }
 
     if (window.confirm(`Yakin ingin membatalkan jadwal terapi sesi ${b.tanggal} (${b.jamMulai} - ${b.jamSelesai} WIB)? Kuota slot akan dikembalikan.`)) {
       const success = db.batalkanBooking(bookingId, 'Dibatalkan mandiri oleh orang tua/siswa');
       if (success) {
-        setAllBookings(db.getBookingsList().filter(x => x.pesertaId === currentPeserta.id));
+        setSystemBookings(db.getBookingsList());
         setSlotsList(db.getSlotsList());
         setSelectedTicket(null);
         alert('Jadwal terapi berhasil dibatalkan.');
@@ -211,7 +211,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
       confetti({ particleCount: 80, spread: 70 });
       const updatedBooking = res.booking;
       setBookingToReschedule(null);
-      setAllBookings(db.getBookingsList().filter(b => b.pesertaId === currentPeserta.id));
+      setSystemBookings(db.getBookingsList());
       setSlotsList(db.getSlotsList());
       setSelectedTicket(updatedBooking);
       alert(`Alhamdulillah! Jadwal berhasil dipindahkan ke ${updatedBooking.tanggal} (${updatedBooking.jamMulai} - ${updatedBooking.jamSelesai} WIB). Kuota penggantian mandiri 1x telah tercapai.`);
@@ -329,6 +329,42 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
             </div>
           </div>
         )}
+
+        {/* KARTU STATISTIK PEMAKAIAN JATAH TERAPI SELAMA INI (ATURAN 4) */}
+        <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/20 space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📊</span>
+              <span className="font-extrabold text-xs sm:text-sm text-white">
+                Total Jatah Terapi Digunakan Selama Ini:
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 self-start sm:self-auto">
+              <span className="px-3 py-1 rounded-xl bg-amber-400 text-slate-950 font-black text-xs sm:text-sm shadow-xs font-mono">
+                {usageStats.totalDigunakan} Sesi Digunakan
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-sky-100">
+            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 font-bold flex items-center gap-1">
+              <span>✓</span>
+              <span>{usageStats.selesai} Selesai / Terlaksana</span>
+            </span>
+            <span className="px-2.5 py-0.5 rounded-lg bg-sky-500/30 border border-sky-400/40 text-sky-200 font-bold flex items-center gap-1">
+              <span>🗓️</span>
+              <span>{usageStats.terjadwal} Terjadwal Aktif</span>
+            </span>
+            {usageStats.batal > 0 && (
+              <span className="px-2.5 py-0.5 rounded-lg bg-rose-500/30 border border-rose-400/40 text-rose-200 font-bold flex items-center gap-1">
+                <span>❌</span>
+                <span>{usageStats.batal} Dibatalkan</span>
+              </span>
+            )}
+            <span className="text-[10px] text-sky-200/80 ml-auto">
+              (Maks. 1x / pekan kalender)
+            </span>
+          </div>
+        </div>
 
         {/* PIN Info Strip */}
         <div className="pt-2 border-t border-sky-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
@@ -532,7 +568,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
               <span>Ketentuan Waktu Pendaftaran ULD:</span>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-600">
-              Pendaftaran terapi paling minimal dilakukan <strong>H-1 hari sebelum pelaksanaan di maksimal jam 24.00 WIB</strong>. Pendaftaran pada Hari H atau sesi yang telah lewat tidak dapat diproses oleh sistem.
+              Pendaftaran terapi paling lambat maksimal dilakukan <strong>H-1 hari sebelum pelaksanaan di pukul 23.59 WIB</strong>. Pendaftaran pada Hari H atau sesi yang telah lewat tidak dapat diproses oleh sistem.
             </p>
           </div>
 
@@ -634,13 +670,16 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
 
                     const deadline = checkBatasPendaftaranHMinus1(selectedDayDate);
 
-                    const isBookedByMe = allBookings.some(b => 
+                    const bookedBySomeone = systemBookings.find(b => 
+                      b.terapisId === currentPeserta.assignedTerapisId && 
                       b.tanggal === selectedDayDate && 
                       b.jamMulai === session.start && 
                       b.status !== 'batal'
                     );
 
-                    const isFull = existingSlot && existingSlot.kuotaTerisi >= existingSlot.kuotaMaksimal;
+                    const isBookedByMe = bookedBySomeone?.pesertaId === currentPeserta.id;
+                    const isBookedByOther = Boolean(bookedBySomeone && bookedBySomeone.pesertaId !== currentPeserta.id);
+                    const isFull = (existingSlot && existingSlot.kuotaTerisi >= existingSlot.kuotaMaksimal) || isBookedByOther;
                     const isClosedByTerapis = existingSlot && existingSlot.statusSlot === 'dibatalkan';
                     const isBlockedRutin = isClosedByTerapis && Boolean(existingSlot?.catatanTerapis?.includes('Dikosongkan Rutin'));
 
@@ -656,7 +695,7 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                                 ? 'bg-slate-100/70 border-slate-200 text-slate-500 opacity-75'
                                 : !deadline.bisaDaftar 
                                   ? 'bg-slate-50/80 border-slate-200 opacity-75' 
-                                  : isFull 
+                                  : isBookedByOther || isFull 
                                     ? 'bg-rose-50/60 border-rose-200' 
                                     : 'bg-white border-slate-200 hover:border-sky-400 shadow-xs'
                         }`}
@@ -681,6 +720,10 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                             ) : !deadline.bisaDaftar ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
                                 🔒 {deadline.labelBatas}
+                              </span>
+                            ) : isBookedByOther ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                🔒 Terisi (Siswa Lain)
                               </span>
                             ) : isFull ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
@@ -721,9 +764,9 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                             <div className="text-center py-1.5 text-[11px] font-semibold text-slate-400">
                               Pendaftaran ditutup (Batas H-1)
                             </div>
-                          ) : isFull ? (
-                            <div className="text-center py-1.5 text-[11px] font-semibold text-rose-700">
-                              Slot sudah terisi oleh siswa lain
+                          ) : isBookedByOther || isFull ? (
+                            <div className="w-full py-2 rounded-xl bg-slate-100 text-slate-500 border border-slate-200 font-bold text-xs text-center cursor-not-allowed">
+                              🔒 Sudah Terisi Anak Lain
                             </div>
                           ) : existingBookingInSelectedDayWeek ? (
                             <div className="space-y-1">
@@ -803,6 +846,27 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
             <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-700 font-bold text-xs border border-sky-100">
               {activeBookings.length} Sesi Terjadwal
             </span>
+          </div>
+
+          {/* BANNER STATISTIK PEMAKAIAN JATAH TERAPI */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50 border border-sky-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
+                <span>🎯</span>
+                <span>Riwayat Pemakaian Jatah Terapi Ananda:</span>
+              </div>
+              <div className="text-[11px] text-slate-600">
+                Total <strong>{usageStats.totalDigunakan} sesi</strong> telah/sedang digunakan dari jatah terapi rutin ULD Kota Probolinggo.
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+              <span className="px-2.5 py-1 rounded-xl bg-white border border-emerald-300 text-emerald-800 text-xs font-bold shadow-2xs">
+                ✓ {usageStats.selesai} Selesai Terlaksana
+              </span>
+              <span className="px-2.5 py-1 rounded-xl bg-white border border-sky-300 text-sky-800 text-xs font-bold shadow-2xs">
+                🗓️ {usageStats.terjadwal} Terjadwal Aktif
+              </span>
+            </div>
           </div>
 
           {activeBookings.length === 0 ? (
@@ -1315,9 +1379,16 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                     s.jamMulai === session.start
                   );
                   const isClosed = existingSlot && existingSlot.statusSlot === 'dibatalkan';
-                  const isFull = existingSlot && (existingSlot.statusSlot === 'penuh' || existingSlot.kuotaTerisi >= existingSlot.kuotaMaksimal);
+                  const bookedByOtherChild = systemBookings.some(b => 
+                    b.id !== bookingToReschedule.id && 
+                    b.terapisId === currentPeserta.assignedTerapisId && 
+                    b.tanggal === activeTargetDate && 
+                    b.jamMulai === session.start && 
+                    b.status !== 'batal'
+                  );
+                  const isFull = (existingSlot && (existingSlot.statusSlot === 'penuh' || existingSlot.kuotaTerisi >= existingSlot.kuotaMaksimal)) || bookedByOtherChild;
                   const isCurrentBookingSlot = bookingToReschedule.tanggal === activeTargetDate && bookingToReschedule.jamMulai === session.start;
-                  const canSelect = !isClosed && (!isFull || isCurrentBookingSlot);
+                  const canSelect = !isClosed && !bookedByOtherChild && (!isFull || isCurrentBookingSlot);
                   const slotId = existingSlot?.id;
                   const isSelected = rescheduleSlotId === slotId && Boolean(slotId);
 
@@ -1356,6 +1427,8 @@ export const PortalPeserta: React.FC<Props> = ({ peserta, onLogout }) => {
                           <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Sesi Anda Saat Ini</span>
                         ) : isClosed ? (
                           <span className="text-[10px] text-slate-500">Ditutup</span>
+                        ) : bookedByOtherChild ? (
+                          <span className="text-[10px] text-rose-700 font-bold bg-rose-100 px-1.5 py-0.5 rounded">🔒 Terisi Anak Lain</span>
                         ) : isFull ? (
                           <span className="text-[10px] text-red-600 font-bold">Penuh</span>
                         ) : (
