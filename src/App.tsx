@@ -226,7 +226,7 @@ export default function App() {
             <div className="flex items-center gap-4 text-slate-600 text-[11px]">
               <button onClick={() => navigateTo('/')} className="hover:text-slate-900">Beranda</button>
               <span>·</span>
-              <button onClick={() => navigateTo('/daftar-jadwal')} className="hover:text-slate-900">Jadwal Terapi (Publik)</button>
+              <button onClick={() => navigateTo('/daftar-jadwal')} className="hover:text-slate-900">Jadwal Terapi</button>
               <span>·</span>
               <button onClick={() => navigateTo('/panduan-layanan')} className="hover:text-slate-900">Panduan Layanan</button>
             </div>

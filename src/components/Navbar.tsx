@@ -71,7 +71,7 @@ export const Navbar: React.FC<Props> = ({ currentPath, currentUser, onLogout }) 
               onClick={() => handleNav('/daftar-jadwal')}
               className={`transition-colors hover:text-slate-900 whitespace-nowrap ${currentPath === '/daftar-jadwal' ? 'text-sky-700 font-semibold border-b-2 border-sky-700 pb-1' : ''}`}
             >
-              Jadwal Terapi (Publik)
+              Jadwal Terapi
             </button>
             <button
               onClick={() => handleNav('/panduan-layanan')}
