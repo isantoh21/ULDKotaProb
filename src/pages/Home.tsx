@@ -129,115 +129,6 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* HUBUNGI PETUGAS ADMIN ULD VIA WHATSAPP (SUGENG & HELMI) */}
-      <section className="bg-emerald-950 text-white rounded-3xl p-6 sm:p-8 space-y-4 border border-emerald-800 shadow-md">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
-            <span>💬 Layanan Informasi & Konsultasi Langsung</span>
-          </div>
-          <h3 className="text-xl sm:text-2xl font-black text-white">
-            Hubungi Petugas Admin ULD Kota Probolinggo
-          </h3>
-          <p className="text-xs sm:text-sm text-emerald-200 leading-relaxed max-w-2xl">
-            Untuk <strong>penjadwalan asesmen baru</strong> atau <strong>pendaftaran ke Psikolog</strong>, silakan hubungi langsung petugas loket kami melalui WhatsApp:
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          {adminList.map(adm => {
-            const waUrl = `https://wa.me/${adm.nomorTelepon}?text=Halo%20Pak%20${encodeURIComponent(adm.nama)}%20(${encodeURIComponent(adm.roleTitle)}),%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20ULD%20Kota%20Probolinggo...`;
-            return (
-              <div 
-                key={adm.id}
-                className="p-5 rounded-3xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-4 shadow-sm"
-              >
-                <div className="flex items-center gap-3.5">
-                  {adm.fotoUrl ? (
-                    <img
-                      key={adm.fotoUrl || adm.id}
-                      src={adm.fotoUrl}
-                      alt={adm.nama}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-md shrink-0 bg-white/10"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-emerald-800 border-2 border-emerald-500 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
-                      {adm.nama.charAt(0)}
-                    </div>
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-extrabold text-white text-base sm:text-lg">{adm.nama}</span>
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-200 border border-emerald-700">
-                        {adm.roleTitle}
-                      </span>
-                    </div>
-                    <div className="text-xs text-emerald-300 font-mono mt-1">
-                      WhatsApp: <strong>+{adm.nomorTelepon}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 active:scale-95"
-                >
-                  <span>💬 Chat WA {adm.nama}</span>
-                  <span>→</span>
-                </a>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* LOKASI ULD KOTA PROBOLINGGO & LINK GOOGLE MAPS PROMINEN */}
-      <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-sky-700/20 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 uppercase tracking-wider">
-              <span>📍 Lokasi Kantor & Tempat Terapi Langsung</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900">
-              Gedung Unit Layanan Disabilitas Kota Probolinggo
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600">
-              Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo, Jawa Timur 67217
-            </p>
-          </div>
-
-          <a
-            href="https://maps.app.goo.gl/LJ7Ymhp9QqdEnoy57"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-5 py-3 rounded-2xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
-          >
-            <span>🗺️ Buka di Google Maps</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        </div>
-
-        {/* Google Maps Embed Langsung */}
-        <div className="w-full h-64 sm:h-72 rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
-          <iframe
-            title="Lokasi Google Maps ULD Kota Probolinggo"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3953.362290619172!2d113.2240633!3d-7.7541116!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd7ad0066a99927%3A0x5c969f11d0009338!2sUnit%20Layanan%20Disabilitas%20(ULD)%20Bidang%20Pendidikan%20Kota%20Probolinggo!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            allowFullScreen={false}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </div>
-      </section>
-
       {/* 4 Pilar Tenaga Ahli Preview */}
       <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
         <div className="flex items-center justify-between">
@@ -309,6 +200,115 @@ export const Home: React.FC = () => {
                   <span>📍</span>
                   <span className="truncate">{t.ruangPraktek}</span>
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* LOKASI ULD KOTA PROBOLINGGO & LINK GOOGLE MAPS PROMINEN */}
+      <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-sky-700/20 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 uppercase tracking-wider">
+              <span>📍 Lokasi Kantor & Tempat Terapi Langsung</span>
+            </div>
+            <h3 className="text-xl font-black text-slate-900">
+              Gedung Unit Layanan Disabilitas Kota Probolinggo
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Jl. Hayam Wuruk No. 63, Mangunharjo, Kec. Mayangan, Kota Probolinggo, Jawa Timur 67217
+            </p>
+          </div>
+
+          <a
+            href="https://maps.app.goo.gl/LJ7Ymhp9QqdEnoy57"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-3 rounded-2xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+          >
+            <span>🗺️ Buka di Google Maps</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+
+        {/* Google Maps Embed Langsung */}
+        <div className="w-full h-64 sm:h-72 rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
+          <iframe
+            title="Lokasi Google Maps ULD Kota Probolinggo"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3953.362290619172!2d113.2240633!3d-7.7541116!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd7ad0066a99927%3A0x5c969f11d0009338!2sUnit%20Layanan%20Disabilitas%20(ULD)%20Bidang%20Pendidikan%20Kota%20Probolinggo!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen={false}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      </section>
+
+      {/* HUBUNGI PETUGAS ADMIN ULD VIA WHATSAPP (SUGENG & HELMI) */}
+      <section className="bg-emerald-950 text-white rounded-3xl p-6 sm:p-8 space-y-4 border border-emerald-800 shadow-md">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+            <span>💬 Layanan Informasi & Konsultasi Langsung</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black text-white">
+            Hubungi Petugas Admin ULD Kota Probolinggo
+          </h3>
+          <p className="text-xs sm:text-sm text-emerald-200 leading-relaxed max-w-2xl">
+            Untuk <strong>penjadwalan asesmen baru</strong> atau <strong>pendaftaran ke Psikolog</strong>, silakan hubungi langsung petugas loket kami melalui WhatsApp:
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          {adminList.map(adm => {
+            const waUrl = `https://wa.me/${adm.nomorTelepon}?text=Halo%20Pak%20${encodeURIComponent(adm.nama)}%20(${encodeURIComponent(adm.roleTitle)}),%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20ULD%20Kota%20Probolinggo...`;
+            return (
+              <div 
+                key={adm.id}
+                className="p-5 rounded-3xl bg-emerald-900/70 border border-emerald-700/80 flex flex-col justify-between space-y-4 shadow-sm"
+              >
+                <div className="flex items-center gap-3.5">
+                  {adm.fotoUrl ? (
+                    <img
+                      key={adm.fotoUrl || adm.id}
+                      src={adm.fotoUrl}
+                      alt={adm.nama}
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-md shrink-0 bg-white/10"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-emerald-800 border-2 border-emerald-500 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
+                      {adm.nama.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-extrabold text-white text-base sm:text-lg">{adm.nama}</span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-200 border border-emerald-700">
+                        {adm.roleTitle}
+                      </span>
+                    </div>
+                    <div className="text-xs text-emerald-300 font-mono mt-1">
+                      WhatsApp: <strong>+{adm.nomorTelepon}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <span>💬 Chat WA {adm.nama}</span>
+                  <span>→</span>
+                </a>
               </div>
             );
           })}
